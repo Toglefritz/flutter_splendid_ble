@@ -1,0 +1,10 @@
+{
+  "appTitle": "Flutter BLE Example App",
+  "@appTitle": {
+    "description": "A title for the flutter_ble plugin example app"
+  },
+  "startScan": "Start\nscan",
+  "@startScan": {
+    "description": "Used on a button allowing the user to start a Bluetooth scan"
+  }
+}
