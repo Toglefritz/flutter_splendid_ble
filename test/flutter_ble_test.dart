@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_ble/flutter_ble.dart';
 import 'package:flutter_ble/flutter_ble_platform_interface.dart';
-import 'package:flutter_ble/flutter_ble_method_channel.dart';
+import 'package:flutter_ble/src/channel/flutter_ble_method_channel.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 
 class MockFlutterBlePlatform

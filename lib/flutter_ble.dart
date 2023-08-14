@@ -1,8 +1,10 @@
 
+import 'package:flutter_ble/models/ble_device.dart';
+
 import 'flutter_ble_platform_interface.dart';
 
 class FlutterBle {
-  Future<String?> getPlatformVersion() {
-    return FlutterBlePlatform.instance.getPlatformVersion();
+  Stream<BleDevice> startScan() {
+    return FlutterBlePlatform.instance.startScan();
   }
 }

@@ -18,9 +18,12 @@ dependencies:
     # the parent directory to use the current plugin's version.
     path: ../
 
+  # Provides localized string values
   flutter_localizations:
     sdk: flutter
   intl: any
+  # Provides a cross-platform (iOS, Android) API to request and check permissions
+  permission_handler: ^10.4.3
 
 dev_dependencies:
   integration_test:

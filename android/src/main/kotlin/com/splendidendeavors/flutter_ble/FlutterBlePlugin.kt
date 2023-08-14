@@ -1,12 +1,14 @@
 package com.splendidendeavors.flutter_ble
 
-import androidx.annotation.NonNull
+import android.os.Build
+import androidx.annotation.RequiresApi
+import com.splendidendeavors.flutter_ble.scanner.BleScannerHandler
 
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
-import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
+import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 
 /** FlutterBlePlugin */
 class FlutterBlePlugin: FlutterPlugin, MethodCallHandler {
@@ -16,20 +18,26 @@ class FlutterBlePlugin: FlutterPlugin, MethodCallHandler {
   /// when the Flutter Engine is detached from the Activity
   private lateinit var channel : MethodChannel
 
-  override fun onAttachedToEngine(@NonNull flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
+  /// The BleScannerHandler handles all methods related to scanning for nearby Bluetooth device.
+  private lateinit var bleScannerHandler: BleScannerHandler
+
+  @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
+  override fun onAttachedToEngine(flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
     channel = MethodChannel(flutterPluginBinding.binaryMessenger, "flutter_ble")
+    bleScannerHandler = BleScannerHandler(channel, flutterPluginBinding.applicationContext)
     channel.setMethodCallHandler(this)
   }
 
-  override fun onMethodCall(@NonNull call: MethodCall, @NonNull result: Result) {
-    if (call.method == "getPlatformVersion") {
-      result.success("Android ${android.os.Build.VERSION.RELEASE}")
-    } else {
-      result.notImplemented()
+  @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
+  override fun onMethodCall(call: MethodCall, result: Result) {
+    when (call.method) {
+      "startScan" -> bleScannerHandler.startScan()
+      "stopScan" -> bleScannerHandler.stopScan()
+      else -> result.notImplemented()
     }
   }
 
-  override fun onDetachedFromEngine(@NonNull binding: FlutterPlugin.FlutterPluginBinding) {
+  override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
     channel.setMethodCallHandler(null)
   }
 }

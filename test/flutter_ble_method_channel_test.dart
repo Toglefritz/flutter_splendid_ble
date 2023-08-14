@@ -1,6 +1,6 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:flutter_ble/flutter_ble_method_channel.dart';
+import 'package:flutter_ble/src/channel/flutter_ble_method_channel.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

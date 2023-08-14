@@ -3,6 +3,14 @@
   "@appTitle": {
     "description": "A title for the flutter_ble plugin example app"
   },
+  "missingPermissions": "Missing permissions",
+  "@missingPermissions": {
+    "description": "A short warning that Bluetooth permissions have not been granted"
+  },
+  "permissionsError": "The request for Bluetooth and location permissions was denied. Without those permissions, none of this will work.",
+  "@permissionsError": {
+    "description": "An error message to indicate that permissions have not been granted"
+  },
   "startScan": "Start\nscan",
   "@startScan": {
     "description": "Used on a button allowing the user to start a Bluetooth scan"
