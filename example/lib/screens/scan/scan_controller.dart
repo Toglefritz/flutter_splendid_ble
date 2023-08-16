@@ -15,6 +15,9 @@ class ScanController extends State<ScanRoute> {
   /// A [StreamSubscription] for the Bluetooth scanning process.
   StreamSubscription<BleDevice>? _scanStream;
 
+  /// A list of [BleDevice]s discovered by the Bluetooth scan.
+  List<BleDevice> discoveredDevices = [];
+
   @override
   void initState() {
     _startBluetoothScan();
@@ -31,7 +34,12 @@ class ScanController extends State<ScanRoute> {
   void onDeviceDetected(BleDevice device) {
     debugPrint('Discovered BLE device: ${device.name}');
 
-    // TODO more to do in here
+    // Add the newly discovered device to the list only if it not already in the list
+    if(discoveredDevices.where((discoveredDevice) => discoveredDevice.address == device.address).isEmpty) {
+      setState(() {
+        discoveredDevices.add(device);
+      });
+    }
   }
 
   @override

@@ -20,7 +20,7 @@ class MainAppBar extends StatelessWidget implements PreferredSizeWidget {
         AppLocalizations.of(context)!.appTitle,
       ),
       centerTitle: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       elevation: 0,
     );
   }

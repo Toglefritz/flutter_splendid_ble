@@ -1,4 +1,12 @@
 {
+  "address": "Address",
+  "@address": {
+    "description": "An address field label"
+  },
+  "discoveredDevices": "Discovered Devices",
+  "@discoveredDevices": {
+    "description": "The title of the Bluetooth scan list page"
+  },
   "appTitle": "Flutter BLE Example App",
   "@appTitle": {
     "description": "A title for the flutter_ble plugin example app"
@@ -7,6 +15,10 @@
   "@missingPermissions": {
     "description": "A short warning that Bluetooth permissions have not been granted"
   },
+  "name": "Name",
+  "@name": {
+    "description": "A name field label"
+  },
   "permissionsError": "The request for Bluetooth and location permissions was denied. Without those permissions, none of this will work.",
   "@permissionsError": {
     "description": "An error message to indicate that permissions have not been granted"
@@ -14,5 +26,9 @@
   "startScan": "Start\nscan",
   "@startScan": {
     "description": "Used on a button allowing the user to start a Bluetooth scan"
+  },
+  "rssi": "RSSI",
+  "@rssi": {
+    "description": "An RSSI field label"
   }
 }
