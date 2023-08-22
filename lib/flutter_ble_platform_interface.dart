@@ -1,4 +1,6 @@
 import 'package:flutter_ble/models/ble_device.dart';
+import 'package:flutter_ble/models/scan_filter.dart';
+import 'package:flutter_ble/models/scan_settings.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 
 import 'src/channel/flutter_ble_method_channel.dart';
@@ -28,7 +30,7 @@ abstract class FlutterBlePlatform extends PlatformInterface {
   /// devices that were discovered. On the Flutter side, listeners can be added to this stream so they can
   /// respond to Bluetooth devices being discovered, for example by presenting the list in the user interface
   /// or enabling controllers to find and connect to specific devices.
-  Stream<BleDevice> startScan() {
+  Stream<BleDevice> startScan({List<ScanFilter>? filters, ScanSettings? settings}) {
     throw UnimplementedError('startScan() has not been implemented.');
   }
 }

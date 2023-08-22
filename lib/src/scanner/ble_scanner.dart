@@ -4,6 +4,9 @@ import '../../models/ble_device.dart';
 import 'dart:async';
 import 'package:flutter/services.dart';
 
+import '../../models/scan_filter.dart';
+import '../../models/scan_settings.dart';
+
 /// The BleScanner class encapsulates everything related to scanning for BLE devices. It contains methods to start
 /// and stop scanning and manages the stream of discovered devices.
 class BleScanner {
@@ -26,12 +29,33 @@ class BleScanner {
     });
   }
 
-  /// Starts scanning for nearby BLE devices.
+  /// Starts scanning for nearby Bluetooth devices.
   ///
-  /// Returns a stream of [BleDevice] objects representing each discovered device.
-  Stream<BleDevice> startScan() {
-    _channel.invokeMethod('startScan');
-    return _streamController.stream;
+  /// Initiates a scan for Bluetooth Low Energy devices. The scan can be customized
+  /// by providing optional [filters] and [settings] parameters.
+  ///
+  /// [filters] is a list of [ScanFilter] objects that specify criteria for the devices to be found.
+  /// [settings] is a [ScanSettings] object that specifies various scan parameters like scan mode,
+  /// report delay, etc.
+  ///
+  /// If [filters] or [settings] are not provided, the scan will be performed without any
+  /// specific filtering or customized settings.
+  ///
+  /// Example usage:
+  /// ```dart
+  /// startScan(
+  ///   filters: [ScanFilter(deviceName: 'DeviceName')],
+  ///   settings: ScanSettings(scanMode: ScanMode.lowLatency),
+  /// );
+  /// ```
+  Future<void> startScan({List<ScanFilter>? filters, ScanSettings? settings}) async {
+    final List<dynamic>? filtersMap = filters?.map((filter) => filter.toMap()).toList();
+    final Map<String, dynamic>? settingsMap = settings?.toMap();
+
+    await _channel.invokeMethod('startScan', {
+      'filters': filtersMap,
+      'settings': settingsMap,
+    });
   }
 
   /// Stops the ongoing scan for nearby BLE devices.

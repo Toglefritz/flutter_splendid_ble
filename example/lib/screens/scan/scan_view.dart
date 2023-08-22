@@ -15,7 +15,14 @@ class ScanView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: const MainAppBar(),
+      appBar: MainAppBar(
+        actions: [
+          IconButton(
+            onPressed: state.onFiltersPressed,
+            icon: const Icon(Icons.tune),
+          ),
+        ],
+      ),
       body: SingleChildScrollView(
         child: Container(
           alignment: Alignment.center,

@@ -23,6 +23,7 @@ class FlutterBleExampleApp extends StatelessWidget {
       // Why use any other mode?
       theme: ThemeData(
         brightness: Brightness.dark,
+        primaryColor: Colors.white,
       ),
       debugShowCheckedModeBanner: false,
       localizationsDelegates: const [

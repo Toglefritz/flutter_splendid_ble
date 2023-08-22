@@ -19,8 +19,7 @@ class ScanResultTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       elevation: 0,
-      shape: BeveledRectangleBorder(
-        borderRadius: BorderRadius.circular(10.0),
+      shape: StadiumBorder(
         side: BorderSide(
           width: 1,
           color: Theme.of(context).primaryColorLight,

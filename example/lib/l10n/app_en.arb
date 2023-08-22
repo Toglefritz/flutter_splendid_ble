@@ -3,13 +3,45 @@
   "@address": {
     "description": "An address field label"
   },
-  "discoveredDevices": "Discovered Devices",
-  "@discoveredDevices": {
-    "description": "The title of the Bluetooth scan list page"
+  "allowDuplicates": "Allow Duplicates",
+  "@allowDuplicates": {
+    "description": "A label for the form field for setting the Bluetooth scan reporting delay"
   },
   "appTitle": "Flutter BLE Example App",
   "@appTitle": {
     "description": "A title for the flutter_ble plugin example app"
+  },
+  "balanced": "Balanced",
+  "@balanced": {
+    "description": "Balanced Bluetooth scanning mode"
+  },
+  "deviceAddress": "Device address",
+  "@deviceAddress": {
+    "description": "Label used for the device address filter form field"
+  },
+  "deviceName": "Device name",
+  "@deviceName": {
+    "description": "Label used for the device name filter form field"
+  },
+  "discoveredDevices": "Discovered Devices",
+  "@discoveredDevices": {
+    "description": "The title of the Bluetooth scan list page"
+  },
+  "done": "Done",
+  "@done": {
+    "description": "A generic label for a CTA button"
+  },
+  "lowLatency": "Low Latency",
+  "@lowLatency": {
+    "description": "Low latency Bluetooth scanning mode"
+  },
+  "lowPower": "Low Power",
+  "@lowPower": {
+    "description": "Low power Bluetooth scanning mode"
+  },
+  "manufacturerId": "Manufacturer ID",
+  "@manufacturerId": {
+    "description": "Label used for the device manufacturer ID filter form field"
   },
   "missingPermissions": "Missing permissions",
   "@missingPermissions": {
@@ -23,9 +55,29 @@
   "@permissionsError": {
     "description": "An error message to indicate that permissions have not been granted"
   },
+  "scanFilters": "Scan Filters",
+  "@scanFilters": {
+    "description": "Title used for the Bluetooth scan filters form"
+  },
+  "scanMode": "Scan Mode",
+  "@scanMode": {
+    "description": "Label used for the scan mode form field"
+  },
+  "scanSettings": "Scan Settings",
+  "@scanSettings": {
+    "description": "Title for the Bluetooth scan settings form"
+  },
+  "serviceUuids": "Service UUIDs (comma-separated)",
+  "@serviceUuids": {
+    "description": "Label used for the scan service UUIDs form field"
+  },
   "startScan": "Start\nscan",
   "@startScan": {
     "description": "Used on a button allowing the user to start a Bluetooth scan"
+  },
+  "reportDelay": "Report Delay (milliseconds)",
+  "@reportDelay": {
+    "description": "Label used for the report delay form field"
   },
   "rssi": "RSSI",
   "@rssi": {

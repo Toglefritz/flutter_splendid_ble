@@ -4,8 +4,12 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 /// The main [AppBar] appearing at the top of the app for most pages.
 class MainAppBar extends StatelessWidget implements PreferredSizeWidget {
   const MainAppBar({
+    this.actions,
     super.key,
   });
+
+  /// A list of buttons displayed on the right side of the [AppBar].
+  final List<Widget>? actions;
 
   /// The height of the [AppBar].
   double get _height => 50.0;
@@ -19,9 +23,9 @@ class MainAppBar extends StatelessWidget implements PreferredSizeWidget {
       title: Text(
         AppLocalizations.of(context)!.appTitle,
       ),
-      centerTitle: true,
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       elevation: 0,
+      actions: actions,
     );
   }
 }

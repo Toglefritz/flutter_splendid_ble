@@ -3,7 +3,9 @@ package com.splendidendeavors.flutter_ble.scanner
 import android.bluetooth.BluetoothManager
 import android.bluetooth.le.BluetoothLeScanner
 import android.bluetooth.le.ScanCallback
+import android.bluetooth.le.ScanFilter
 import android.bluetooth.le.ScanResult
+import android.bluetooth.le.ScanSettings
 import android.content.Context
 import android.os.Build
 import androidx.annotation.RequiresApi
@@ -66,14 +68,17 @@ class BleScannerHandler(private val channel: MethodChannel, activity: Context) {
      * Note: Ensure that the necessary permissions (e.g., location access) and Bluetooth are
      * enabled on the device, as these are prerequisites for scanning BLE devices on Android.
      */
-    fun startScan() {
+    fun startScan(scanFilters: List<ScanFilter>? = null, scanSettings: ScanSettings? = null) {
         // Define a scan callback
         scanCallback = object : ScanCallback() {
             override fun onScanResult(callbackType: Int, result: ScanResult?) {
                 result?.let {
                     // Extract the manufacturer data
                     val manufacturerDataBytes = it.scanRecord?.manufacturerSpecificData?.get(0)
-                    val manufacturerData = manufacturerDataBytes?.joinToString(separator = "") { byte -> "%02x".format(byte) }
+                    val manufacturerData =
+                        manufacturerDataBytes?.joinToString(separator = "") { byte ->
+                            "%02x".format(byte)
+                        }
 
 
                     // Create a map with device details
@@ -94,8 +99,14 @@ class BleScannerHandler(private val channel: MethodChannel, activity: Context) {
             }
         }
 
-        // Start scanning
-        bluetoothLeScanner.startScan(scanCallback)
+        // Start scanning, using different forms of the overloaded `startScan` method from the
+        // `BluetoothLeScanner` class depending upon whether filters and/or settings for the scan
+        // were provided.
+        if (scanFilters != null && scanSettings != null) {
+            bluetoothLeScanner.startScan(scanFilters, scanSettings, scanCallback)
+        } else {
+            bluetoothLeScanner.startScan(scanCallback)
+        }
     }
 
     /**
