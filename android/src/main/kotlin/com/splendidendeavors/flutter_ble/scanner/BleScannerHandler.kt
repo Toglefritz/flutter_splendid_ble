@@ -7,8 +7,6 @@ import android.bluetooth.le.ScanFilter
 import android.bluetooth.le.ScanResult
 import android.bluetooth.le.ScanSettings
 import android.content.Context
-import android.os.Build
-import androidx.annotation.RequiresApi
 import io.flutter.plugin.common.MethodChannel
 
 /**
@@ -39,7 +37,6 @@ import io.flutter.plugin.common.MethodChannel
  * Note: The scanning process requires specific permissions (such as location access) and enabled
  * Bluetooth on the device. These should be handled elsewhere in the application.
  */
-@RequiresApi(Build.VERSION_CODES.LOLLIPOP)
 class BleScannerHandler(private val channel: MethodChannel, activity: Context) {
     private val bluetoothLeScanner: BluetoothLeScanner
     private var scanCallback: ScanCallback? = null
@@ -66,46 +63,55 @@ class BleScannerHandler(private val channel: MethodChannel, activity: Context) {
      * The scanning process continues until explicitly stopped by calling the `stopScan` method.
      *
      * Note: Ensure that the necessary permissions (e.g., location access) and Bluetooth are
-     * enabled on the device, as these are prerequisites for scanning BLE devices on Android.
+     * enabled on the device, as these are prerequisites for scanning BLE devices on Android. If
+     * permissions have not been granted, a `SecurityException` is thrown.
      */
     fun startScan(scanFilters: List<ScanFilter>? = null, scanSettings: ScanSettings? = null) {
-        // Define a scan callback
-        scanCallback = object : ScanCallback() {
-            override fun onScanResult(callbackType: Int, result: ScanResult?) {
-                result?.let {
-                    // Extract the manufacturer data
-                    val manufacturerDataBytes = it.scanRecord?.manufacturerSpecificData?.get(0)
-                    val manufacturerData =
-                        manufacturerDataBytes?.joinToString(separator = "") { byte ->
-                            "%02x".format(byte)
-                        }
+        try {
+            // Define a scan callback
+            scanCallback = object : ScanCallback() {
+                override fun onScanResult(callbackType: Int, result: ScanResult?) {
+                    result?.let {
+                        // Extract the manufacturer data
+                        val manufacturerDataBytes = it.scanRecord?.manufacturerSpecificData?.get(0)
+                        val manufacturerData =
+                            manufacturerDataBytes?.joinToString(separator = "") { byte ->
+                                "%02x".format(byte)
+                            }
 
 
-                    // Create a map with device details
-                    val deviceMap = mapOf(
-                        "name" to it.device.name,
-                        "address" to it.device.address,
-                        "rssi" to it.rssi,
-                        "manufacturerData" to manufacturerData
-                        // ... add other details as needed
-                    )
+                        // Create a map with device details
+                        val deviceMap = mapOf(
+                            "name" to it.device.name,
+                            "address" to it.device.address,
+                            "rssi" to it.rssi,
+                            "manufacturerData" to manufacturerData
+                            // ... add other details as needed
+                        )
 
-                    // Construct DiscoveredDevice (either as an object or a map)
-                    val discoveredDevice = DiscoveredDevice(deviceMap)
+                        // Construct DiscoveredDevice (either as an object or a map)
+                        val discoveredDevice = DiscoveredDevice(deviceMap)
 
-                    // Invoke method on Flutter side
-                    channel.invokeMethod("bleDeviceScanned", discoveredDevice.toMap())
+                        // Invoke method on Flutter side
+                        channel.invokeMethod("bleDeviceScanned", discoveredDevice.toMap())
+                    }
                 }
             }
-        }
 
-        // Start scanning, using different forms of the overloaded `startScan` method from the
-        // `BluetoothLeScanner` class depending upon whether filters and/or settings for the scan
-        // were provided.
-        if (scanFilters != null && scanSettings != null) {
-            bluetoothLeScanner.startScan(scanFilters, scanSettings, scanCallback)
-        } else {
-            bluetoothLeScanner.startScan(scanCallback)
+            // Start scanning, using different forms of the overloaded `startScan` method from the
+            // `BluetoothLeScanner` class depending upon whether filters and/or settings for the scan
+            // were provided.
+            if (scanFilters != null && scanSettings != null) {
+                bluetoothLeScanner.startScan(scanFilters, scanSettings, scanCallback)
+            } else {
+                bluetoothLeScanner.startScan(scanCallback)
+            }
+        } catch (e: SecurityException) {
+            // SecurityException thrown, handle it here
+            channel.invokeMethod(
+                "error",
+                "Required Bluetooth permissions are missing: ${e.message}"
+            )
         }
     }
 
@@ -115,11 +121,24 @@ class BleScannerHandler(private val channel: MethodChannel, activity: Context) {
      * This method stops the scanning process that was initiated with startScan().
      * It does so by invoking the stopScan() method on the bluetoothLeScanner instance
      * and providing the previously stored scan callback.
+     *
+     * Note: Ensure that the required Bluetooth permissions have been granted before making this
+     * call. This should be the case since a scan should not be ongoing if Bluetooth permissions
+     * were not granted. But, nonetheless, a `SecurityException` will be thrown if this method
+     * is used without the necessary permissions.
      */
     fun stopScan() {
-        if (scanCallback != null) {
-            bluetoothLeScanner.stopScan(scanCallback)
-            scanCallback = null // Clear the callback reference
+        try {
+            if (scanCallback != null) {
+                bluetoothLeScanner.stopScan(scanCallback)
+                scanCallback = null // Clear the callback reference
+            }
+        } catch (e: SecurityException) {
+            // SecurityException thrown, handle it here
+            channel.invokeMethod(
+                "error",
+                "Required Bluetooth permissions are missing: ${e.message}"
+            )
         }
     }
 }
