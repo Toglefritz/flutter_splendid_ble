@@ -8,4 +8,8 @@ class FlutterBle {
   Stream<BleDevice> startScan({List<ScanFilter>? filters, ScanSettings? settings}) {
     return FlutterBlePlatform.instance.startScan();
   }
+
+  void stopScan() {
+    return FlutterBlePlatform.instance.stopScan();
+  }
 }

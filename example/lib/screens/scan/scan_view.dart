@@ -18,6 +18,10 @@ class ScanView extends StatelessWidget {
       appBar: MainAppBar(
         actions: [
           IconButton(
+            onPressed: state.onStopPressed,
+            icon: const Icon(Icons.stop_outlined),
+          ),
+          IconButton(
             onPressed: state.onFiltersPressed,
             icon: const Icon(Icons.tune),
           ),

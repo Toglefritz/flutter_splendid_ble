@@ -33,4 +33,9 @@ abstract class FlutterBlePlatform extends PlatformInterface {
   Stream<BleDevice> startScan({List<ScanFilter>? filters, ScanSettings? settings}) {
     throw UnimplementedError('startScan() has not been implemented.');
   }
+
+  /// Stops an ongoing Bluetooth scan or, if no scan is running, does nothing.
+  void stopScan() {
+    throw UnimplementedError('stopScan() has not been implemented.');
+  }
 }

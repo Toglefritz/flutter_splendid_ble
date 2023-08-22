@@ -39,4 +39,10 @@ class MethodChannelFlutterBle extends FlutterBlePlatform {
 
     return streamController.stream;
   }
+
+  /// Stops an ongoing Bluetooth scan.
+  @override
+  void stopScan() {
+    _channel.invokeMethod('stopScan');
+  }
 }

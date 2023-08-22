@@ -66,6 +66,14 @@ class ScanController extends State<ScanRoute> {
     );
   }
 
+  /// Handles taps on the "stop" button in the [AppBar].
+  ///
+  /// This button is used to simply stop the Bluetooth scan.
+  void onStopPressed() {
+    _ble.stopScan();
+    _scanStream?.cancel();
+  }
+
   @override
   Widget build(BuildContext context) => ScanView(this);
 
