@@ -1,12 +1,20 @@
 # Flutter Bluetooth Low Energy (BLE) Plugin
 
-## flutter_ble
+<p align="center">
+<image src="./assets/flutter_ble_logo.png" alt="flutter_ble plugin logo" width="200"></image></p>
 
 A comprehensive Flutter plugin for interacting with Bluetooth Low Energy (BLE) devices. This plugin
 provides functionalities such as scanning for BLE devices, connecting to them, managing the bonding
 process, writing to their characteristics, and disconnecting from them, among other features.
 
-### Main Goals:
+> ## Plugin Status
+> **Work in Progress**
+>
+> This plugin is a work in progress. There are missing features, documentation that needs to be 
+> added or updated, error handling that needs to be implemented, and parts that may make those 
+> who went to college for computer science feel offended.
+
+## Main Goals:
 
 1. **Efficient Toolset**: The primary objective is to provide developers with an efficient set of
    tools for BLE interactions, reducing the need to rely on multiple libraries or native code.
@@ -57,19 +65,19 @@ import 'package:flutter_ble_plugin/flutter_ble_plugin.dart';
 final ble = FlutterBlePlugin();
 ```
 
-*other details coming soon*
+<*other details coming soon*>
 
 ## Error Handling:
 
 This plugin offers detailed error messages to help you handle possible exceptions gracefully in your
 Flutter application.
 
-*other details coming soon*
+<*other details coming soon*>
 
 ## Feedback and Contributions:
 
-We welcome contributions, suggestions, and feedback. Please open an issue or submit a pull request
-on our GitHub repository.
+Contributions, suggestions, and feedback are all welcome and very much appriciated. Please open an issue or submit a pull request
+on the GitHub repository.
 
 ## License:
 
