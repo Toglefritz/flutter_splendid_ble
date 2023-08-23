@@ -3,6 +3,7 @@ import 'package:flutter_ble/models/scan_filter.dart';
 import 'package:flutter_ble/models/scan_settings.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 
+import 'models/bluetooth_status.dart';
 import 'src/channel/flutter_ble_method_channel.dart';
 
 abstract class FlutterBlePlatform extends PlatformInterface {
@@ -24,6 +25,12 @@ abstract class FlutterBlePlatform extends PlatformInterface {
   static set instance(FlutterBlePlatform instance) {
     PlatformInterface.verifyToken(instance, _token);
     _instance = instance;
+  }
+
+  /// Checks the status of the host device's Bluetooth adapter and returns a [BluetoothStatus] to communicate the
+  /// current status of the adapter.
+  Future<BluetoothStatus> checkBluetoothAdapterStatus() async {
+    throw UnimplementedError('checkBluetoothAdapterStatus() has not been implemented.');
   }
 
   /// Starts a scan for nearby BLE devices and returns a [Stream] of [BleDevice] instances representing the BLE

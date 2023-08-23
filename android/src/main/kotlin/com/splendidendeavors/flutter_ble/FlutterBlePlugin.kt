@@ -1,5 +1,6 @@
 package com.splendidendeavors.flutter_ble
 
+import BluetoothAdapterHandler
 import android.bluetooth.le.ScanFilter
 import android.bluetooth.le.ScanSettings
 import android.os.Build
@@ -23,16 +24,24 @@ class FlutterBlePlugin : FlutterPlugin, MethodCallHandler {
     /// The BleScannerHandler handles all methods related to scanning for nearby Bluetooth device.
     private lateinit var bleScannerHandler: BleScannerHandler
 
+    // The BluetoothAdapterHandler checks the status of the Bluetooth adapter on the device.
+    private lateinit var bluetoothAdapterHandler: BluetoothAdapterHandler
+
     override fun onAttachedToEngine(flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
         channel = MethodChannel(flutterPluginBinding.binaryMessenger, "flutter_ble")
         bleScannerHandler = BleScannerHandler(channel, flutterPluginBinding.applicationContext)
         channel.setMethodCallHandler(this)
+        bluetoothAdapterHandler = BluetoothAdapterHandler(flutterPluginBinding.applicationContext)
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onMethodCall(call: MethodCall, result: Result) {
         when (call.method) {
-            // StartScan method
+            "checkBluetoothAdapterStatus" -> {
+                val status = bluetoothAdapterHandler.checkBluetoothAdapterStatus()
+                result.success(status.name)
+            }
+
             "startScan" -> {
                 val filtersList = call.argument<List<Map<String, Any>>?>("filters")
                 val settingsMap = call.argument<Map<String, Any>?>("settings")
@@ -44,7 +53,6 @@ class FlutterBlePlugin : FlutterPlugin, MethodCallHandler {
                 result.success(null)
             }
 
-            // StopScan method
             "stopScan" -> bleScannerHandler.stopScan()
 
             // Throw an exception if an unknown method name is received

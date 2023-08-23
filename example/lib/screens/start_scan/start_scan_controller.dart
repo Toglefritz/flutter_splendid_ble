@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_ble/flutter_ble.dart';
+import 'package:flutter_ble/models/bluetooth_status.dart';
 import 'package:flutter_ble_example/screens/scan/scan_route.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'dart:io' show Platform;
@@ -9,12 +11,20 @@ import 'package:permission_handler/permission_handler.dart';
 
 /// A controller for the [StartScanRoute] that manages the state and owns all business logic.
 class StartScanController extends State<StartScanRoute> {
+  /// A [FlutterBle] instance used for Bluetooth operations conducted by this route.
+  final FlutterBle _ble = FlutterBle();
+
   /// Determines if Bluetooth permissions have been granted.
   ///
   /// A null value indicates that permissions have neither been granted nor denied. It is simply a mystery.
   bool? _permissionsGranted;
 
   bool? get permissionsGranted => _permissionsGranted;
+
+  /// The status of the Bluetooth adapter on the host device.
+  BluetoothStatus? _bluetoothStatus;
+
+  BluetoothStatus? get bluetoothStatus => _bluetoothStatus;
 
   @override
   void initState() {
@@ -62,7 +72,18 @@ class StartScanController extends State<StartScanRoute> {
       setState(() {
         _permissionsGranted = true;
       });
+
+      // Check the adapter status
+      _checkAdapterStatus();
     }
+  }
+
+  /// Checks the status of the Bluetooth adapter on the host device (assuming one is present).
+  ///
+  /// Before the Bluetooth scan can be started or any other Bluetooth operations can be performed, the Bluetooth
+  /// capabilities of the host device must be available.
+  void _checkAdapterStatus() async {
+    _bluetoothStatus = await _ble.checkBluetoothAdapterStatus();
   }
 
   /// Handles taps on the "start scan" button.
