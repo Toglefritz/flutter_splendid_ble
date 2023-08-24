@@ -7,6 +7,8 @@ import android.bluetooth.le.ScanFilter
 import android.bluetooth.le.ScanResult
 import android.bluetooth.le.ScanSettings
 import android.content.Context
+import android.os.Build
+import androidx.annotation.RequiresApi
 import io.flutter.plugin.common.MethodChannel
 
 /**
@@ -140,5 +142,59 @@ class BleScannerHandler(private val channel: MethodChannel, activity: Context) {
                 "Required Bluetooth permissions are missing: ${e.message}"
             )
         }
+    }
+
+    /**
+     * Creates a ScanFilter object from the given map representation.
+     *
+     * This function is responsible for extracting relevant properties from the map  and
+     * constructing a corresponding ScanFilter instance.
+     *
+     * @param filterMap The map containing the filter properties.
+     * @return A ScanFilter instance corresponding to the given map.
+     */
+    fun createScanFilterFromMap(filterMap: Map<String, Any>): ScanFilter {
+        val builder = ScanFilter.Builder()
+
+        // Extract properties from the filterMap and apply them to the builder
+        filterMap["deviceName"]?.let { builder.setDeviceName(it as String) }
+        filterMap["deviceAddress"]?.let { builder.setDeviceAddress(it as String) }
+        filterMap["manufacturerData"]?.let {
+            val manufacturerId = (it as Map<*, *>)["manufacturerId"] as Int
+            val manufacturerData = (it["manufacturerData"] as? String)?.toByteArray()
+            val manufacturerDataMask = (it["manufacturerDataMask"] as? String)?.toByteArray()
+            if (manufacturerData != null) {
+                builder.setManufacturerData(manufacturerId, manufacturerData, manufacturerDataMask)
+            }
+        }
+        // ... Add other properties as needed
+
+        return builder.build()
+    }
+
+    /**
+     * Creates a ScanSettings object from the given map representation.
+     *
+     * This function is responsible for extracting relevant properties from the map and
+     * constructing a corresponding ScanSettings instance.
+     *
+     * @param settingsMap The map containing the settings properties.
+     * @return A ScanSettings instance corresponding to the given map.
+     */
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun createScanSettingsFromMap(settingsMap: Map<String, Any>?): ScanSettings {
+        val builder = ScanSettings.Builder()
+
+        // Extract properties from the settingsMap and apply them to the builder
+        settingsMap?.get("scanMode")?.let { builder.setScanMode(it as Int) }
+        settingsMap?.get("reportDelayMillis")?.let { builder.setReportDelay(it as Long) }
+        settingsMap?.get("matchMode")?.let { builder.setMatchMode(it as Int) }
+        settingsMap?.get("callbackType")?.let { builder.setCallbackType(it as Int) }
+        settingsMap?.get("numOfMatches")?.let { builder.setNumOfMatches(it as Int) }
+        settingsMap?.get("legacy")?.let { builder.setLegacy(it as Boolean) }
+        settingsMap?.get("phy")?.let { builder.setPhy(it as Int) }
+        // ... Add other properties as needed
+
+        return builder.build()
     }
 }
