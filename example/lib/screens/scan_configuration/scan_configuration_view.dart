@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_ble/models/scan_settings.dart';
-import 'package:flutter_ble_example/screens/components/fancy_outlined_text.dart';
 import 'package:flutter_ble_example/screens/scan_configuration/scan_configuration_controller.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
@@ -89,10 +88,27 @@ class ScanConfigurationView extends StatelessWidget {
                 ),
                 Padding(
                   padding: const EdgeInsets.only(top: 64.0),
-                  child: InkWell(
-                    onTap: state.onDone,
-                    child: FancyOutlinedText(
-                      text: AppLocalizations.of(context)!.done.toUpperCase(),
+                  child: OutlinedButton(
+                    style: OutlinedButton.styleFrom(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12.0),
+                      ),
+                      side: BorderSide(
+                        color: Theme.of(context).primaryColorLight,
+                        width: 2.0,
+                      ),
+                    ),
+                    onPressed: state.onDone,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          AppLocalizations.of(context)!.done.toUpperCase(),
+                          style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                                fontSize: 32,
+                              ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
