@@ -83,7 +83,11 @@ class StartScanController extends State<StartScanRoute> {
   /// Before the Bluetooth scan can be started or any other Bluetooth operations can be performed, the Bluetooth
   /// capabilities of the host device must be available.
   void _checkAdapterStatus() async {
-    _bluetoothStatus = await _ble.checkBluetoothAdapterStatus();
+    BluetoothStatus status = await _ble.checkBluetoothAdapterStatus();
+
+    setState(() {
+      _bluetoothStatus = status;
+    });
   }
 
   /// Handles taps on the "start scan" button.

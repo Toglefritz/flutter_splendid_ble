@@ -109,7 +109,6 @@ class BleScannerHandler(private val channel: MethodChannel, activity: Context) {
                 bluetoothLeScanner.startScan(scanCallback)
             }
         } catch (e: SecurityException) {
-            // SecurityException thrown, handle it here
             channel.invokeMethod(
                 "error",
                 "Required Bluetooth permissions are missing: ${e.message}"
@@ -136,7 +135,6 @@ class BleScannerHandler(private val channel: MethodChannel, activity: Context) {
                 scanCallback = null // Clear the callback reference
             }
         } catch (e: SecurityException) {
-            // SecurityException thrown, handle it here
             channel.invokeMethod(
                 "error",
                 "Required Bluetooth permissions are missing: ${e.message}"
@@ -167,7 +165,6 @@ class BleScannerHandler(private val channel: MethodChannel, activity: Context) {
                 builder.setManufacturerData(manufacturerId, manufacturerData, manufacturerDataMask)
             }
         }
-        // ... Add other properties as needed
 
         return builder.build()
     }

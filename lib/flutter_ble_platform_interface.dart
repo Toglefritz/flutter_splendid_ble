@@ -3,6 +3,7 @@ import 'package:flutter_ble/models/scan_filter.dart';
 import 'package:flutter_ble/models/scan_settings.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 
+import 'models/ble_connection_state.dart';
 import 'models/bluetooth_status.dart';
 import 'src/channel/flutter_ble_method_channel.dart';
 
@@ -44,5 +45,23 @@ abstract class FlutterBlePlatform extends PlatformInterface {
   /// Stops an ongoing Bluetooth scan or, if no scan is running, does nothing.
   void stopScan() {
     throw UnimplementedError('stopScan() has not been implemented.');
+  }
+
+  /// Initiates a connection to a BLE peripheral and returns a Stream representing
+  /// the connection state.
+  Stream<BleConnectionState> connect(String deviceAddress) {
+    throw UnimplementedError('connect() has not been implemented.');
+  }
+
+  /// Terminates the connection to a BLE peripheral.
+  /// Initiates a connection to a BLE peripheral and returns a Stream representing
+  /// the connection state.
+  Future<void> disconnect(String deviceAddress) async {
+    throw UnimplementedError('disconnect() has not been implemented.');
+  }
+
+  /// Returns the current connection state for the Bluetooth device with the specified address.
+  Future<BleConnectionState> getCurrentConnectionState(String deviceAddress) {
+    throw UnimplementedError('getCurrentConnectionState() has not been implemented.');
   }
 }

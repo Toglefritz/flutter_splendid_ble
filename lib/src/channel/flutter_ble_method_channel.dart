@@ -1,8 +1,8 @@
 import 'dart:async';
-
 import 'package:flutter/services.dart';
 
 import '../../flutter_ble_platform_interface.dart';
+import '../../models/ble_connection_state.dart';
 import '../../models/ble_device.dart';
 import '../../models/bluetooth_status.dart';
 import '../../models/scan_filter.dart';
@@ -62,5 +62,61 @@ class MethodChannelFlutterBle extends FlutterBlePlatform {
   @override
   void stopScan() {
     _channel.invokeMethod('stopScan');
+  }
+
+  /// Initiates a connection to a BLE peripheral and returns a Stream representing
+  /// the connection state.
+  ///
+  /// The [deviceAddress] parameter specifies the MAC address of the target device.
+  ///
+  /// This method calls the 'connect' method on the native Android implementation
+  /// via a method channel, and returns a [Stream] that emits [ConnectionState]
+  /// enum values representing the status of the connection.
+  @override
+  Stream<BleConnectionState> connect(String deviceAddress) {
+    /// A [StreamController] emitting values from the [ConnectionState] enum, which represent the connection state
+    /// between the host mobile device and a Bluetooth peripheral.
+    final StreamController<BleConnectionState> connectionStateStreamController =
+        StreamController<BleConnectionState>.broadcast();
+
+    // Listen to the platform side for connection state updates.
+    _channel.setMethodCallHandler((MethodCall call) async {
+      if (call.method == 'bleConnectionState') {
+        final String connectionStateString = call.arguments as String;
+        final BleConnectionState state =
+        BleConnectionState.values.firstWhere((value) => value.identifier == connectionStateString.toLowerCase());
+        connectionStateStreamController.add(state);
+      }
+    });
+
+    _channel.invokeMethod('connect', {'address': deviceAddress});
+    return connectionStateStreamController.stream;
+  }
+
+  /// Terminates the connection between the host mobile device and a BLE peripheral.
+  @override
+  Future<void> disconnect(String deviceAddress) async {
+    _channel.invokeMethod('disconnect');
+  }
+
+  /// Fetches the current connection state of a Bluetooth Low Energy (BLE) device.
+  ///
+  /// The [deviceAddress] parameter specifies the MAC address of the target device.
+  ///
+  /// This method calls the 'getCurrentConnectionState' method on the native Android implementation
+  /// via a method channel. It then returns a [Future] that resolves to the [ConnectionState] enum,
+  /// which represents the current connection state of the device.
+  ///
+  /// Returns a [Future] containing the [ConnectionState] representing the current connection state
+  /// of the BLE device with the specified address.
+  @override
+  Future<BleConnectionState> getCurrentConnectionState(String deviceAddress) async {
+    // Invoke the method channel to fetch the current connection state for the BLE device.
+    final String connectionStateString = await _channel.invokeMethod('getCurrentConnectionState', {
+      'address': deviceAddress,
+    });
+
+    // Convert the string received from Kotlin to the Dart enum value.
+    return BleConnectionState.values.firstWhere((e) => e.identifier == connectionStateString);
   }
 }

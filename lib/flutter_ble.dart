@@ -3,6 +3,7 @@ import 'package:flutter_ble/models/scan_filter.dart';
 import 'package:flutter_ble/models/scan_settings.dart';
 
 import 'flutter_ble_platform_interface.dart';
+import 'models/ble_connection_state.dart';
 import 'models/bluetooth_status.dart';
 
 class FlutterBle {
@@ -16,5 +17,17 @@ class FlutterBle {
 
   Stream<BleDevice> startScan({List<ScanFilter>? filters, ScanSettings? settings}) {
     return FlutterBlePlatform.instance.startScan();
+  }
+
+  Stream<BleConnectionState> connect(String deviceAddress) {
+    return FlutterBlePlatform.instance.connect(deviceAddress);
+  }
+
+  Future<void> disconnect(String deviceAddress) {
+    return FlutterBlePlatform.instance.disconnect(deviceAddress);
+  }
+
+  Future<BleConnectionState> getCurrentConnectionState(String deviceAddress) {
+    return FlutterBlePlatform.instance.getCurrentConnectionState(deviceAddress);
   }
 }

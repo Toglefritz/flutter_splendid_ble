@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_ble/flutter_ble.dart';
 import 'package:flutter_ble/models/ble_device.dart';
+import 'package:flutter_ble_example/screens/device_details/device_details_route.dart';
 
 import 'package:flutter_ble_example/screens/scan/scan_route.dart';
 import 'package:flutter_ble_example/screens/scan/scan_view.dart';
@@ -72,6 +73,21 @@ class ScanController extends State<ScanRoute> {
   void onStopPressed() {
     _ble.stopScan();
     _scanStream?.cancel();
+  }
+
+  /// Handles taps on a scan result.
+  void onResultTap(BleDevice device) {
+    _ble.stopScan();
+    _scanStream?.cancel();
+
+    Navigator.pushReplacement<void, void>(
+      context,
+      MaterialPageRoute<void>(
+        builder: (BuildContext context) => DeviceDetailsRoute(
+          device: device,
+        ),
+      ),
+    );
   }
 
   @override

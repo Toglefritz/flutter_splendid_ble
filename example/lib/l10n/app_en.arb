@@ -19,6 +19,14 @@
   "@bluetoothDisabled": {
     "description": "An error message indicating that the Bluetooth adapter is disabled"
   },
+  "connect": "Connect",
+  "@connect": {
+    "description": "Text for the button used to start the connection process"
+  },
+  "connectionStatus": "Connection Status",
+  "@connectionStatus": {
+    "description": "A label for the connection status row of the device details table"
+  },
   "deviceAddress": "Device address",
   "@deviceAddress": {
     "description": "Label used for the device address filter form field"
@@ -42,6 +50,10 @@
   "lowPower": "Low Power",
   "@lowPower": {
     "description": "Low power Bluetooth scanning mode"
+  },
+  "manufacturerData": "Manufacturer Data",
+  "@manufacturerData": {
+    "description": "Label used for the device manufacturer data row of the device details table"
   },
   "manufacturerId": "Manufacturer ID",
   "@manufacturerId": {

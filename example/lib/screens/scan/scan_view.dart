@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_ble_example/screens/scan/scan_controller.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
+import '../components/loading_indicator.dart';
 import '../components/main_app_bar.dart';
 import 'components/scan_result_title.dart';
 
@@ -29,32 +30,25 @@ class ScanView extends StatelessWidget {
       ),
       body: SingleChildScrollView(
         child: Container(
-          alignment: Alignment.center,
+          constraints: BoxConstraints(
+            minHeight: MediaQuery.of(context).size.height,
+            minWidth: MediaQuery.of(context).size.width,
+          ),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisAlignment: state.discoveredDevices.isEmpty ? MainAxisAlignment.center : MainAxisAlignment.start,
             children: [
-              Padding(
-                padding: const EdgeInsets.only(bottom: 16.0),
-                child: Text(
-                  AppLocalizations.of(context)!.discoveredDevices,
-                  style: Theme.of(context).textTheme.headlineMedium,
+              if (state.discoveredDevices.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 16.0),
+                  child: Text(
+                    AppLocalizations.of(context)!.discoveredDevices,
+                    style: Theme.of(context).textTheme.headlineMedium,
+                  ),
                 ),
-              ),
               if (state.discoveredDevices.isEmpty)
-                Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    SizedBox(
-                      width: 48,
-                      height: 48,
-                      child: CircularProgressIndicator(
-                        color: Theme.of(context).primaryColorLight,
-                      ),
-                    ),
-                    CircularProgressIndicator(
-                      color: Theme.of(context).primaryColorLight,
-                    ),
-                  ],
+                const Padding(
+                  padding: EdgeInsets.only(bottom: 80),
+                  child: LoadingIndicator(),
                 ),
               if (state.discoveredDevices.isNotEmpty)
                 ListView.builder(
@@ -70,6 +64,7 @@ class ScanView extends StatelessWidget {
                         ),
                         child: ScanResultTile(
                           device: state.discoveredDevices[index],
+                          onTap: () => state.onResultTap(state.discoveredDevices[index]),
                         ),
                       );
                     } else {
