@@ -96,7 +96,7 @@ class StartScanController extends State<StartScanRoute> {
   /// the boolean indicating if permissions have been granted is true by default), navigate to the [ScanRoute].
   /// Otherwise, show a [SnackBar] to indicate that permissions have not been granted yet.
   void onStartScanTap() {
-    if (_permissionsGranted == true) {
+    if (_permissionsGranted == true && _bluetoothStatus == BluetoothStatus.enabled) {
       Navigator.pushReplacement<void, void>(
         context,
         MaterialPageRoute<void>(
