@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_ble/flutter_ble.dart';
 import 'package:flutter_ble/models/bluetooth_status.dart';
@@ -20,6 +21,10 @@ class StartScanController extends State<StartScanRoute> {
   bool? _permissionsGranted;
 
   bool? get permissionsGranted => _permissionsGranted;
+
+  /// A [Stream] used to listen for changes in the status of the Bluetooth adapter on the host device and set the
+  /// value of [_bluetoothStatus].
+  StreamSubscription<BluetoothStatus>? _bluetoothStatusStream;
 
   /// The status of the Bluetooth adapter on the host device.
   BluetoothStatus? _bluetoothStatus;
@@ -81,12 +86,13 @@ class StartScanController extends State<StartScanRoute> {
   /// Checks the status of the Bluetooth adapter on the host device (assuming one is present).
   ///
   /// Before the Bluetooth scan can be started or any other Bluetooth operations can be performed, the Bluetooth
-  /// capabilities of the host device must be available.
+  /// capabilities of the host device must be available. This method establishes a listener on the current state
+  /// of the host device's Bluetooth adapter, which is represented by the enum, [BluetoothState].
   void _checkAdapterStatus() async {
-    BluetoothStatus status = await _ble.checkBluetoothAdapterStatus();
-
-    setState(() {
-      _bluetoothStatus = status;
+    _bluetoothStatusStream = _ble.emitCurrentBluetoothStatus().listen((status) {
+      setState(() {
+        _bluetoothStatus = status;
+      });
     });
   }
 
@@ -124,4 +130,11 @@ class StartScanController extends State<StartScanRoute> {
 
   @override
   Widget build(BuildContext context) => StartScanView(this);
+
+  @override
+  void dispose() {
+    _bluetoothStatusStream?.cancel();
+
+    super.dispose();
+  }
 }

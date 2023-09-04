@@ -34,6 +34,11 @@ abstract class FlutterBlePlatform extends PlatformInterface {
     throw UnimplementedError('checkBluetoothAdapterStatus() has not been implemented.');
   }
 
+  /// Emits the current Bluetooth adapter status to the Dart side.
+  Stream<BluetoothStatus> emitCurrentBluetoothStatus() {
+    throw UnimplementedError('emitCurrentBluetoothStatus() has not been implemented.');
+  }
+
   /// Starts a scan for nearby BLE devices and returns a [Stream] of [BleDevice] instances representing the BLE
   /// devices that were discovered. On the Flutter side, listeners can be added to this stream so they can
   /// respond to Bluetooth devices being discovered, for example by presenting the list in the user interface

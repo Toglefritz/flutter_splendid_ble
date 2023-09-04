@@ -30,6 +30,44 @@ class MethodChannelFlutterBle extends FlutterBlePlatform {
     return BluetoothStatus.values.firstWhere((e) => e.identifier == statusString);
   }
 
+  /// Emits the current Bluetooth adapter status to the Dart side.
+  ///
+  /// This method communicates with the native Android code to obtain the current status of the Bluetooth adapter
+  /// and emits it to any listeners on the Dart side.
+  ///
+  /// Listeners on the Dart side will receive one of the following enum values from [BluetoothStatus]:
+  ///
+  /// * [BluetoothStatus.enabled]: Indicates that Bluetooth is enabled and ready for connections.
+  /// * [BluetoothStatus.disabled]: Indicates that Bluetooth is disabled and not available for use.
+  /// * [BluetoothStatus.notAvailable]: Indicates that Bluetooth is not available on the device.
+  ///
+  /// Returns a [Future] containing a [Stream] of [BluetoothStatus] values representing the current status
+  /// of the Bluetooth adapter on the device.
+  @override
+  Stream<BluetoothStatus> emitCurrentBluetoothStatus() {
+    final StreamController<BluetoothStatus> streamController = StreamController<BluetoothStatus>.broadcast();
+
+    // Listen to the platform side for Bluetooth adapter status updates.
+    _channel.setMethodCallHandler((MethodCall call) async {
+      if (call.method == 'adapterStateUpdated') {
+        final String statusString = call.arguments as String;
+
+        // Convert the string status to its corresponding enum value
+        final BluetoothStatus status = BluetoothStatus.values.firstWhere(
+          (e) => e.identifier == statusString,
+          orElse: () => BluetoothStatus.notAvailable,
+        ); // Default to notAvailable if the string does not match any enum value
+
+        streamController.add(status);
+      }
+    });
+
+    // Begin emitting Bluetooth adapter status updates from the platform side.
+    _channel.invokeMethod('emitCurrentBluetoothStatus');
+
+    return streamController.stream;
+  }
+
   /// Starts a scan for nearby BLE devices.
   ///
   /// Returns a stream of [BleDevice] objects representing each discovered device.
@@ -84,7 +122,7 @@ class MethodChannelFlutterBle extends FlutterBlePlatform {
       if (call.method == 'bleConnectionState') {
         final String connectionStateString = call.arguments as String;
         final BleConnectionState state =
-        BleConnectionState.values.firstWhere((value) => value.identifier == connectionStateString.toLowerCase());
+            BleConnectionState.values.firstWhere((value) => value.identifier == connectionStateString.toLowerCase());
         connectionStateStreamController.add(state);
       }
     });

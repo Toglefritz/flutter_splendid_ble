@@ -1,12 +1,13 @@
 package com.splendidendeavors.flutter_ble
 
-import BluetoothAdapterHandler
+import com.splendidendeavors.flutter_ble.adapter.BluetoothAdapterHandler
 import android.os.Build
 import androidx.annotation.RequiresApi
 import com.splendidendeavors.flutter_ble.connector.BleConnectorHandler
 import com.splendidendeavors.flutter_ble.scanner.BleScannerHandler
 
 import io.flutter.embedding.engine.plugins.FlutterPlugin
+import io.flutter.plugin.common.EventChannel
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.Result
@@ -20,6 +21,17 @@ class FlutterBlePlugin : FlutterPlugin, MethodCallHandler {
     /// when the Flutter Engine is detached from the Activity
     private lateinit var channel: MethodChannel
 
+    // The EventChannel that facilitates real-time communication between Flutter and native Android.
+    //
+    // This channel is used to send Bluetooth adapter status updates from native Android to Flutter,
+    // allowing the Dart side to listen to a stream of status updates. This stream can then be used
+    // in the business logic to respond to changes in the Bluetooth adapter status.
+    //
+    // The EventChannel is registered with the Flutter Engine during the plugin attachment process
+    // in the `onAttachedToEngine` method.
+
+    private lateinit var eventChannel: EventChannel
+
     /// The BleScannerHandler handles all methods related to scanning for nearby Bluetooth device.
     private lateinit var bleScannerHandler: BleScannerHandler
 
@@ -31,9 +43,16 @@ class FlutterBlePlugin : FlutterPlugin, MethodCallHandler {
 
     override fun onAttachedToEngine(flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
         channel = MethodChannel(flutterPluginBinding.binaryMessenger, "flutter_ble")
-        bleScannerHandler = BleScannerHandler(channel, flutterPluginBinding.applicationContext)
         channel.setMethodCallHandler(this)
-        bluetoothAdapterHandler = BluetoothAdapterHandler(flutterPluginBinding.applicationContext)
+        eventChannel = EventChannel(flutterPluginBinding.binaryMessenger, "flutter_ble_events")
+
+        // Initialize BleScannerHandler
+        bleScannerHandler = BleScannerHandler(channel, flutterPluginBinding.applicationContext)
+
+        // Initialize BluetoothAdapterHandler
+        bluetoothAdapterHandler = BluetoothAdapterHandler(channel, flutterPluginBinding.applicationContext)
+
+        // Initialize BleConnectorHandler
         bleConnectorHandler = BleConnectorHandler(flutterPluginBinding.applicationContext, channel)
     }
 
@@ -43,6 +62,11 @@ class FlutterBlePlugin : FlutterPlugin, MethodCallHandler {
             "checkBluetoothAdapterStatus" -> {
                 val status = bluetoothAdapterHandler.checkBluetoothAdapterStatus()
                 result.success(status.name)
+            }
+
+            "emitCurrentBluetoothStatus" -> {
+                bluetoothAdapterHandler.emitCurrentBluetoothStatus()
+                result.success(null)
             }
 
             "startScan" -> {
@@ -77,7 +101,8 @@ class FlutterBlePlugin : FlutterPlugin, MethodCallHandler {
             "getCurrentConnectionState" -> {
                 val deviceAddress = call.argument<String>("address")
                 if (deviceAddress != null) {
-                    val connectionState = bleConnectorHandler.getCurrentConnectionState(deviceAddress).lowercase()
+                    val connectionState =
+                        bleConnectorHandler.getCurrentConnectionState(deviceAddress).lowercase()
                     result.success(connectionState)
                 } else {
                     result.error("INVALID_ARGUMENT", "Device address cannot be null.", null)

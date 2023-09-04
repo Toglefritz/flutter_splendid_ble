@@ -11,6 +11,10 @@ class FlutterBle {
     return FlutterBlePlatform.instance.checkBluetoothAdapterStatus();
   }
 
+  Stream<BluetoothStatus> emitCurrentBluetoothStatus() {
+    return FlutterBlePlatform.instance.emitCurrentBluetoothStatus();
+  }
+
   void stopScan() {
     return FlutterBlePlatform.instance.stopScan();
   }
