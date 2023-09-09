@@ -4,6 +4,7 @@ import 'package:flutter_ble/models/scan_settings.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 
 import 'models/ble_connection_state.dart';
+import 'models/ble_service.dart';
 import 'models/bluetooth_status.dart';
 import 'src/channel/flutter_ble_method_channel.dart';
 
@@ -54,8 +55,13 @@ abstract class FlutterBlePlatform extends PlatformInterface {
 
   /// Initiates a connection to a BLE peripheral and returns a Stream representing
   /// the connection state.
-  Stream<BleConnectionState> connect(String deviceAddress) {
+  Stream<BleConnectionState> connect({required String deviceAddress}) {
     throw UnimplementedError('connect() has not been implemented.');
+  }
+
+  /// Triggers the service discovery process manually.
+  Stream<List<BleService>> discoverServices(String deviceAddress) {
+    throw UnimplementedError('discoverServices() has not been implemented.');
   }
 
   /// Terminates the connection to a BLE peripheral.

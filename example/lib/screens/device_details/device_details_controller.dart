@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_ble/flutter_ble.dart';
 import 'package:flutter_ble/models/ble_connection_state.dart';
+import 'package:flutter_ble/models/ble_service.dart';
 import 'package:flutter_ble_example/screens/start_scan/start_scan_route.dart';
 
 import 'device_details_route.dart';
@@ -20,7 +23,22 @@ class DeviceDetailsController extends State<DeviceDetailsRoute> {
   bool get isConnected => currentConnectionState == BleConnectionState.connected;
 
   /// Determine if a connection attempt is currently in progress.
-  bool connecting = false;
+  bool _connecting = false;
+
+  bool get connecting => _connecting;
+
+  /// Determines if the service and characteristic discovery process is currently in progress.
+  bool _discoveringServices = false;
+
+  bool get discoveringServices => _discoveringServices;
+
+  /// A [StreamController]
+  StreamSubscription? _servicesDiscoveredStream;
+
+  /// A list of Bluetooth service information that includes a list of characteristics under each service.
+  final List<BleService> _discoveredServices = [];
+
+  List<BleService> get discoveredServices => _discoveredServices;
 
   @override
   void initState() {
@@ -60,14 +78,33 @@ class DeviceDetailsController extends State<DeviceDetailsRoute> {
   /// provided [BleDevice].
   void onConnectTap() {
     setState(() {
-      connecting = true;
+      _connecting = true;
     });
 
     try {
-      _ble.connect(widget.device.address).listen((state) => onConnectionStateUpdate(state));
+      _ble.connect(deviceAddress: widget.device.address).listen((state) => onConnectionStateUpdate(state));
     } catch (e) {
       debugPrint('Failed to connect to device, ${widget.device.address}, with exception, $e');
     }
+  }
+
+  /// Handles taps on the "Discover Services" button, which starts the BLE service and characteristic discovery
+  /// process.
+  void onDiscoverServicesTap() {
+    setState(() {
+      _discoveringServices = true;
+    });
+
+    _servicesDiscoveredStream = _ble.discoverServices(widget.device.address).listen(
+          (service) => _onServiceDiscovered(service),
+        );
+  }
+
+  /// A callback used each time a new service is discovered and emitted to the [Stream].
+  void _onServiceDiscovered(List<BleService> service) {
+    setState(() {
+      _discoveredServices.addAll(service);
+    });
   }
 
   /// Callback for changes in the connection state between the host mobile device and the [BleDevice].
@@ -79,7 +116,7 @@ class DeviceDetailsController extends State<DeviceDetailsRoute> {
 
       // Once the device is connected, it is no longer connecting, you know?
       setState(() {
-        connecting = false;
+        _connecting = false;
       });
 
       // TODO when connected do something else in the UI right about here
@@ -88,4 +125,11 @@ class DeviceDetailsController extends State<DeviceDetailsRoute> {
 
   @override
   Widget build(BuildContext context) => DeviceDetailsView(this);
+
+  @override
+  void dispose() {
+    _servicesDiscoveredStream?.cancel();
+
+    super.dispose();
+  }
 }

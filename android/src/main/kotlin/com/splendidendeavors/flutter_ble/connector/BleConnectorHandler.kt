@@ -7,54 +7,55 @@ import android.os.Looper
 import io.flutter.plugin.common.MethodChannel
 
 /**
- * Handles Bluetooth Low Energy (BLE) connections.
+ * Handles Bluetooth Low Energy (BLE) connections for multiple devices.
  *
  * This class is responsible for establishing, maintaining, and tearing down
- * connections to BLE devices. It provides methods to connect to and disconnect from
- * a BLE device. It also maintains the latest known state of the BLE connection and allows
- * querying this state.
+ * connections to multiple BLE devices. It provides methods to connect to and disconnect from
+ * a BLE device. It also maintains the latest known state of each BLE connection and allows
+ * querying these states.
  *
  * @property context The Android Context object. Required for obtaining system services and performing
  *                   BLE operations.
  * @property channel The MethodChannel used for communication with the Flutter side.
  */
 class BleConnectorHandler(private val context: Context, private val channel: MethodChannel) {
-    /**
-     * A BluetoothGatt instance representing a GATT server on a BLE device.
-     *
-     * BluetoothGatt is an Android representation of a GATT server on a BLE device,
-     * providing a subset of Bluetooth GATT operations. This instance is created
-     * upon a successful connection to a BLE device and is used for interactions
-     * with that device.
-     */
-    private var bluetoothGatt: BluetoothGatt? = null
 
     /**
-     * The Bluetooth address of the device to which the current connection is established
-     * or is being established.
+     * A map to store multiple BluetoothGatt instances for different devices.
      *
-     * This Bluetooth address uniquely identifies the remote device and is used for
-     * future operations on the GATT server, represented by the [bluetoothGatt] object.
+     * Each key-value pair represents a BluetoothGatt instance with the device's address
+     * as the key and the BluetoothGatt instance as the value.
      */
-    private lateinit var deviceAddress: String
+    private val bluetoothGattMap: MutableMap<String, BluetoothGatt> = mutableMapOf()
 
     /**
      * Callback object for changes in GATT client state and GATT server state.
      *
-     * This object is used to receive various BluetoothGatt events that occur in response to operations
-     * on the GATT server of the connected BLE device. This includes events such as changes in the
-     * connection state, service discovery completion, characteristic read/write, etc.
-     *
-     * Particularly, the `onConnectionStateChange` method is implemented to handle and notify the
-     * Flutter side about changes in the BLE device's connection state. The state can be one of the
-     * following: CONNECTED, DISCONNECTED, CONNECTING, and DISCONNECTING, which are encapsulated
-     * in the [ConnectionState] enum.
+     * This object is responsible for handling various BluetoothGatt events that occur in response to
+     * operations on the GATT server of the connected BLE device. It listens to events such as changes
+     * in connection state, service discovery completion, characteristic read/write, and more.
      */
     private val gattCallback = object : BluetoothGattCallback() {
-        // The invokeMethod function can only be used on the main thread, so ensure this
-        // callback executes its logic on the main thread
+        /**
+         * Handler to execute logic on the main thread.
+         *
+         * BluetoothGattCallbacks can be invoked on different threads. The MethodChannel, however,
+         * requires all interactions to be done on the main thread. This handler ensures that.
+         */
         val mainHandler = Handler(Looper.getMainLooper())
 
+        /**
+         * Called when the connection state of the GATT server changes.
+         *
+         * This method is invoked when the GATT server connection state changes between the device and
+         * the remote BLE device we're connected to. States include CONNECTED, DISCONNECTED,
+         * CONNECTING, and DISCONNECTING. This method maps those states to a ConnectionState enum and
+         * forwards it to the Flutter side using the MethodChannel.
+         *
+         * @param gatt The GATT client.
+         * @param status The status of the operation. BluetoothGatt.GATT_SUCCESS if the operation succeeds.
+         * @param newState The new state, can be one of BluetoothProfile.STATE_* constants.
+         */
         override fun onConnectionStateChange(gatt: BluetoothGatt, status: Int, newState: Int) {
             mainHandler.post {
                 val state = when (newState) {
@@ -64,7 +65,39 @@ class BleConnectorHandler(private val context: Context, private val channel: Met
                     BluetoothProfile.STATE_DISCONNECTING -> ConnectionState.DISCONNECTING
                     else -> ConnectionState.UNKNOWN
                 }
-                channel.invokeMethod("bleConnectionState", state.name)
+                channel.invokeMethod("bleConnectionState_${gatt.device.address}", state.name)
+            }
+        }
+
+        /**
+         * Called when services have been discovered on the remote device.
+         *
+         * After a successful service discovery operation, this method is invoked to handle the newly
+         * discovered services and their characteristics. A map is built that contains the service UUIDs
+         * and their corresponding characteristics. This map is sent to the Flutter side using the
+         * MethodChannel for further processing.
+         *
+         * @param gatt The GATT client involved in the operation.
+         * @param status The status of the operation. BluetoothGatt.GATT_SUCCESS if the operation succeeds.
+         */
+        override fun onServicesDiscovered(gatt: BluetoothGatt, status: Int) {
+            if (status == BluetoothGatt.GATT_SUCCESS) {
+                mainHandler.post {
+                    // Prepare a map to send to the Dart side
+                    val servicesData = mutableMapOf<String, List<String>>()
+                    val services = gatt.services
+
+                    services.forEach { service ->
+                        val characteristics = service.characteristics.map { it.uuid.toString() }
+                        servicesData[service.uuid.toString()] = characteristics
+                    }
+
+                    // Notify the Flutter side
+                    channel.invokeMethod(
+                        "bleServicesDiscovered_${gatt.device.address}",
+                        servicesData
+                    )
+                }
             }
         }
     }
@@ -72,32 +105,33 @@ class BleConnectorHandler(private val context: Context, private val channel: Met
     /**
      * Initiates a connection to a Bluetooth Low Energy (BLE) device.
      *
-     * This function initiates a BLE connection by calling `connectGatt` on the corresponding
-     * `BluetoothDevice` object.
+     * @param deviceAddress The Bluetooth address of the device to connect.
      */
     fun connect(deviceAddress: String) {
-        this.deviceAddress = deviceAddress
         val bluetoothManager =
             context.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
         val device = bluetoothManager.adapter.getRemoteDevice(deviceAddress)
         try {
-            bluetoothGatt = device.connectGatt(context, false, gattCallback)
+            val gatt = device.connectGatt(context, false, gattCallback)
+            bluetoothGattMap[deviceAddress] = gatt
         } catch (e: SecurityException) {
             channel.invokeMethod(
                 "error",
                 "Required Bluetooth permissions are missing: ${e.message}"
             )
         }
+
     }
 
     /**
-     * Disconnects from the connected Bluetooth Low Energy (BLE) device.
+     * Disconnects from a connected Bluetooth Low Energy (BLE) device.
      *
-     * This function disconnects the device by calling `disconnect` on the `BluetoothGatt` object.
+     * @param deviceAddress The Bluetooth address of the device to disconnect.
      */
-    fun disconnect() {
+    fun disconnect(deviceAddress: String) {
         try {
-            bluetoothGatt?.disconnect()
+            bluetoothGattMap[deviceAddress]?.disconnect()
+            bluetoothGattMap.remove(deviceAddress)
         } catch (e: SecurityException) {
             channel.invokeMethod(
                 "error",
@@ -109,22 +143,14 @@ class BleConnectorHandler(private val context: Context, private val channel: Met
     /**
      * Gets the current connection state of a Bluetooth Low Energy (BLE) device by its Bluetooth address.
      *
-     * This method uses the Android `BluetoothManager` to fetch a list of all devices that are currently
-     * in any of the following states: CONNECTED, CONNECTING, DISCONNECTED, or DISCONNECTING.
-     * It then checks if the device with the given address is present in that list. If so,
-     * it fetches and returns the current connection state of that device.
-     *
      * @param deviceAddress The Bluetooth address of the device whose connection state needs to be determined.
      *
-     * @return A string representation of the connection state, as defined in the `ConnectionState` enum.
-     * Possible values are "CONNECTED", "CONNECTING", "DISCONNECTED", "DISCONNECTING", and "UNKNOWN".
+     * @return A string representation of the connection state.
      */
     fun getCurrentConnectionState(deviceAddress: String): String {
         val bluetoothManager =
             context.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
-
         try {
-            // Get a list of devices that are currently in a connected or connecting state.
             val connectedDevices = bluetoothManager.getDevicesMatchingConnectionStates(
                 BluetoothProfile.GATT,
                 intArrayOf(
@@ -135,10 +161,8 @@ class BleConnectorHandler(private val context: Context, private val channel: Met
                 )
             )
 
-            // Find the device in the list with the specified address.
             val targetDevice = connectedDevices.find { it.address == deviceAddress }
 
-            // Determine the connection state of the device.
             return if (targetDevice != null) {
                 when (bluetoothManager.getConnectionState(targetDevice, BluetoothProfile.GATT)) {
                     BluetoothProfile.STATE_CONNECTED -> ConnectionState.CONNECTED.name
@@ -158,5 +182,44 @@ class BleConnectorHandler(private val context: Context, private val channel: Met
         }
 
         return ConnectionState.UNKNOWN.name
+    }
+
+    /**
+     * Initiates manual discovery of GATT services and their characteristics.
+     *
+     * This method invokes the `discoverServices` method on the BluetoothGatt instance
+     * to initiate service and characteristic discovery. Service discovery is an essential step
+     * for learning the capabilities of the remote BLE device, represented as a hierarchy of
+     * services and characteristics.
+     *
+     * Typically, this method is called after a successful connection to the remote BLE device,
+     * especially if the initial connection was made without service discovery.
+     */
+    fun discoverServices(deviceAddress: String) {
+        val bluetoothGatt: BluetoothGatt? = bluetoothGattMap[deviceAddress]
+
+        try {
+            // Check if BluetoothGatt instance exists; if not, service discovery can't proceed
+            if (bluetoothGatt == null) {
+                channel.invokeMethod(
+                    "error",
+                    "BluetoothGatt instance is null; can't discover services"
+                )
+                return
+            }
+
+            // Initiate service discovery
+            val success = bluetoothGatt.discoverServices()
+
+            // Check if the service discovery initiation was successful
+            if (!success) {
+                channel.invokeMethod("error", "Failed to start service discovery")
+            }
+        } catch (e: SecurityException) {
+            channel.invokeMethod(
+                "error",
+                "Required Bluetooth permissions are missing: ${e.message}"
+            )
+        }
     }
 }

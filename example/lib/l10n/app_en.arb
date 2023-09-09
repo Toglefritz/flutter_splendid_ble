@@ -39,6 +39,10 @@
   "@discoveredDevices": {
     "description": "The title of the Bluetooth scan list page"
   },
+  "discoverServices": "Discover Services",
+  "@discoverServices": {
+    "description": "Text for the button used to trigger the service discovery process"
+  },
   "done": "Done",
   "@done": {
     "description": "A generic label for a CTA button"
@@ -86,6 +90,14 @@
   "scanSettings": "Scan Settings",
   "@scanSettings": {
     "description": "Title for the Bluetooth scan settings form"
+  },
+  "services": "Services",
+  "@services": {
+    "description": "A label for the list of services presented for a Bluetooth device"
+  },
+  "servicesNotDiscovered": "Services not discovered",
+  "@servicesNotDiscovered": {
+    "description": "A message indicating that service discovery has not yet been performed"
   },
   "serviceUuids": "Service UUIDs (comma-separated)",
   "@serviceUuids": {

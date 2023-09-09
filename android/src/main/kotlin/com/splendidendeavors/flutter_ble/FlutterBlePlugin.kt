@@ -50,7 +50,8 @@ class FlutterBlePlugin : FlutterPlugin, MethodCallHandler {
         bleScannerHandler = BleScannerHandler(channel, flutterPluginBinding.applicationContext)
 
         // Initialize BluetoothAdapterHandler
-        bluetoothAdapterHandler = BluetoothAdapterHandler(channel, flutterPluginBinding.applicationContext)
+        bluetoothAdapterHandler =
+            BluetoothAdapterHandler(channel, flutterPluginBinding.applicationContext)
 
         // Initialize BleConnectorHandler
         bleConnectorHandler = BleConnectorHandler(flutterPluginBinding.applicationContext, channel)
@@ -93,9 +94,24 @@ class FlutterBlePlugin : FlutterPlugin, MethodCallHandler {
                 }
             }
 
+            "discoverServices" -> {
+                val deviceAddress = call.argument<String>("address")
+                if (deviceAddress != null) {
+                    bleConnectorHandler.discoverServices(deviceAddress)
+                    result.success(null)
+                } else {
+                    result.error("INVALID_ARGUMENT", "Device address cannot be null.", null)
+                }
+            }
+
             "disconnect" -> {
-                bleConnectorHandler.disconnect()
-                result.success(null)
+                val deviceAddress = call.argument<String>("address")
+                if (deviceAddress != null) {
+                    bleConnectorHandler.disconnect(deviceAddress)
+                    result.success(null)
+                } else {
+                    result.error("INVALID_ARGUMENT", "Device address cannot be null.", null)
+                }
             }
 
             "getCurrentConnectionState" -> {
