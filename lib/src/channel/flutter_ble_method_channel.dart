@@ -1,7 +1,9 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 import '../../flutter_ble_platform_interface.dart';
+import '../../models/ble_characteristic.dart';
 import '../../models/ble_connection_state.dart';
 import '../../models/ble_device.dart';
 import '../../models/ble_service.dart';
@@ -169,28 +171,45 @@ class MethodChannelFlutterBle extends FlutterBlePlatform {
   /// [deviceAddress] is the MAC address of the target BLE device.
   /// [servicesDiscoveredController] is the stream controller through which the discovered services will be emitted to listeners.
   void _handleBleServicesDiscovered(
-      String deviceAddress, StreamController<List<BleService>> servicesDiscoveredController) {
+    String deviceAddress,
+    StreamController<List<BleService>> servicesDiscoveredController,
+  ) {
     _channel.setMethodCallHandler((MethodCall call) async {
       if (call.method == 'bleServicesDiscovered_$deviceAddress') {
-        final Map rawServicesMap = call.arguments as Map;
+        try {
+          final Map rawServicesMap = call.arguments as Map;
 
-        // Safely cast the Map<Object?, Object?> to Map<String, List<String>>
-        final Map<String, List<String>> servicesMap = {};
+          // Construct a list of BleService objects from the raw data.
+          final List<BleService> services = rawServicesMap.entries
+              .map((entry) {
+                if (entry.key is String && entry.value is List) {
+                  List<Map> rawCharacteristics = List<Map>.from(entry.value);
 
-        for (var key in rawServicesMap.keys) {
-          if (key is String && rawServicesMap[key] is List) {
-            servicesMap[key] = List<String>.from(rawServicesMap[key] as List);
-          }
+                  // Convert the raw characteristic maps to BleCharacteristic objects.
+                  List<BleCharacteristic> characteristics = rawCharacteristics.map((charMap) {
+                    // Manually convert the map to the desired type
+                    Map<String, dynamic> typedMap =
+                        Map.from(charMap).map((key, value) => MapEntry(key as String, value));
+                    return BleCharacteristic.fromMap(typedMap);
+                  }).toList();
+
+                  return BleService(
+                    serviceUuid: entry.key as String,
+                    characteristics: characteristics,
+                  );
+                } else {
+                  // Return a null BleService to be filtered out later.
+                  return null;
+                }
+              })
+              .where((service) => service != null)
+              .cast<BleService>()
+              .toList();
+
+          servicesDiscoveredController.add(services);
+        } catch (e) {
+          debugPrint('An exception has been happened!\n$e');
         }
-
-        final List<BleService> services = servicesMap.entries.map((entry) {
-          return BleService(
-            serviceUuid: entry.key,
-            characteristicUuids: List<String>.from(entry.value),
-          );
-        }).toList();
-
-        servicesDiscoveredController.add(services);
       }
     });
   }

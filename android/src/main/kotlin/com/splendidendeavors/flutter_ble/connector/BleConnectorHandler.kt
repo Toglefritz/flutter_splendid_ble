@@ -72,23 +72,35 @@ class BleConnectorHandler(private val context: Context, private val channel: Met
         /**
          * Called when services have been discovered on the remote device.
          *
-         * After a successful service discovery operation, this method is invoked to handle the newly
-         * discovered services and their characteristics. A map is built that contains the service UUIDs
-         * and their corresponding characteristics. This map is sent to the Flutter side using the
-         * MethodChannel for further processing.
+         * This callback is invoked following a successful service discovery operation initiated on a GATT client represented by the parameter 'gatt'. Within the scope of this method, a map containing detailed information about the discovered services and their respective characteristics is constructed.
          *
-         * @param gatt The GATT client involved in the operation.
-         * @param status The status of the operation. BluetoothGatt.GATT_SUCCESS if the operation succeeds.
+         * The map is structured as follows:
+         * - The keys are strings representing the UUIDs of the discovered services.
+         * - The values are lists of maps, where each map represents a characteristic and contains the following keys:
+         *   - "uuid": a string representing the UUID of the characteristic.
+         *   - "properties": an integer representing the bitwise properties of the characteristic, which provide information about the operations supported by the characteristic (e.g., read, write, notify). The Flutter side should properly interpret these bitwise values to ascertain the specific properties supported by each characteristic.
+         *   - "permissions": an integer representing the bitwise permissions of the characteristic, outlining the security permissions required for operations on the characteristic (e.g., whether bonding is needed). Again, proper interpretation of these bitwise values is expected on the Flutter side to determine the specific permissions set for each characteristic.
+         *
+         * Once constructed, this map is transmitted to the Flutter side through a MethodChannel, allowing the Flutter app to have detailed insights into the services and characteristics available on the remote device, thereby facilitating precise control and interaction with the Bluetooth peripheral.
+         *
+         * @param gatt The GATT client involved in the operation, providing an interface to interact with the Bluetooth GATT layer.
+         * @param status The status of the service discovery operation, where BluetoothGatt.GATT_SUCCESS indicates a successful operation.
          */
         override fun onServicesDiscovered(gatt: BluetoothGatt, status: Int) {
             if (status == BluetoothGatt.GATT_SUCCESS) {
                 mainHandler.post {
                     // Prepare a map to send to the Dart side
-                    val servicesData = mutableMapOf<String, List<String>>()
-                    val services = gatt.services
+                    val servicesData = mutableMapOf<String, List<Map<String, Any>>>()
 
+                    val services = gatt.services
                     services.forEach { service ->
-                        val characteristics = service.characteristics.map { it.uuid.toString() }
+                        val characteristics = service.characteristics.map { characteristic ->
+                            mapOf(
+                                "uuid" to characteristic.uuid.toString(),
+                                "properties" to characteristic.properties, // This will return an int representation of the properties
+                                "permissions" to characteristic.permissions // This will return an int representation of the permissions
+                            )
+                        }
                         servicesData[service.uuid.toString()] = characteristics
                     }
 

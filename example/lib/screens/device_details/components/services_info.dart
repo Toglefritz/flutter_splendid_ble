@@ -62,11 +62,11 @@ class ServicesInfo extends StatelessWidget {
                         ),
                         iconColor: Theme.of(context).primaryColor,
                         children: List.generate(
-                          services[index].characteristicUuids.length,
+                          services[index].characteristics.length,
                           (i) => Padding(
                             padding: const EdgeInsets.symmetric(vertical: 8.0),
                             child: Text(
-                              services[index].characteristicUuids[i],
+                              services[index].characteristics[i].uuid,
                             ),
                           ),
                         ),
