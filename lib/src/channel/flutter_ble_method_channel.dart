@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 import '../../flutter_ble_platform_interface.dart';
@@ -176,40 +175,35 @@ class MethodChannelFlutterBle extends FlutterBlePlatform {
   ) {
     _channel.setMethodCallHandler((MethodCall call) async {
       if (call.method == 'bleServicesDiscovered_$deviceAddress') {
-        try {
-          final Map rawServicesMap = call.arguments as Map;
+        final Map rawServicesMap = call.arguments as Map;
 
-          // Construct a list of BleService objects from the raw data.
-          final List<BleService> services = rawServicesMap.entries
-              .map((entry) {
-                if (entry.key is String && entry.value is List) {
-                  List<Map> rawCharacteristics = List<Map>.from(entry.value);
+        // Construct a list of BleService objects from the raw data.
+        final List<BleService> services = rawServicesMap.entries
+            .map((entry) {
+              if (entry.key is String && entry.value is List) {
+                List<Map> rawCharacteristics = List<Map>.from(entry.value);
 
-                  // Convert the raw characteristic maps to BleCharacteristic objects.
-                  List<BleCharacteristic> characteristics = rawCharacteristics.map((charMap) {
-                    // Manually convert the map to the desired type
-                    Map<String, dynamic> typedMap =
-                        Map.from(charMap).map((key, value) => MapEntry(key as String, value));
-                    return BleCharacteristic.fromMap(typedMap);
-                  }).toList();
+                // Convert the raw characteristic maps to BleCharacteristic objects.
+                List<BleCharacteristic> characteristics = rawCharacteristics.map((charMap) {
+                  // Manually convert the map to the desired type
+                  Map<String, dynamic> typedMap = Map.from(charMap).map((key, value) => MapEntry(key as String, value));
+                  return BleCharacteristic.fromMap(typedMap);
+                }).toList();
 
-                  return BleService(
-                    serviceUuid: entry.key as String,
-                    characteristics: characteristics,
-                  );
-                } else {
-                  // Return a null BleService to be filtered out later.
-                  return null;
-                }
-              })
-              .where((service) => service != null)
-              .cast<BleService>()
-              .toList();
+                return BleService(
+                  serviceUuid: entry.key as String,
+                  characteristics: characteristics,
+                );
+              } else {
+                // Return a null BleService to be filtered out later.
+                return null;
+              }
+            })
+            .where((service) => service != null)
+            .cast<BleService>()
+            .toList();
 
-          servicesDiscoveredController.add(services);
-        } catch (e) {
-          debugPrint('An exception has been happened!\n$e');
-        }
+        servicesDiscoveredController.add(services);
       }
     });
   }
@@ -239,5 +233,30 @@ class MethodChannelFlutterBle extends FlutterBlePlatform {
 
     // Convert the string received from Kotlin to the Dart enum value.
     return BleConnectionState.values.firstWhere((e) => e.identifier == connectionStateString);
+  }
+
+  /// Writes data to a specified characteristic.
+  ///
+  /// [address] - The address of the device to communicate with.
+  /// [characteristicUuid] - The UUID of the characteristic to write to.
+  /// [value] - The string value to be written.
+  /// [writeType] - Optional write type, defaulting to `BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT`.
+  @override
+  Future<void> writeCharacteristic({
+    required String address,
+    required String characteristicUuid,
+    required String value,
+    int? writeType,
+  }) async {
+    try {
+      await _channel.invokeMethod('writeCharacteristic', {
+        'address': address,
+        'characteristicUuid': characteristicUuid,
+        'value': value,
+        if (writeType != null) 'writeType': writeType,
+      });
+    } catch (e) {
+      rethrow;
+    }
   }
 }

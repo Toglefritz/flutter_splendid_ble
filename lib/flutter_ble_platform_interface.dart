@@ -75,4 +75,14 @@ abstract class FlutterBlePlatform extends PlatformInterface {
   Future<BleConnectionState> getCurrentConnectionState(String deviceAddress) {
     throw UnimplementedError('getCurrentConnectionState() has not been implemented.');
   }
+
+  /// Writes data to a specified characteristic.
+  Future<void> writeCharacteristic({
+    required String address,
+    required String characteristicUuid,
+    required String value,
+    int? writeType,
+  }) async {
+    throw UnimplementedError('writeCharacteristic() has not been implemented.');
+  }
 }

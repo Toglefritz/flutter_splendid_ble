@@ -39,4 +39,18 @@ class FlutterBle {
   Future<BleConnectionState> getCurrentConnectionState(String deviceAddress) {
     return FlutterBlePlatform.instance.getCurrentConnectionState(deviceAddress);
   }
+
+  Future<void> writeCharacteristic({
+    required String address,
+    required String characteristicUuid,
+    required String value,
+    int? writeType,
+  }) async {
+    return FlutterBlePlatform.instance.writeCharacteristic(
+      address: address,
+      characteristicUuid: characteristicUuid,
+      value: value,
+      writeType: writeType,
+    );
+  }
 }

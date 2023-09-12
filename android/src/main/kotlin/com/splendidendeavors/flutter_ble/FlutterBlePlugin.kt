@@ -1,9 +1,11 @@
 package com.splendidendeavors.flutter_ble
 
+import android.bluetooth.BluetoothGattCharacteristic
 import com.splendidendeavors.flutter_ble.adapter.BluetoothAdapterHandler
 import android.os.Build
 import androidx.annotation.RequiresApi
-import com.splendidendeavors.flutter_ble.connector.BleConnectorHandler
+import com.splendidendeavors.flutter_ble.connector.BleConnectionHandler
+import com.splendidendeavors.flutter_ble.`interface`.BleDeviceInterface
 import com.splendidendeavors.flutter_ble.scanner.BleScannerHandler
 
 import io.flutter.embedding.engine.plugins.FlutterPlugin
@@ -12,6 +14,7 @@ import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.Result
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
+import java.util.UUID
 
 /** FlutterBlePlugin */
 class FlutterBlePlugin : FlutterPlugin, MethodCallHandler {
@@ -32,29 +35,37 @@ class FlutterBlePlugin : FlutterPlugin, MethodCallHandler {
 
     private lateinit var eventChannel: EventChannel
 
-    /// The BleScannerHandler handles all methods related to scanning for nearby Bluetooth device.
-    private lateinit var bleScannerHandler: BleScannerHandler
-
     // The BluetoothAdapterHandler checks the status of the Bluetooth adapter on the device.
     private lateinit var bluetoothAdapterHandler: BluetoothAdapterHandler
 
+    /// The BleScannerHandler handles all methods related to scanning for nearby Bluetooth device.
+    private lateinit var bleScannerHandler: BleScannerHandler
+
     /// The BleConnectorHandler handles all methods related to Bluetooth device connections.
-    private lateinit var bleConnectorHandler: BleConnectorHandler
+    private lateinit var bleConnectionHandler: BleConnectionHandler
+
+    /// The BleDeviceInterface handles all methods related to writing to, reading from, and handling
+    /// subscriptions to the Bluetooth characteristics of a connected Bluetooth peripheral.
+    private lateinit var bleDeviceInterface: BleDeviceInterface
 
     override fun onAttachedToEngine(flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
         channel = MethodChannel(flutterPluginBinding.binaryMessenger, "flutter_ble")
         channel.setMethodCallHandler(this)
         eventChannel = EventChannel(flutterPluginBinding.binaryMessenger, "flutter_ble_events")
 
-        // Initialize BleScannerHandler
-        bleScannerHandler = BleScannerHandler(channel, flutterPluginBinding.applicationContext)
-
         // Initialize BluetoothAdapterHandler
         bluetoothAdapterHandler =
             BluetoothAdapterHandler(channel, flutterPluginBinding.applicationContext)
 
+        // Initialize BleScannerHandler
+        bleScannerHandler = BleScannerHandler(channel, flutterPluginBinding.applicationContext)
+
         // Initialize BleConnectorHandler
-        bleConnectorHandler = BleConnectorHandler(flutterPluginBinding.applicationContext, channel)
+        bleConnectionHandler =
+            BleConnectionHandler(flutterPluginBinding.applicationContext, channel)
+
+        // Initialize the BleDeviceInterface
+        bleDeviceInterface = BleDeviceInterface(channel, bleConnectionHandler)
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
@@ -87,7 +98,7 @@ class FlutterBlePlugin : FlutterPlugin, MethodCallHandler {
             "connect" -> {
                 val deviceAddress = call.argument<String>("address")
                 if (deviceAddress != null) {
-                    bleConnectorHandler.connect(deviceAddress)
+                    bleConnectionHandler.connect(deviceAddress)
                     result.success(null)
                 } else {
                     result.error("INVALID_ARGUMENT", "Device address cannot be null.", null)
@@ -97,7 +108,7 @@ class FlutterBlePlugin : FlutterPlugin, MethodCallHandler {
             "discoverServices" -> {
                 val deviceAddress = call.argument<String>("address")
                 if (deviceAddress != null) {
-                    bleConnectorHandler.discoverServices(deviceAddress)
+                    bleConnectionHandler.discoverServices(deviceAddress)
                     result.success(null)
                 } else {
                     result.error("INVALID_ARGUMENT", "Device address cannot be null.", null)
@@ -107,7 +118,7 @@ class FlutterBlePlugin : FlutterPlugin, MethodCallHandler {
             "disconnect" -> {
                 val deviceAddress = call.argument<String>("address")
                 if (deviceAddress != null) {
-                    bleConnectorHandler.disconnect(deviceAddress)
+                    bleConnectionHandler.disconnect(deviceAddress)
                     result.success(null)
                 } else {
                     result.error("INVALID_ARGUMENT", "Device address cannot be null.", null)
@@ -118,10 +129,45 @@ class FlutterBlePlugin : FlutterPlugin, MethodCallHandler {
                 val deviceAddress = call.argument<String>("address")
                 if (deviceAddress != null) {
                     val connectionState =
-                        bleConnectorHandler.getCurrentConnectionState(deviceAddress).lowercase()
+                        bleConnectionHandler.getCurrentConnectionState(deviceAddress).lowercase()
                     result.success(connectionState)
                 } else {
                     result.error("INVALID_ARGUMENT", "Device address cannot be null.", null)
+                }
+            }
+
+            "writeCharacteristic" -> {
+                val deviceAddress = call.argument<String>("address")
+                val characteristicUuidStr = call.argument<String>("characteristicUuid")
+                val stringValue = call.argument<String>("value")
+                val writeType = call.argument<Int>("writeType")
+                    ?: BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT
+
+                if (deviceAddress != null && characteristicUuidStr != null && stringValue != null) {
+                    val characteristicUuid = UUID.fromString(characteristicUuidStr)
+                    val byteValue = stringValue.toByteArray()
+
+                    try {
+                        bleDeviceInterface.writeCharacteristic(
+                            deviceAddress,
+                            characteristicUuid,
+                            byteValue,
+                            writeType
+                        )
+                        result.success(null)
+                    } catch (e: Exception) {
+                        result.error(
+                            "WRITE_ERROR",
+                            "Failed to write characteristic: ${e.message}",
+                            null
+                        )
+                    }
+                } else {
+                    result.error(
+                        "INVALID_ARGUMENT",
+                        "Device address, characteristic UUID, or value cannot be null.",
+                        null
+                    )
                 }
             }
 

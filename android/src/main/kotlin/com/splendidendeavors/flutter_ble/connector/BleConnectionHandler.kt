@@ -18,8 +18,7 @@ import io.flutter.plugin.common.MethodChannel
  *                   BLE operations.
  * @property channel The MethodChannel used for communication with the Flutter side.
  */
-class BleConnectorHandler(private val context: Context, private val channel: MethodChannel) {
-
+class BleConnectionHandler(private val context: Context, private val channel: MethodChannel) {
     /**
      * A map to store multiple BluetoothGatt instances for different devices.
      *
@@ -27,6 +26,16 @@ class BleConnectorHandler(private val context: Context, private val channel: Met
      * as the key and the BluetoothGatt instance as the value.
      */
     private val bluetoothGattMap: MutableMap<String, BluetoothGatt> = mutableMapOf()
+
+    /**
+     * Get the BluetoothGatt instance for a specific device address.
+     *
+     * @param deviceAddress The MAC address of the Bluetooth device.
+     * @return The BluetoothGatt instance if a connection has been made, or null otherwise.
+     */
+    fun getBluetoothGatt(deviceAddress: String): BluetoothGatt? {
+        return bluetoothGattMap[deviceAddress]
+    }
 
     /**
      * Callback object for changes in GATT client state and GATT server state.

@@ -93,6 +93,7 @@ class DeviceDetailsView extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 16.0),
                   child: ServicesInfo(
                     services: state.discoveredServices,
+                    characteristicOnTap: state.characteristicOnTap,
                   ),
                 ),
             ],

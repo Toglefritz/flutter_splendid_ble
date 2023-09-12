@@ -2,10 +2,12 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_ble/flutter_ble.dart';
+import 'package:flutter_ble/models/ble_characteristic.dart';
 import 'package:flutter_ble/models/ble_connection_state.dart';
 import 'package:flutter_ble/models/ble_service.dart';
 import 'package:flutter_ble_example/screens/start_scan/start_scan_route.dart';
 
+import '../characteristic_interaction/characteristic_interaction_route.dart';
 import 'device_details_route.dart';
 import 'device_details_view.dart';
 
@@ -121,6 +123,21 @@ class DeviceDetailsController extends State<DeviceDetailsRoute> {
 
       // TODO when connected do something else in the UI right about here
     });
+  }
+
+  /// Handles taps on a Bluetooth characteristic by navigating to the [CharacteristicInteractionRoute], allowing
+  /// for values to be written to or read from the selected Bluetooth characteristic, depending upon the
+  /// properties of that characteristic.
+  void characteristicOnTap(BleCharacteristic characteristic) {
+    Navigator.pushReplacement<void, void>(
+      context,
+      MaterialPageRoute<void>(
+        builder: (BuildContext context) => CharacteristicInteractionRoute(
+          device: widget.device,
+          characteristic: characteristic,
+        ),
+      ),
+    );
   }
 
   @override

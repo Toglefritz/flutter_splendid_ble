@@ -19,6 +19,10 @@
   "@bluetoothDisabled": {
     "description": "An error message indicating that the Bluetooth adapter is disabled"
   },
+  "characteristicInteraction": "Characteristic Interaction",
+  "@characteristicInteraction": {
+    "description": "Title for the CharacteristicInteractionView"
+  },
   "connect": "Connect",
   "@connect": {
     "description": "Text for the button used to start the connection process"
@@ -46,6 +50,10 @@
   "done": "Done",
   "@done": {
     "description": "A generic label for a CTA button"
+  },
+  "errorWriting": "Writing to the Bluetooth device failed",
+  "@errorWriting": {
+    "description": "An error message indicating that a BLE write operation failed"
   },
   "lowLatency": "Low Latency",
   "@lowLatency": {
@@ -78,6 +86,10 @@
   "permissionsError": "The request for Bluetooth and location permissions was denied. Without those permissions, none of this will work.",
   "@permissionsError": {
     "description": "An error message to indicate that permissions have not been granted"
+  },
+  "primaryService": "Primary service",
+  "@primaryService": {
+    "description": "Label for a primary service UUID"
   },
   "scanFilters": "Scan Filters",
   "@scanFilters": {
