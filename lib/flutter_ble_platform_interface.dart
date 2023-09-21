@@ -3,6 +3,7 @@ import 'package:flutter_ble/models/scan_filter.dart';
 import 'package:flutter_ble/models/scan_settings.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 
+import 'models/ble_characteristic_value.dart';
 import 'models/ble_connection_state.dart';
 import 'models/ble_service.dart';
 import 'models/bluetooth_status.dart';
@@ -84,5 +85,16 @@ abstract class FlutterBlePlatform extends PlatformInterface {
     int? writeType,
   }) async {
     throw UnimplementedError('writeCharacteristic() has not been implemented.');
+  }
+
+  /// Reads the value of a specified Bluetooth characteristic.
+  ///
+  /// This method is accessed through the [BleCharacteristic] class.
+  Future<BleCharacteristicValue> readCharacteristic({
+    required String address,
+    required String characteristicUuid,
+    required Duration timeout,
+  }) async {
+    throw UnimplementedError('readCharacteristic() has not been implemented.');
   }
 }

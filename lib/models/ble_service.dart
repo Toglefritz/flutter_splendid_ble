@@ -32,7 +32,11 @@ class BleService {
   factory BleService.fromMap(Map<String, dynamic> map) {
     return BleService(
       serviceUuid: map['serviceUuid'] as String,
-      characteristics: (map['characteristics'] as List).map((charMap) => BleCharacteristic.fromMap(charMap as Map<String, dynamic>)).toList(),
+      characteristics: (map['characteristics'] as List)
+          .map(
+            (charMap) => BleCharacteristic.fromMap(charMap as Map<String, dynamic>),
+          )
+          .toList(),
     );
   }
 

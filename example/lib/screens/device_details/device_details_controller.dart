@@ -128,8 +128,8 @@ class DeviceDetailsController extends State<DeviceDetailsRoute> {
   /// Handles taps on a Bluetooth characteristic by navigating to the [CharacteristicInteractionRoute], allowing
   /// for values to be written to or read from the selected Bluetooth characteristic, depending upon the
   /// properties of that characteristic.
-  void characteristicOnTap(BleCharacteristic characteristic) {
-    Navigator.pushReplacement<void, void>(
+  Future<void> characteristicOnTap(BleCharacteristic characteristic) async {
+    await Navigator.push<void>(
       context,
       MaterialPageRoute<void>(
         builder: (BuildContext context) => CharacteristicInteractionRoute(
@@ -138,6 +138,8 @@ class DeviceDetailsController extends State<DeviceDetailsRoute> {
         ),
       ),
     );
+
+    setState(() {});
   }
 
   @override

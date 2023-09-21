@@ -32,7 +32,6 @@ class FlutterBlePlugin : FlutterPlugin, MethodCallHandler {
     //
     // The EventChannel is registered with the Flutter Engine during the plugin attachment process
     // in the `onAttachedToEngine` method.
-
     private lateinit var eventChannel: EventChannel
 
     // The BluetoothAdapterHandler checks the status of the Bluetooth adapter on the device.
@@ -166,6 +165,35 @@ class FlutterBlePlugin : FlutterPlugin, MethodCallHandler {
                     result.error(
                         "INVALID_ARGUMENT",
                         "Device address, characteristic UUID, or value cannot be null.",
+                        null
+                    )
+                }
+            }
+
+            "readCharacteristic" -> {
+                val characteristicUuidStr = call.argument<String>("characteristicUuid")
+                val deviceAddress = call.argument<String>("address")
+
+                if (characteristicUuidStr != null && deviceAddress != null) {
+                    val characteristicUuid = UUID.fromString(characteristicUuidStr)
+
+                    try {
+                        bleDeviceInterface.readCharacteristic(
+                            deviceAddress,
+                            characteristicUuid,
+                        )
+                        result.success(null)
+                    } catch (e: Exception) {
+                        result.error(
+                            "WRITE_ERROR",
+                            "Failed to read characteristic: ${e.message}",
+                            null
+                        )
+                    }
+                } else {
+                    result.error(
+                        "INVALID_ARGUMENT",
+                        "Device address or characteristic UUID cannot be null.",
                         null
                     )
                 }

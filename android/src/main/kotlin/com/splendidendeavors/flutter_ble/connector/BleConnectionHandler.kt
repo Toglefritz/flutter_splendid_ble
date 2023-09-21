@@ -105,6 +105,7 @@ class BleConnectionHandler(private val context: Context, private val channel: Me
                     services.forEach { service ->
                         val characteristics = service.characteristics.map { characteristic ->
                             mapOf(
+                                "address" to gatt.device.address,
                                 "uuid" to characteristic.uuid.toString(),
                                 "properties" to characteristic.properties, // This will return an int representation of the properties
                                 "permissions" to characteristic.permissions // This will return an int representation of the permissions
