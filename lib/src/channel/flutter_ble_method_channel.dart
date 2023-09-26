@@ -238,21 +238,19 @@ class MethodChannelFlutterBle extends FlutterBlePlatform {
 
   /// Writes data to a specified characteristic.
   ///
-  /// [address] - The address of the device to communicate with.
-  /// [characteristicUuid] - The UUID of the characteristic to write to.
+  /// [characteristic] - The Bluetooth characteristic to which the method will write.
   /// [value] - The string value to be written.
   /// [writeType] - Optional write type, defaulting to `BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT`.
   @override
   Future<void> writeCharacteristic({
-    required String address,
-    required String characteristicUuid,
+    required BleCharacteristic characteristic,
     required String value,
     int? writeType,
   }) async {
     try {
       await _channel.invokeMethod('writeCharacteristic', {
-        'address': address,
-        'characteristicUuid': characteristicUuid,
+        'address': characteristic.address,
+        'characteristicUuid': characteristic.uuid,
         'value': value,
         if (writeType != null) 'writeType': writeType,
       });
@@ -306,15 +304,19 @@ class MethodChannelFlutterBle extends FlutterBlePlatform {
   /// ```
   @override
   Future<BleCharacteristicValue> readCharacteristic({
-    required String address,
-    required String characteristicUuid,
+    required BleCharacteristic characteristic,
     required Duration timeout,
   }) async {
     final completer = Completer<BleCharacteristicValue>();
 
     _channel.setMethodCallHandler((MethodCall call) async {
       if (call.method == 'onCharacteristicRead') {
-        final BleCharacteristicValue response = BleCharacteristicValue.fromMap(call.arguments);
+        final BleCharacteristicValue response;
+        try {
+          response = BleCharacteristicValue.fromMap(call.arguments);
+        } catch (e) {
+          rethrow;
+        }
         completer.complete(response);
         _channel.setMethodCallHandler(null); // Reset the handler to avoid future calls.
       }
@@ -322,8 +324,8 @@ class MethodChannelFlutterBle extends FlutterBlePlatform {
 
     // Read the value of the characteristic.
     _channel.invokeMethod('readCharacteristic', {
-      'address': address,
-      'characteristicUuid': characteristicUuid,
+      'address': characteristic.address,
+      'characteristicUuid': characteristic.uuid,
     });
 
     // Implement the timeout logic.
@@ -335,5 +337,47 @@ class MethodChannelFlutterBle extends FlutterBlePlatform {
         throw TimeoutException('Failed to read characteristic within the given timeout', timeout);
       },
     );
+  }
+
+  /// Subscribes to a Bluetooth characteristic to listen for updates.
+  ///
+  /// A caller to this function will receive a [Stream] of [BleCharacteristicValue] objects. A caller should listen
+  /// to this stream and establish a callback function invoked each time a new value is emitted to the stream. Once
+  /// subscribed, any updates to the characteristic value will be sent as a stream of [BleCharacteristicValue] objects.
+  @override
+  Stream<BleCharacteristicValue> subscribeToCharacteristic(BleCharacteristic characteristic) {
+    StreamController<BleCharacteristicValue> streamController = StreamController<BleCharacteristicValue>.broadcast();
+
+    // Listen for characteristic updates from the platform side.
+    _channel.setMethodCallHandler((MethodCall call) async {
+      if (call.method == 'onCharacteristicChanged') {
+        final BleCharacteristicValue value;
+        try {
+          value = BleCharacteristicValue.fromMap(call.arguments);
+        } catch (e) {
+          rethrow;
+        }
+        streamController.add(value);
+      }
+    });
+
+    // Trigger the subscription to the characteristic on the platform side.
+    _channel.invokeMethod('subscribeToCharacteristic', {
+      'address': characteristic.address,
+      'characteristicUuid': characteristic.uuid,
+    });
+
+    return streamController.stream;
+  }
+
+  /// Unsubscribes from a Bluetooth characteristic.
+  ///
+  /// This method stops listening for updates for a given characteristic on a specified device.
+  @override
+  void unsubscribeFromCharacteristic(BleCharacteristic characteristic) {
+    _channel.invokeMethod('unsubscribeFromCharacteristic', {
+      'address': characteristic.address,
+      'characteristicUuid': characteristic.uuid,
+    });
   }
 }

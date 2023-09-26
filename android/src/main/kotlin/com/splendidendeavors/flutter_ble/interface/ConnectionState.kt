@@ -1,4 +1,4 @@
-package com.splendidendeavors.flutter_ble.connector
+package com.splendidendeavors.flutter_ble.`interface`
 
 enum class ConnectionState {
     CONNECTED,

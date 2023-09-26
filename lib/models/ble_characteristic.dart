@@ -49,6 +49,22 @@ class BleCharacteristic {
     );
   }
 
+  /// Writes data to a specified characteristic.
+  ///
+  /// [characteristic] - The Bluetooth characteristic to which the method will write.
+  /// [value] - The string value to be written.
+  /// [writeType] - Optional write type, defaulting to `BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT`.
+  Future<void> writeValue({
+    required String value,
+    int? writeType,
+  }) async {
+    return FlutterBlePlatform.instance.writeCharacteristic(
+      characteristic: this,
+      value: value,
+      writeType: writeType,
+    );
+  }
+
   /// Asynchronously retrieves the value of the characteristic.
   ///
   /// This method provides a flexible way to read the characteristic's value from a BLE device
@@ -67,12 +83,12 @@ class BleCharacteristic {
   /// ```
   ///
   /// If a type other than `String` or `List<int>` is used, an `ArgumentError` is thrown.
+  // TODO should this method return a BleCharacteristicValue instance instead?
   Future<T> readValue<T>({
     Duration timeout = const Duration(seconds: 5),
   }) async {
     BleCharacteristicValue characteristicValue = await FlutterBlePlatform.instance.readCharacteristic(
-      address: address,
-      characteristicUuid: uuid,
+      characteristic: this,
       timeout: timeout,
     );
 
@@ -83,6 +99,22 @@ class BleCharacteristic {
     } else {
       throw ArgumentError('Unsupported return type $T. Supported types are String and List<int>');
     }
+  }
+
+  /// Subscribes to a Bluetooth characteristic to listen for updates.
+  ///
+  /// A caller to this function will receive a [Stream] of [BleCharacteristicValue] objects. A caller should listen
+  /// to this stream and establish a callback function invoked each time a new value is emitted to the stream. Once
+  /// subscribed, any updates to the characteristic value will be sent as a stream of [BleCharacteristicValue] objects.
+  Stream<BleCharacteristicValue> subscribe() {
+    return FlutterBlePlatform.instance.subscribeToCharacteristic(this);
+  }
+
+  /// Unsubscribes from a Bluetooth characteristic.
+  ///
+  /// This method stops listening for updates for a given characteristic on a specified device.
+  void unsubscribe() {
+    return FlutterBlePlatform.instance.unsubscribeFromCharacteristic(this);
   }
 
   /// Converts a list of [BluetoothGattCharacteristicProperties] to a string representation.

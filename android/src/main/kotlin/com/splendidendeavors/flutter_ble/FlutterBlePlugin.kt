@@ -4,7 +4,6 @@ import android.bluetooth.BluetoothGattCharacteristic
 import com.splendidendeavors.flutter_ble.adapter.BluetoothAdapterHandler
 import android.os.Build
 import androidx.annotation.RequiresApi
-import com.splendidendeavors.flutter_ble.connector.BleConnectionHandler
 import com.splendidendeavors.flutter_ble.`interface`.BleDeviceInterface
 import com.splendidendeavors.flutter_ble.scanner.BleScannerHandler
 
@@ -12,7 +11,6 @@ import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.plugin.common.EventChannel
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
-import io.flutter.plugin.common.MethodChannel.Result
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import java.util.UUID
 
@@ -41,7 +39,7 @@ class FlutterBlePlugin : FlutterPlugin, MethodCallHandler {
     private lateinit var bleScannerHandler: BleScannerHandler
 
     /// The BleConnectorHandler handles all methods related to Bluetooth device connections.
-    private lateinit var bleConnectionHandler: BleConnectionHandler
+    //private lateinit var bleConnectionHandler: BleConnectionHandler
 
     /// The BleDeviceInterface handles all methods related to writing to, reading from, and handling
     /// subscriptions to the Bluetooth characteristics of a connected Bluetooth peripheral.
@@ -60,11 +58,10 @@ class FlutterBlePlugin : FlutterPlugin, MethodCallHandler {
         bleScannerHandler = BleScannerHandler(channel, flutterPluginBinding.applicationContext)
 
         // Initialize BleConnectorHandler
-        bleConnectionHandler =
-            BleConnectionHandler(flutterPluginBinding.applicationContext, channel)
+        //bleConnectionHandler = BleConnectionHandler(flutterPluginBinding.applicationContext, channel)
 
         // Initialize the BleDeviceInterface
-        bleDeviceInterface = BleDeviceInterface(channel, bleConnectionHandler)
+        bleDeviceInterface = BleDeviceInterface(channel, flutterPluginBinding.applicationContext)
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
@@ -97,7 +94,7 @@ class FlutterBlePlugin : FlutterPlugin, MethodCallHandler {
             "connect" -> {
                 val deviceAddress = call.argument<String>("address")
                 if (deviceAddress != null) {
-                    bleConnectionHandler.connect(deviceAddress)
+                    bleDeviceInterface.connect(deviceAddress)
                     result.success(null)
                 } else {
                     result.error("INVALID_ARGUMENT", "Device address cannot be null.", null)
@@ -107,7 +104,7 @@ class FlutterBlePlugin : FlutterPlugin, MethodCallHandler {
             "discoverServices" -> {
                 val deviceAddress = call.argument<String>("address")
                 if (deviceAddress != null) {
-                    bleConnectionHandler.discoverServices(deviceAddress)
+                    bleDeviceInterface.discoverServices(deviceAddress)
                     result.success(null)
                 } else {
                     result.error("INVALID_ARGUMENT", "Device address cannot be null.", null)
@@ -117,7 +114,7 @@ class FlutterBlePlugin : FlutterPlugin, MethodCallHandler {
             "disconnect" -> {
                 val deviceAddress = call.argument<String>("address")
                 if (deviceAddress != null) {
-                    bleConnectionHandler.disconnect(deviceAddress)
+                    bleDeviceInterface.disconnect(deviceAddress)
                     result.success(null)
                 } else {
                     result.error("INVALID_ARGUMENT", "Device address cannot be null.", null)
@@ -128,7 +125,7 @@ class FlutterBlePlugin : FlutterPlugin, MethodCallHandler {
                 val deviceAddress = call.argument<String>("address")
                 if (deviceAddress != null) {
                     val connectionState =
-                        bleConnectionHandler.getCurrentConnectionState(deviceAddress).lowercase()
+                        bleDeviceInterface.getCurrentConnectionState(deviceAddress).lowercase()
                     result.success(connectionState)
                 } else {
                     result.error("INVALID_ARGUMENT", "Device address cannot be null.", null)
@@ -187,6 +184,66 @@ class FlutterBlePlugin : FlutterPlugin, MethodCallHandler {
                         result.error(
                             "WRITE_ERROR",
                             "Failed to read characteristic: ${e.message}",
+                            null
+                        )
+                    }
+                } else {
+                    result.error(
+                        "INVALID_ARGUMENT",
+                        "Characteristic read error: device address or characteristic UUID cannot be null.",
+                        null
+                    )
+                }
+            }
+
+            "subscribeToCharacteristic" -> {
+                val deviceAddress = call.argument<String>("address")
+                val characteristicUuidStr = call.argument<String>("characteristicUuid")
+
+                if (deviceAddress != null && characteristicUuidStr != null) {
+                    val characteristicUuid = UUID.fromString(characteristicUuidStr)
+                    try {
+                        // The actual implementation logic for subscribing to the characteristic
+                        bleDeviceInterface.subscribeToCharacteristic(
+                            deviceAddress,
+                            characteristicUuid,
+                            true
+                        )
+                        result.success(null)
+                    } catch (e: Exception) {
+                        result.error(
+                            "SUBSCRIBE_ERROR",
+                            "Failed to subscribe to characteristic: ${e.message}",
+                            null
+                        )
+                    }
+                } else {
+                    result.error(
+                        "INVALID_ARGUMENT",
+                        "Characteristic subscription error: device address or characteristic UUID cannot be null.",
+                        null
+                    )
+                }
+            }
+
+            "unsubscribeFromCharacteristic" -> {
+                val deviceAddress = call.argument<String>("address")
+                val characteristicUuidStr = call.argument<String>("characteristicUuid")
+
+                if (deviceAddress != null && characteristicUuidStr != null) {
+                    val characteristicUuid = UUID.fromString(characteristicUuidStr)
+                    try {
+                        // The actual implementation logic for subscribing to the characteristic
+                        bleDeviceInterface.subscribeToCharacteristic(
+                            deviceAddress,
+                            characteristicUuid,
+                            false
+                        )
+                        result.success(null)
+                    } catch (e: Exception) {
+                        result.error(
+                            "SUBSCRIBE_ERROR",
+                            "Failed to unsubscribe from characteristic: ${e.message}",
                             null
                         )
                     }

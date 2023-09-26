@@ -68,11 +68,15 @@ class BleCharacteristicValue {
   /// final charValue = BleCharacteristicValue.fromMap(mapData);
   /// print(charValue.characteristicUuid);  // prints 'some-uuid'
   /// ```
-  factory BleCharacteristicValue.fromMap(Map<String, dynamic> map) {
-    return BleCharacteristicValue(
-      characteristicUuid: map['characteristicUuid'],
-      deviceAddress: map['deviceAddress'],
-      value: List<int>.from(map['value']),
-    );
+  factory BleCharacteristicValue.fromMap(Map<dynamic, dynamic> map) {
+    try {
+      return BleCharacteristicValue(
+        characteristicUuid: map['characteristicUuid'] as String,
+        deviceAddress: map['deviceAddress'] as String,
+        value: (map['value'] as List).map((e) => e as int).toList(),
+      );
+    } catch (e) {
+      throw FormatException('Failed to construct BleCharacteristicValue from Map, $map, with exception, $e');
+    }
   }
 }

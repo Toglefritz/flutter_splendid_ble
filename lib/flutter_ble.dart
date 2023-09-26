@@ -3,7 +3,6 @@ import 'package:flutter_ble/models/scan_filter.dart';
 import 'package:flutter_ble/models/scan_settings.dart';
 
 import 'flutter_ble_platform_interface.dart';
-import 'models/ble_characteristic_value.dart';
 import 'models/ble_connection_state.dart';
 import 'models/ble_service.dart';
 import 'models/bluetooth_status.dart';
@@ -39,19 +38,5 @@ class FlutterBle {
 
   Future<BleConnectionState> getCurrentConnectionState(String deviceAddress) {
     return FlutterBlePlatform.instance.getCurrentConnectionState(deviceAddress);
-  }
-
-  Future<void> writeCharacteristic({
-    required String address,
-    required String characteristicUuid,
-    required String value,
-    int? writeType,
-  }) async {
-    return FlutterBlePlatform.instance.writeCharacteristic(
-      address: address,
-      characteristicUuid: characteristicUuid,
-      value: value,
-      writeType: writeType,
-    );
   }
 }
