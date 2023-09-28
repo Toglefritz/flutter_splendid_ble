@@ -12,6 +12,7 @@ import io.flutter.plugin.common.EventChannel
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
+import io.flutter.plugin.common.MethodChannel.Result
 import java.util.UUID
 
 /** FlutterBlePlugin */
@@ -64,7 +65,7 @@ class FlutterBlePlugin : FlutterPlugin, MethodCallHandler {
         bleDeviceInterface = BleDeviceInterface(channel, flutterPluginBinding.applicationContext)
     }
 
-    @RequiresApi(Build.VERSION_CODES.O)
+    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onMethodCall(call: MethodCall, result: Result) {
         when (call.method) {
             "checkBluetoothAdapterStatus" -> {
