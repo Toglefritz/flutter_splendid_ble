@@ -1,4 +1,5 @@
 # Flutter Bluetooth Low Energy (BLE) Plugin
+## *flutter_ble*
 
 <p align="center">
 <image src="./assets/flutter_ble_logo.png" alt="flutter_ble plugin logo" width="200"></image></p>
