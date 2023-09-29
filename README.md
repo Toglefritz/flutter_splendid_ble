@@ -1,5 +1,4 @@
-# Flutter Bluetooth Low Energy (BLE) Plugin
-## *flutter_ble*
+# FlutterBLE: Flutter Bluetooth Low Energy (BLE) Plugin
 
 <p align="center">
 <image src="./assets/flutter_ble_logo.png" alt="flutter_ble plugin logo" width="200"></image></p>
@@ -77,7 +76,7 @@ Flutter application.
 
 ## Feedback and Contributions:
 
-Contributions, suggestions, and feedback are all welcome and very much appriciated. Please open an issue or submit a pull request
+Contributions, suggestions, and feedback are all welcome and very much appreciated. Please open an issue or submit a pull request
 on the GitHub repository.
 
 ## License:
