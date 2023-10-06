@@ -94,6 +94,8 @@ class BleCharacteristic {
 
     if (T == String) {
       return utf8.decode(characteristicValue.value) as T;
+    } else if (T == BleCharacteristicValue) {
+      return characteristicValue as T;
     } else if (T == List<int>) {
       return characteristicValue.value as T;
     } else {

@@ -1,14 +1,15 @@
+import 'dart:convert';
+
 /// Represents the value of a Bluetooth characteristic.
 ///
-/// This class encapsulates the value of a specific Bluetooth characteristic
-/// fetched from a connected device. The value is typically a list of integers,
-/// representing bytes of data from the characteristic.
+/// This class encapsulates the value of a specific Bluetooth characteristic fetched from a connected device. The
+/// value is typically a list of integers, representing bytes of data from the characteristic.
 ///
-/// Along with the value, the class provides details about the characteristic's
-/// UUID and the Bluetooth device's address from which the value was read.
+/// Along with the value, the class provides details about the characteristic's UUID and the Bluetooth device's
+/// address from which the value was read.
 ///
-/// Instances of this class can be used to easily manage, display, or process
-/// the characteristic values in your application.
+/// Instances of this class can be used to easily manage, display, or process the characteristic values in your
+/// application.
 ///
 /// Example:
 /// ```dart
@@ -20,40 +21,40 @@
 class BleCharacteristicValue {
   /// The UUID of the Bluetooth characteristic.
   ///
-  /// This UUID uniquely identifies the characteristic from which the value
-  /// has been read. It can be used to differentiate values if you're working
-  /// with multiple characteristics.
+  /// This UUID uniquely identifies the characteristic from which the value has been read. It can be used to
+  /// differentiate values if you're working with multiple characteristics.
   final String characteristicUuid;
 
   /// The MAC address of the Bluetooth device.
   ///
-  /// This address uniquely identifies the Bluetooth device from which the
-  /// value was read. This is especially useful if your application is
-  /// communicating with multiple devices simultaneously.
+  /// This address uniquely identifies the Bluetooth device from which the value was read. This is especially
+  /// useful if your application is communicating with multiple devices simultaneously.
   final String deviceAddress;
 
   /// The actual value of the characteristic.
   ///
-  /// This is a list of integers, where each integer represents a byte of data
-  /// from the characteristic. The structure and meaning of this data is
-  /// typically defined by the Bluetooth service specification to which the
-  /// characteristic belongs.
+  /// This is a list of integers, where each integer represents a byte of data rom the characteristic. The structure
+  /// and meaning of this data is typically defined by the Bluetooth service specification to which the characteristic
+  /// belongs.
   final List<int> value;
+
+  /// Returns the [value] converted into a String by treating the `List<int>` as a UTF-8 encoded string. This string
+  /// value may, depending upon your application and the firmware running on the Bluetooth device, be further
+  /// deserialized as a JSON or Protobuf object.
+  String get valueString => utf8.decode(value);
 
   /// Constructs a new instance of [BleCharacteristicValue].
   ///
-  /// Requires the [characteristicUuid], [deviceAddress], and [value] to
-  /// initialize the instance. Each of these parameters should be fetched
-  /// from the connected Bluetooth device when reading the characteristic.
+  /// Requires the [characteristicUuid], [deviceAddress], and [value] to initialize the instance. Each of these
+  /// parameters should be fetched from the connected Bluetooth device when reading the characteristic.
   BleCharacteristicValue({
     required this.characteristicUuid,
     required this.deviceAddress,
     required this.value,
   });
 
-  /// Factory constructor that creates an instance of [BleCharacteristicValue]
-  /// from a map. This is typically used to convert data coming from the
-  /// platform side using methods provided by the *flutter_ble* plugin.
+  /// Factory constructor that creates an instance of [BleCharacteristicValue] from a map. This is typically used to
+  /// convert data coming from the platform side using methods provided by the *flutter_ble* plugin.
   ///
   /// The map is expected to have the keys 'characteristicUuid', 'deviceAddress',
   /// and 'value'.

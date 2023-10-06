@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_ble/models/ble_characteristic.dart';
-import 'package:flutter_ble/models/ble_characteristic_property.dart';
 import 'package:flutter_ble/models/ble_service.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+
+import 'characteristic_info.dart';
 
 /// Contains a list of Bluetooth GATT services discovered from a Bluetooth device, each of which is presented in a
 /// [ExpansionTile] that can be opened to view a list of Bluetooth characteristics under each service.
@@ -18,35 +18,6 @@ class ServicesInfo extends StatelessWidget {
 
   /// A callback invoked when a characteristic is tapped.
   final Function characteristicOnTap;
-
-  /// Converts a list of Bluetooth characteristic properties into a string format that is easier to read in the UI.
-  String _getPropertiesLabel(List<BleCharacteristicProperty> properties) {
-    return properties
-        .toString()
-        .replaceAll('BleCharacteristicProperty.', '')
-        .replaceAll('[', '')
-        .replaceAll(']', '')
-        .toUpperCase();
-  }
-
-  /// Reads the value of the provided Bluetooth characteristic and returns the value as a String.
-  ///
-  /// If reading the characteristic value is successful, this function returns the characteristic value as a String.
-  /// However, if reading the characteristic is unsuccessful (the process throws an exception), this function
-  /// returns the string "-" to indicate in the UI that the characteristic does not currently have a value.
-  Future<String> _readCharacteristicValue(BleCharacteristic characteristic) async {
-    String? value;
-
-    try {
-      value = await characteristic.readValue<String>();
-
-      return value;
-    } catch (e) {
-      debugPrint('Failed to read characteristic value with exception, $e');
-
-      return '-';
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -108,42 +79,11 @@ class ServicesInfo extends StatelessWidget {
                         iconColor: Theme.of(context).primaryColor,
                         children: List.generate(
                           services[index].characteristics.length,
-                          (i) => InkWell(
-                            onTap: () => characteristicOnTap(services[index].characteristics[i]),
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 32.0),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        'UUID: ${services[index].characteristics[i].uuid}',
-                                        style: Theme.of(context).textTheme.labelMedium,
-                                      ),
-                                      Text(
-                                        'Properties: ${_getPropertiesLabel(services[index].characteristics[i].properties)}',
-                                        style: Theme.of(context).textTheme.labelSmall,
-                                      ),
-                                      FutureBuilder(
-                                        future: _readCharacteristicValue(services[index].characteristics[i]),
-                                        builder: (BuildContext context, AsyncSnapshot<String> valueSnapshot) {
-                                          if (valueSnapshot.hasData) {
-                                            return Text(
-                                              'Value: ${valueSnapshot.data}',
-                                              style: Theme.of(context).textTheme.labelSmall,
-                                            );
-                                          } else {
-                                            return const SizedBox.shrink();
-                                          }
-                                        },
-                                      ),
-                                    ],
-                                  ),
-                                  const Icon(Icons.arrow_right),
-                                ],
-                              ),
+                          (i) => Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 32.0),
+                            child: CharacteristicInfo(
+                              characteristic: services[index].characteristics[i],
+                              characteristicOnTap: characteristicOnTap,
                             ),
                           ),
                         ),

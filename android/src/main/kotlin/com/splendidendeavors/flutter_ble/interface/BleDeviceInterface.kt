@@ -12,6 +12,7 @@ import android.os.Handler
 import android.os.Looper
 import androidx.annotation.RequiresApi
 import io.flutter.plugin.common.MethodChannel
+import java.lang.Exception
 import java.util.UUID
 
 /**
@@ -375,7 +376,6 @@ class BleDeviceInterface(
      * @return The data read from the characteristic as a list of integers.
      */
     fun readCharacteristic(deviceAddress: String, characteristicUuid: UUID) {
-        //val gatt = bleConnectionHandler.getBluetoothGatt(deviceAddress)
         val gatt = getBluetoothGatt(deviceAddress)
         if (gatt == null) {
             channel.invokeMethod(
@@ -397,6 +397,11 @@ class BleDeviceInterface(
                 channel.invokeMethod(
                     "error",
                     "Required Bluetooth permissions are missing: ${e.message}"
+                )
+            } catch (e: Exception) {
+                channel.invokeMethod(
+                    "error",
+                    "Failed to read characteristic, ${characteristicUuid}: ${e.message}"
                 )
             }
         } else {
@@ -421,7 +426,6 @@ class BleDeviceInterface(
         status: Int
     ) {
         super.onCharacteristicRead(gatt, characteristic, value, status)
-
 
         if (status == BluetoothGatt.GATT_SUCCESS) {
             val valueList = value.map { byte -> byte.toInt() }

@@ -34,7 +34,7 @@ class DeviceDetailsController extends State<DeviceDetailsRoute> {
 
   bool get discoveringServices => _discoveringServices;
 
-  /// A [StreamController]
+  /// A [StreamController] used to listen for updates during the BLE service discovery process.
   StreamSubscription? _servicesDiscoveredStream;
 
   /// A list of Bluetooth service information that includes a list of characteristics under each service.
@@ -129,7 +129,7 @@ class DeviceDetailsController extends State<DeviceDetailsRoute> {
   /// for values to be written to or read from the selected Bluetooth characteristic, depending upon the
   /// properties of that characteristic.
   Future<void> characteristicOnTap(BleCharacteristic characteristic) async {
-    await Navigator.push<void>(
+    await Navigator.push(
       context,
       MaterialPageRoute<void>(
         builder: (BuildContext context) => CharacteristicInteractionRoute(
@@ -139,7 +139,9 @@ class DeviceDetailsController extends State<DeviceDetailsRoute> {
       ),
     );
 
-    setState(() {});
+    setState(() {
+      // No-op
+    });
   }
 
   @override
