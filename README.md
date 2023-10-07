@@ -42,7 +42,7 @@ process, writing to their characteristics, and disconnecting from them, among ot
 
 ## Installation
 
-Add the following line to your `pubspec.yaml`:
+First, add the following line to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
@@ -55,6 +55,12 @@ Then run:
 flutter pub get
 ```
 
+In the files in which you wish to use the plugin, import it by adding:
+
+```dart
+import 'package:flutter_ble/flutter_ble.dart';
+```
+
 ## Usage
 
 ### Initialize the plugin:
@@ -62,7 +68,7 @@ flutter pub get
 ```dart
 import 'package:flutter_ble_plugin/flutter_ble_plugin.dart';
 
-final ble = FlutterBlePlugin();
+final FlutterBlePlugin ble = FlutterBlePlugin();
 ```
 
 <*other details coming soon*>

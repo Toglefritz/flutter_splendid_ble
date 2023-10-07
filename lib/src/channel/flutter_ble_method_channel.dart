@@ -11,22 +11,30 @@ import '../../models/bluetooth_status.dart';
 import '../../models/scan_filter.dart';
 import '../../models/scan_settings.dart';
 
-/// An implementation of [FlutterBlePlatform] that uses method channels.
+/// An implementation of [FlutterBlePlatform] that uses method channels allowing the Dart code in a Flutter app
+/// to utilize platform specific functionality and APIs. In this case, the systems allowing Android applications
+/// to perform operations on the devices' Bluetooth radios are accessible via APIs that are part of the Android
+/// operating system.
 class MethodChannelFlutterBle extends FlutterBlePlatform {
   /// The method channel used to interact with the native platform.
   final MethodChannel _channel = const MethodChannel('flutter_ble');
 
   /// Checks the status of the Bluetooth adapter on the device.
   ///
-  /// This method communicates with the native Android code to obtain the current status of the
-  /// Bluetooth adapter, and returns one of the values from the [BluetoothStatus] enumeration.
+  /// This method communicates with the native Android code to obtain the current status of the Bluetooth adapter,
+  /// and returns one of the values from the [BluetoothStatus] enumeration.
   ///
   /// * [BluetoothStatus.ENABLED]: Bluetooth is enabled and ready for connections.
   /// * [BluetoothStatus.DISABLED]: Bluetooth is disabled and not available for use.
   /// * [BluetoothStatus.NOT_AVAILABLE]: Bluetooth is not available on the device.
   ///
-  /// Returns a Future containing the [BluetoothStatus] representing the current status of the
-  /// Bluetooth adapter on the device.
+  /// Returns a Future containing the [BluetoothStatus] representing the current status of the Bluetooth adapter on
+  /// the device.
+  ///
+  /// It can be useful to check on the status of the Bluetooth adapter prior to attempting Bluetooth operations as
+  /// a way of improving the user experience. Checking on the state of the Bluetooth adapter allows the user to be
+  /// notified and prompted for action if they attempt to use an applications for which Bluetooth plays a critical
+  /// role while the Bluetooth capabilities of the host device are disabled.
   @override
   Future<BluetoothStatus> checkBluetoothAdapterStatus() async {
     final String statusString = await _channel.invokeMethod('checkBluetoothAdapterStatus');
@@ -71,9 +79,19 @@ class MethodChannelFlutterBle extends FlutterBlePlatform {
     return streamController.stream;
   }
 
-  /// Starts a scan for nearby BLE devices.
+  /// Starts a scan for nearby Bluetooth Low Energy (BLE) devices and returns a stream of discovered devices.
   ///
-  /// Returns a stream of [BleDevice] objects representing each discovered device.
+  /// Scanning for BLE devices is a crucial step in establishing a BLE connection. It allows the mobile app to
+  /// discover nearby BLE devices and gather essential information like device name, MAC address, and more. This
+  /// method starts the scanning operation on the platform side and listens for discovered devices.
+  ///
+  /// The function takes optional `filters` and `settings` parameters that allow for more targeted device scanning.
+  /// For example, you could specify a filter to only discover devices that are advertising a specific service.
+  /// Similarly, `settings` allows you to adjust aspects like scan mode, report delay, and more.
+  ///
+  /// The method uses a [StreamController] to handle the asynchronous nature of BLE scanning. Every time a device is
+  /// discovered by the native platform, the 'bleDeviceScanned' method is invoked, and the device information is
+  /// parsed and added to the stream.
   @override
   Stream<BleDevice> startScan({List<ScanFilter>? filters, ScanSettings? settings}) {
     StreamController<BleDevice> streamController = StreamController<BleDevice>.broadcast();
@@ -138,11 +156,25 @@ class MethodChannelFlutterBle extends FlutterBlePlatform {
     return connectionStateStreamController.stream;
   }
 
-  /// Triggers the service discovery process and returns a [Stream] of discovered services.
+  /// Initiates the service discovery process for a connected Bluetooth Low Energy (BLE) device and returns a
+  /// [Stream] of discovered services and their characteristics.
   ///
-  /// Returns a [Stream] of [List<BleService>] where each individual element in this list, each individual [BleService]
-  /// instance, is a service of the Bluetooth peripheral, that emits whenever services and characteristics
-  /// are discovered on a connected Bluetooth peripheral.
+  /// The service discovery process is a crucial step after establishing a BLE connection. It involves querying the
+  /// connected peripheral to enumerate the services it offers along with their associated characteristics and
+  /// descriptors. These services can represent various functionalities provided by the device, such as heart rate
+  /// monitoring, temperature sensing, etc.
+  ///
+  /// The method uses a [StreamController] to handle the asynchronous nature of service discovery. The native
+  /// platform code Android sends updates when new services and characteristics are discovered, which are then parsed
+  /// and added to the stream.
+  ///
+  /// ## How Service Discovery Works
+  ///
+  /// 1. After connecting to a BLE device, you invoke the `discoverServices()` method, passing in the device address.
+  /// 2. The native code kicks off the service discovery process.
+  /// 3. As services and their characteristics are discovered, they are sent back to the Flutter app.
+  /// 4. These updates are received in the `_handleBleServicesDiscovered` method (not shown here), which then
+  ///    notifies all listeners to the stream.
   @override
   Stream<List<BleService>> discoverServices(String deviceAddress) {
     final StreamController<List<BleService>> servicesDiscoveredController =
@@ -209,7 +241,17 @@ class MethodChannelFlutterBle extends FlutterBlePlatform {
     });
   }
 
-  /// Terminates the connection between the host mobile device and a BLE peripheral.
+  /// Asynchronously terminates the connection between the host mobile device and a Bluetooth Low Energy (BLE) peripheral.
+  ///
+  /// Disconnecting from a BLE device is an important part of BLE best practices. Proper disconnection ensures
+  /// that resources like memory and battery are optimized on both the mobile device and the peripheral.
+  ///
+  /// ## Importance of Disconnecting
+  ///
+  /// 1. **Resource Management**: BLE connections occupy system resources. Failing to disconnect can lead to resource leakage.
+  /// 2. **Battery Optimization**: BLE connections consume battery power on both connecting and connected devices. Timely disconnection helps in prolonging battery life.
+  /// 3. **Security**: Maintaining an open connection can expose the devices to potential security risks.
+  /// 4. **Connection Limits**: BLE peripherals often have a limit on the number of concurrent connections. Disconnecting when done ensures that other devices can connect.
   @override
   Future<void> disconnect(String deviceAddress) async {
     _channel.invokeMethod('disconnect', {'address': deviceAddress});
@@ -236,11 +278,30 @@ class MethodChannelFlutterBle extends FlutterBlePlatform {
     return BleConnectionState.values.firstWhere((e) => e.identifier == connectionStateString);
   }
 
-  /// Writes data to a specified characteristic.
+  /// Asynchronously writes data to a specified Bluetooth Low Energy (BLE) characteristic.
   ///
-  /// [characteristic] - The Bluetooth characteristic to which the method will write.
-  /// [value] - The string value to be written.
-  /// [writeType] - Optional write type, defaulting to `BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT`.
+  /// ## BLE Communication Overview
+  ///
+  /// In the BLE protocol, devices communicate by reading and writing to 'characteristics' exposed by each other's
+  /// services. Characteristics are essentially data variables that a peripheral device exposes to other devices.
+  /// When writing data to a characteristic, the information is generally treated as a list of hexadecimal numbers,
+  /// mapping to bytes at a relatively low level in the Bluetooth communication stack.
+  ///
+  /// ## Encrypted Write Operations
+  ///
+  /// If the target characteristic has encrypted write permissions, the Android operating system should automatically
+  /// prompt the user to complete a pairing request with the BLE device. Pairing is a prerequisite to encrypted
+  /// communication and enhances the security of the data exchange.
+  ///
+  /// ## Parameters
+  ///
+  /// - [characteristic]: The BLE characteristic to which the data will be written. This should include both the device
+  ///   address and the UUID of the characteristic.
+  /// - [value]: The data to be written to the characteristic, generally a string that will be converted into
+  ///   bytes/hexadecimals.
+  /// - [writeType]: Optional parameter to specify the type of write operation. Defaults to
+  ///   `BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT`. Different write types have different transmission and
+  ///   confirmation behaviors.
   @override
   Future<void> writeCharacteristic({
     required BleCharacteristic characteristic,
@@ -261,33 +322,27 @@ class MethodChannelFlutterBle extends FlutterBlePlatform {
 
   /// Reads the value of a specified Bluetooth characteristic.
   ///
-  /// This method asynchronously fetches the value of a specified
-  /// Bluetooth characteristic from a connected device and returns it as a
-  /// [BleCharacteristicValue] instance.
+  /// This method asynchronously fetches the value of a specified Bluetooth characteristic from a connected device
+  /// and returns it as a [BleCharacteristicValue] instance.
   ///
-  /// The method will throw a [TimeoutException] if it does not receive a response
-  /// within the specified [timeout]. This safeguards against situations where the
-  /// asynchronous operation hangs indefinitely.
+  /// The method will throw a [TimeoutException] if it does not receive a response within the specified [timeout].
+  /// This safeguards against situations where the asynchronous operation hangs indefinitely.
   ///
-  /// Note: A [TimeoutException] does not necessarily indicate a failure in reading the
-  /// characteristic, but rather that a response was not received in the given timeframe.
-  /// Ensure that the timeout value is appropriate for the expected device response times
-  /// and consider retrying the operation if necessary.
+  /// Note: A [TimeoutException] does not necessarily indicate a failure in reading the characteristic, but rather
+  /// that a response was not received in the given timeframe. Ensure that the timeout value is appropriate for the
+  /// expected device response times and consider retrying the operation if necessary.
   ///
   /// - [address]: The MAC address of the Bluetooth device. This uniquely identifies
   ///   the device and is used to fetch the associated BluetoothGatt instance.
-  ///
   /// - [characteristicUuid]: The UUID of the characteristic whose value is to be read.
   ///   This UUID should match one of the characteristics available on the connected
   ///   Bluetooth device.
-  ///
   /// - [timeout]: The maximum amount of time this function will wait for a response from
   ///   the platform side. If this duration is exceeded without receiving a response,
   ///   a [TimeoutException] will be thrown. Ensure that this duration accounts for
   ///   potential delays in device communication.
   ///
-  /// Returns a `Future<BleCharacteristicValue>` that completes with the characteristic value
-  /// once it has been read.
+  /// Returns a `Future<BleCharacteristicValue>` that completes with the characteristic value once it has been read.
   ///
   /// Example usage:
   /// ```dart

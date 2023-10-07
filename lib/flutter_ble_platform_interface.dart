@@ -10,6 +10,8 @@ import 'models/ble_service.dart';
 import 'models/bluetooth_status.dart';
 import 'src/channel/flutter_ble_method_channel.dart';
 
+/// This abstract class defines methods made available by the *flutter_ble* plugin. The concrete implementations
+/// of these methods can be found in */src/channel/flutter_ble_method_channel.dart*.
 abstract class FlutterBlePlatform extends PlatformInterface {
   /// Constructs a FlutterBlePlatform.
   FlutterBlePlatform() : super(token: _token);
