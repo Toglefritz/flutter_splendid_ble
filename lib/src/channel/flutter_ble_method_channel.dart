@@ -99,8 +99,12 @@ class MethodChannelFlutterBle extends FlutterBlePlatform {
     // Listen to the platform side for scanned devices.
     _channel.setMethodCallHandler((MethodCall call) async {
       if (call.method == 'bleDeviceScanned') {
-        BleDevice device = BleDevice.fromMap(call.arguments);
-        streamController.add(device);
+        try {
+          BleDevice device = BleDevice.fromMap(call.arguments);
+          streamController.add(device);
+        } catch (e) {
+          throw FormatException('Failed to parse discovered device info with exception, $e');
+        }
       }
     });
 
@@ -216,17 +220,22 @@ class MethodChannelFlutterBle extends FlutterBlePlatform {
               if (entry.key is String && entry.value is List) {
                 List<Map> rawCharacteristics = List<Map>.from(entry.value);
 
-                // Convert the raw characteristic maps to BleCharacteristic objects.
-                List<BleCharacteristic> characteristics = rawCharacteristics.map((charMap) {
-                  // Manually convert the map to the desired type
-                  Map<String, dynamic> typedMap = Map.from(charMap).map((key, value) => MapEntry(key as String, value));
-                  return BleCharacteristic.fromMap(typedMap);
-                }).toList();
+                try {
+                  // Convert the raw characteristic maps to BleCharacteristic objects.
+                  List<BleCharacteristic> characteristics = rawCharacteristics.map((charMap) {
+                    // Manually convert the map to the desired type
+                    Map<String, dynamic> typedMap =
+                        Map.from(charMap).map((key, value) => MapEntry(key as String, value));
+                    return BleCharacteristic.fromMap(typedMap);
+                  }).toList();
 
-                return BleService(
-                  serviceUuid: entry.key as String,
-                  characteristics: characteristics,
-                );
+                  return BleService(
+                    serviceUuid: entry.key as String,
+                    characteristics: characteristics,
+                  );
+                } catch (e) {
+                  throw FormatException('Failed to get BleCharacteristic instance with exception, $e');
+                }
               } else {
                 // Return a null BleService to be filtered out later.
                 return null;
