@@ -25,3 +25,5 @@ flutter:
         pluginClass: FlutterBlePlugin
       ios:
         pluginClass: FlutterBlePlugin
+      macos:
+        pluginClass: FlutterBlePlugin
