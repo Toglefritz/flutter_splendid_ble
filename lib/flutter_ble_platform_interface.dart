@@ -7,6 +7,7 @@ import 'models/ble_characteristic.dart';
 import 'models/ble_characteristic_value.dart';
 import 'models/ble_connection_state.dart';
 import 'models/ble_service.dart';
+import 'models/bluetooth_permission_status.dart';
 import 'models/bluetooth_status.dart';
 import 'src/channel/flutter_ble_method_channel.dart';
 
@@ -107,5 +108,15 @@ abstract class FlutterBlePlatform extends PlatformInterface {
   /// Unsubscribes from a Bluetooth characteristic.
   void unsubscribeFromCharacteristic(BleCharacteristic characteristic) {
     throw UnimplementedError('unsubscribeFromCharacteristic() has not been implemented.');
+  }
+
+  /// Requests Bluetooth permissions from the user.
+  Future<BluetoothPermissionStatus> requestBluetoothPermissions() async {
+    throw UnimplementedError('requestBluetoothPermissions() has not been implemented.');
+  }
+
+  /// Emits the current Bluetooth permission status whenever it changes.
+  Stream<BluetoothPermissionStatus> emitCurrentPermissionStatus() {
+    throw UnimplementedError('emitCurrentPermissionStatus() has not been implemented.');
   }
 }

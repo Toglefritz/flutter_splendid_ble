@@ -1,3 +1,26 @@
-## 0.1.0
+# Changelog
 
-* TODO: Describe initial release.
+All notable changes to the `flutter_ble` plugin will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+## [0.1.0] - 2023-10-07
+
+### Added
+
+- Initial support for Bluetooth operations on Android:
+    - Bluetooth status checking.
+    - Emitting current Bluetooth status.
+    - Bluetooth device scanning.
+    - Bluetooth device connection handling.
+    - Bluetooth service and characteristic discovery and subscription.
+    - Reading from Bluetooth characteristics.
+    - Writing to Bluetooth characteristics.
+    - Terminating a connection to a BLE device.
+- Android example application to demonstrate basic usage.
+- Comprehensive documentation for Android functionality.
+- Kotlin-based implementation for Android platforms.
+

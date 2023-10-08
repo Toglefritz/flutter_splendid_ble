@@ -7,6 +7,7 @@ import '../../models/ble_characteristic_value.dart';
 import '../../models/ble_connection_state.dart';
 import '../../models/ble_device.dart';
 import '../../models/ble_service.dart';
+import '../../models/bluetooth_permission_status.dart';
 import '../../models/bluetooth_status.dart';
 import '../../models/scan_filter.dart';
 import '../../models/scan_settings.dart';
@@ -443,5 +444,54 @@ class MethodChannelFlutterBle extends FlutterBlePlatform {
       'address': characteristic.address,
       'characteristicUuid': characteristic.uuid,
     });
+  }
+
+  /// Requests Bluetooth permissions from the user.
+  ///
+  /// This method communicates with the native platform code to request Bluetooth permissions.
+  /// It returns one of the values from the [BluetoothPermissionStatus] enumeration.
+  ///
+  /// * [BluetoothPermissionStatus.GRANTED]: Permission is granted.
+  /// * [BluetoothPermissionStatus.DENIED]: Permission is denied.
+  ///
+  /// Returns a [Future] containing the [BluetoothPermissionStatus] representing whether permission was granted or not.
+  @override
+  Future<BluetoothPermissionStatus> requestBluetoothPermissions() async {
+    final String permissionStatusString = await _channel.invokeMethod('requestBluetoothPermissions');
+    return BluetoothPermissionStatus.values.firstWhere((status) => status.identifier == permissionStatusString);
+  }
+
+  /// Emits the current Bluetooth permission status to the Dart side.
+  ///
+  /// This method communicates with the native platform code to obtain the current Bluetooth permission status and emits it to any listeners on the Dart side.
+  ///
+  /// Listeners on the Dart side will receive one of the following enum values from [BluetoothPermissionStatus]:
+  ///
+  /// * [BluetoothPermissionStatus.GRANTED]: Indicates that Bluetooth permission is granted.
+  /// * [BluetoothPermissionStatus.DENIED]: Indicates that Bluetooth permission is denied.
+  ///
+  /// Returns a [Stream] of [BluetoothPermissionStatus] values representing the current Bluetooth permission status on the device.
+  @override
+  Stream<BluetoothPermissionStatus> emitCurrentPermissionStatus() {
+    final StreamController<BluetoothPermissionStatus> streamController =
+        StreamController<BluetoothPermissionStatus>.broadcast();
+
+    _channel.setMethodCallHandler((MethodCall call) async {
+      if (call.method == 'permissionStatusUpdated') {
+        final String permissionStatusString = call.arguments as String;
+
+        // Convert the string status to its corresponding enum value
+        final BluetoothPermissionStatus status = BluetoothPermissionStatus.values.firstWhere(
+          (status) => status.identifier == permissionStatusString,
+        );
+
+        streamController.add(status);
+      }
+    });
+
+    // Begin emitting Bluetooth permission status updates from the platform side.
+    _channel.invokeMethod('emitCurrentPermissionStatus');
+
+    return streamController.stream;
   }
 }

@@ -83,7 +83,7 @@
   "@notAvailable": {
     "description": "An error message indicating that Bluetooth is not available on the host device"
   },
-  "permissionsError": "The request for Bluetooth and location permissions was denied. Without those permissions, none of this will work.",
+  "permissionsError": "The request for Bluetooth permissions was denied. Without those permissions, none of this will work.",
   "@permissionsError": {
     "description": "An error message to indicate that permissions have not been granted"
   },

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_ble/flutter_ble.dart';
+import 'package:flutter_ble/models/bluetooth_permission_status.dart';
 import 'package:flutter_ble/models/bluetooth_status.dart';
 import 'package:flutter_ble_example/screens/scan/scan_route.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -35,6 +36,8 @@ class StartScanController extends State<StartScanRoute> {
   void initState() {
     if (Platform.isAndroid) {
       _requestAndroidPermissions();
+    } else if (Platform.isMacOS || Platform.isIOS) {
+      _requestApplePermissions();
     }
 
     super.initState();
@@ -61,8 +64,9 @@ class StartScanController extends State<StartScanRoute> {
       });
 
       _showPermissionsErrorSnackBar();
-    } else if (locationPermissionStatus.isDenied) {
-      // If permission is denied, show a SnackBar with a relevant message
+    }
+    // If permission is denied, show a SnackBar with a relevant message
+    else if (locationPermissionStatus.isDenied) {
       debugPrint('Location permissions denied.');
 
       setState(() {
@@ -70,8 +74,41 @@ class StartScanController extends State<StartScanRoute> {
       });
 
       _showPermissionsErrorSnackBar();
-    } else {
-      // If permissions were granted, we go on our merry way
+    }
+    // If permissions were granted, we go on our merry way
+    else {
+      debugPrint('Bluetooth and location permissions granted.');
+
+      setState(() {
+        _permissionsGranted = true;
+      });
+
+      // Check the adapter status
+      _checkAdapterStatus();
+    }
+  }
+
+  /// Requests Bluetooth permissions.
+  ///
+  /// The user will be prompted to allow the app to use various Bluetooth features of their mobile device. These
+  /// permissions must be granted for the app to function since its whole deal is doing Bluetooth stuff.
+  Future<void> _requestApplePermissions() async {
+    // Request the Bluetooth Scan permission
+    BluetoothPermissionStatus bluetoothPermissionStatus = await _ble.requestBluetoothPermissions();
+
+    // Check if permission has been granted or not
+    if (bluetoothPermissionStatus != BluetoothPermissionStatus.granted) {
+      // If permission is denied, show a SnackBar with a relevant message
+      debugPrint('Bluetooth permissions denied or are unknown.');
+
+      setState(() {
+        _permissionsGranted = false;
+      });
+
+      _showPermissionsErrorSnackBar();
+    }
+    // If permissions were granted, we go on our merry way
+    else {
       debugPrint('Bluetooth and location permissions granted.');
 
       setState(() {
@@ -89,11 +126,19 @@ class StartScanController extends State<StartScanRoute> {
   /// capabilities of the host device must be available. This method establishes a listener on the current state
   /// of the host device's Bluetooth adapter, which is represented by the enum, [BluetoothState].
   void _checkAdapterStatus() async {
-    _bluetoothStatusStream = _ble.emitCurrentBluetoothStatus().listen((status) {
-      setState(() {
-        _bluetoothStatus = status;
+    try {
+      _bluetoothStatusStream = _ble.emitCurrentBluetoothStatus().listen((status) {
+        setState(() {
+          _bluetoothStatus = status;
+        });
       });
-    });
+    } catch (e) {
+      debugPrint('Unable to get Bluetooth status with exception, $e');
+
+      setState(() {
+        _bluetoothStatus = BluetoothStatus.notAvailable;
+      });
+    }
   }
 
   /// Handles taps on the "start scan" button.
