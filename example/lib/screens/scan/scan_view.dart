@@ -28,53 +28,37 @@ class ScanView extends StatelessWidget {
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        child: Container(
-          constraints: BoxConstraints(
-            minHeight: MediaQuery.of(context).size.height,
-            minWidth: MediaQuery.of(context).size.width,
-          ),
-          child: Column(
-            mainAxisAlignment: state.discoveredDevices.isEmpty ? MainAxisAlignment.center : MainAxisAlignment.start,
-            children: [
-              if (state.discoveredDevices.isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 16.0),
-                  child: Text(
-                    AppLocalizations.of(context)!.discoveredDevices,
-                    style: Theme.of(context).textTheme.headlineMedium,
-                  ),
+      body: CustomScrollView(
+        slivers: [
+          if (state.discoveredDevices.isEmpty)
+            const SliverFillRemaining(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  LoadingIndicator(),
+                ],
+              ),
+            ),
+          if (state.discoveredDevices.isNotEmpty)
+            SliverList.list(
+              children: [
+                Text(
+                  AppLocalizations.of(context)!.discoveredDevices,
+                  style: Theme.of(context).textTheme.headlineMedium,
+                  textAlign: TextAlign.center,
                 ),
-              if (state.discoveredDevices.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.only(bottom: 80),
-                  child: LoadingIndicator(),
-                ),
-              if (state.discoveredDevices.isNotEmpty)
-                ListView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: state.discoveredDevices.length,
-                  itemBuilder: (BuildContext context, int index) {
-                    if (state.discoveredDevices[index].name != null) {
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8.0,
-                          vertical: 4.0,
-                        ),
-                        child: ScanResultTile(
+                ...List.generate(
+                  state.discoveredDevices.length,
+                  (index) => state.discoveredDevices[index].name != null
+                      ? ScanResultTile(
                           device: state.discoveredDevices[index],
                           onTap: () => state.onResultTap(state.discoveredDevices[index]),
-                        ),
-                      );
-                    } else {
-                      return const SizedBox.shrink();
-                    }
-                  },
-                ),
-            ],
-          ),
-        ),
+                        )
+                      : const SizedBox.shrink(),
+                )
+              ],
+            ),
+        ],
       ),
     );
   }

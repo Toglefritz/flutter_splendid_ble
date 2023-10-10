@@ -26,63 +26,88 @@ class ScanResultTile extends StatelessWidget {
       onTap: onTap,
       child: Card(
         elevation: 0,
-        shape: StadiumBorder(
+        shape: RoundedRectangleBorder(
           side: BorderSide(
             width: 1,
             color: Theme.of(context).primaryColorLight,
           ),
+          borderRadius: BorderRadius.circular(12.0),
+        ),
+        margin: const EdgeInsets.symmetric(
+          horizontal: 16.0,
+          vertical: 4.0,
         ),
         child: Padding(
           padding: const EdgeInsets.all(16.0),
-          child: Row(
-            children: [
-              Expanded(
-                flex: 2,
-                child: Column(
-                  children: [
-                    Text(
+          child: Table(
+            columnWidths: const <int, TableColumnWidth>{
+              0: FlexColumnWidth(),
+              1: FlexColumnWidth(3),
+            },
+            defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+            children: <TableRow>[
+              TableRow(
+                children: <Widget>[
+                  TableCell(
+                    child: Text(
                       AppLocalizations.of(context)!.name,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    Text(
-                      device.name ?? '--',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
                       textAlign: TextAlign.center,
                     ),
-                  ],
-                ),
+                  ),
+                  TableCell(
+                    child: Text(
+                      device.name ?? '--',
+                      style: Theme.of(context).textTheme.bodySmall,
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ],
               ),
-              Expanded(
-                flex: 2,
-                child: Column(
-                  children: [
-                    Text(
+              TableRow(
+                children: <Widget>[
+                  TableCell(
+                    child: Text(
                       AppLocalizations.of(context)!.address,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                      textAlign: TextAlign.center,
                     ),
-                    Text(
+                  ),
+                  TableCell(
+                    child: Text(
                       device.address,
+                      style: Theme.of(context).textTheme.bodySmall,
+                      textAlign: TextAlign.center,
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-              Expanded(
-                child: Column(
-                  children: [
-                    Text(
+              TableRow(
+                children: <Widget>[
+                  TableCell(
+                    child: Text(
                       AppLocalizations.of(context)!.rssi,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                  TableCell(
+                    child: FractionallySizedBox(
+                      widthFactor: 0.5,
+                      child: LinearProgressIndicator(
+                        value: (100 - device.rssi.abs()) / 100,
+                        borderRadius: BorderRadius.circular(8.0),
+                        color: Theme.of(context).primaryColor,
                       ),
                     ),
-                    Text(
-                      device.rssi.toString(),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ],
           ),

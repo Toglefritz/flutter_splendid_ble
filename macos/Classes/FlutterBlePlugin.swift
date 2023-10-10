@@ -18,6 +18,9 @@ public class FlutterBlePlugin: NSObject, FlutterPlugin {
     /// An instance of the `BluetoothAdapterHandler` class for checking and emitting the status of the Bluetooth adapter.
     private var bluetoothAdapterHandler: BluetoothAdapterHandler?
     
+    /// An instance of the `BleScannerHandler` class for Bluetooth scanning.
+    private var bleScannerHandler: BleScannerHandler?
+    
     /// Registers the Flutter plugin with a given `FlutterPluginRegistrar`.
     ///
     /// - Parameter registrar: The `FlutterPluginRegistrar` with which to register the plugin.
@@ -27,6 +30,7 @@ public class FlutterBlePlugin: NSObject, FlutterPlugin {
         let instance = FlutterBlePlugin()
         instance.bluetoothAdapterHandler = BluetoothAdapterHandler(channel: channel)
         instance.bluetoothPermissionHandler = BluetoothPermissionHandler(channel: channel)
+        instance.bleScannerHandler = BleScannerHandler(channel: channel)
         
         registrar.addMethodCallDelegate(instance, channel: channel)
     }
@@ -56,6 +60,16 @@ public class FlutterBlePlugin: NSObject, FlutterPlugin {
             // Handles request to emit the current status of the Bluetooth adapter.
         case "emitCurrentBluetoothStatus":
             bluetoothAdapterHandler?.emitCurrentBluetoothStatus()
+            result(nil)
+            
+            // Handles request to start Bluetooth scanning.
+        case "startScan":
+            bleScannerHandler?.startScan()
+            result(nil)
+            
+            // Handles request to stop Bluetooth scanning.
+        case "stopScan":
+            bleScannerHandler?.stopScan()
             result(nil)
             
             // Case where the method called from Dart is not implemented here.

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/services.dart';
 
 import '../../flutter_ble_platform_interface.dart';
@@ -101,7 +102,15 @@ class MethodChannelFlutterBle extends FlutterBlePlatform {
     _channel.setMethodCallHandler((MethodCall call) async {
       if (call.method == 'bleDeviceScanned') {
         try {
-          BleDevice device = BleDevice.fromMap(call.arguments);
+          BleDevice device;
+          // Different operating systems will send the arguments in different formats. So, normalize the arguments
+          // as a Map<dynamic, dynamic> for use in the BleDevice.fromMap factory constructor.
+          if (call.arguments is String) {
+            Map<dynamic, dynamic> argumentsParsed = json.decode(call.arguments);
+            device = BleDevice.fromMap(argumentsParsed);
+          } else {
+            device = BleDevice.fromMap(call.arguments);
+          }
           streamController.add(device);
         } catch (e) {
           throw FormatException('Failed to parse discovered device info with exception, $e');

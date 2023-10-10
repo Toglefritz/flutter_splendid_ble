@@ -14,7 +14,7 @@ class BleDevice {
   /// The manufacturer data associated with the device.
   ///
   /// Bluetooth devices are not required to provide manufacturer data so this field is nullable.
-  final Map<String, dynamic>? manufacturerData;
+  final String? manufacturerData;
 
   BleDevice({
     required this.name,
