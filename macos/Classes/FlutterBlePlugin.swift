@@ -164,7 +164,7 @@ public class FlutterBlePlugin: NSObject, FlutterPlugin, CBCentralManagerDelegate
             
         case "unsubscribeFromCharacteristic":
             unsubscribeFromCharacteristic(call: call, result: result)
-        
+            
         default:
             result(FlutterMethodNotImplemented)
         }
@@ -199,7 +199,6 @@ public class FlutterBlePlugin: NSObject, FlutterPlugin, CBCentralManagerDelegate
             "name": peripheral.name,
             "address": peripheral.identifier.uuidString,
             "rssi": RSSI.intValue,
-            // ... add other details as needed
         ]
         
         // Get manufacturer data and add it to the map
@@ -318,8 +317,6 @@ public class FlutterBlePlugin: NSObject, FlutterPlugin, CBCentralManagerDelegate
             channel.invokeMethod("error", arguments: "Failed to update notification state for characteristic \(characteristic.uuid): \(error!.localizedDescription)")
             return
         }
-        
-        // TODO Handle the notification state update if needed
     }
     
     /// Invoked when a peripheral has updated the value for a characteristic.
@@ -407,12 +404,22 @@ public class FlutterBlePlugin: NSObject, FlutterPlugin, CBCentralManagerDelegate
     }
     
     // MARK: Adapter Status Helper Methods
+    
     ///  The methods in this section manage the Bluetooth adapter on a MacOS device and communicates its status to the Dart side of a Flutter app.
     ///
     ///  This section is responsible for managing the Bluetooth adapter's status on the MacOS device. It can check the current status of the Bluetooth adapter, and also listen for changes to the adapter's status. This allows the Dart side of a Flutter application to respond in real-time to changes in the Bluetooth adapter's status.
     ///  The class uses the CoreBluetooth library to interact with the Bluetooth adapter and EventChannel.EventSink to communicate with the Dart side.
     
-    /// Method to check the Bluetooth adapter status
+    /// Checks and returns the Bluetooth adapter status.
+    ///
+    /// This method queries the `CBCentralManager`'s `state` to determine the current status of the Bluetooth adapter on the macOS device. It returns a `BluetoothStatus` enumeration, indicating whether the adapter is not available, enabled, or disabled.
+    /// - NotAvailable: Bluetooth is unsupported on the hardware.
+    /// - Enabled: Bluetooth is powered on and functional.
+    /// - Disabled: Bluetooth is in any state other than powered on (e.g., powered off, resetting, unauthorized, or unknown).
+    ///
+    /// The result is used within the `FlutterBlePlugin` to inform the Dart side about the adapter's status, which is crucial for managing Bluetooth operations such as scanning, connecting, and interacting with peripherals.
+    ///
+    /// - Returns: A `BluetoothStatus` enumeration that represents the current status of the Bluetooth adapter.
     func checkBluetoothAdapterStatus() -> BluetoothStatus {
         switch centralManager.state {
         case .unsupported:
@@ -424,7 +431,24 @@ public class FlutterBlePlugin: NSObject, FlutterPlugin, CBCentralManagerDelegate
         }
     }
     
-    /// Emit current Bluetooth adapter status to the Dart side
+    /// Emits the current Bluetooth adapter status to the Dart side of the Flutter application.
+    ///
+    /// This function calls `checkBluetoothAdapterStatus` to obtain the current state of the Bluetooth adapter.
+    /// It then converts this status into a raw value which represents a string understandable on the Dart side.
+    /// This string is then sent over the FlutterMethodChannel to inform the Flutter application about the
+    /// current status of the Bluetooth adapter, which can be one of the following:
+    /// - "notAvailable": The device hardware does not support Bluetooth.
+    /// - "enabled": The Bluetooth is turned on and ready for communication.
+    /// - "disabled": The Bluetooth is not available for use (turned off, in an error state, etc.).
+    ///
+    /// The status is important for the Flutter application to handle UI updates accordingly and to manage
+    /// Bluetooth operations based on the availability of the Bluetooth adapter.
+    ///
+    /// This method ensures that the Dart side is always synchronized with the actual state of the macOS device's
+    /// Bluetooth adapter, enabling a reactive UI that responds correctly to state changes.
+    ///
+    /// - Note: This method should be invoked whenever the Bluetooth adapter's state changes, or when
+    ///         the Dart side needs to recheck the adapter status (e.g., when the app resumes from the background).
     func emitCurrentBluetoothStatus() {
         let status = self.checkBluetoothAdapterStatus().rawValue
         // Invoke method on Flutter side
