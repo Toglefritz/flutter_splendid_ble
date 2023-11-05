@@ -112,6 +112,37 @@ public class FlutterBlePlugin: NSObject, FlutterPlugin, CBCentralManagerDelegate
             peripheral.discoverServices(nil)
             result(nil)
             
+        case "writeCharacteristic":
+            // First, ensure that we're dealing with a dictionary of arguments.
+            guard let arguments = call.arguments as? [String: Any] else {
+                result(FlutterError(code: "INVALID_ARGUMENT", message: "Arguments are not in the expected format", details: nil))
+                return
+            }
+            
+            // Extract arguments safely.
+            guard let deviceAddress = arguments["address"] as? String,
+                  let characteristicUuidStr = arguments["characteristicUuid"] as? String,
+                  let stringValue = arguments["value"] as? String,
+                  let peripheral = getPeripheralByIdentifier(deviceAddress: deviceAddress),
+                  let characteristicUuid = UUID(uuidString: characteristicUuidStr),
+                  let characteristic = getCharacteristicByUuid(peripheral: peripheral, uuid: characteristicUuid) else {
+                result(FlutterError(code: "INVALID_ARGUMENT", message: "Device address, characteristic UUID, or value cannot be null.", details: nil))
+                return
+            }
+            
+            let dataValue = Data(stringValue.utf8)
+            let writeTypeValue = arguments["writeType"] as? Int ?? CBCharacteristicWriteType.withResponse.rawValue
+            guard let writeType = CBCharacteristicWriteType(rawValue: writeTypeValue) else {
+                result(FlutterError(code: "INVALID_ARGUMENT", message: "Invalid write type provided.", details: nil))
+                return
+            }
+            
+            peripheral.writeValue(dataValue, for: characteristic, type: writeType)
+            result(nil)
+            
+        case "subscribeToCharacteristic":
+            subscribeToCharacteristic(call: call, result: result)
+            
         default:
             result(FlutterMethodNotImplemented)
         }
@@ -195,6 +226,13 @@ public class FlutterBlePlugin: NSObject, FlutterPlugin, CBCentralManagerDelegate
     
     // MARK: CBPeripheralDelegate Methods
     
+    /// Invoked when a peripheral's services have been successfully discovered.
+    /// This delegate method checks for any errors in service discovery and initiates the discovery of characteristics for each service.
+    /// It is critical for progressing the BLE discovery process, enabling the app to access service-related information and act upon it.
+    /// If an error occurs during service discovery, it communicates this to the Flutter layer for appropriate handling in the UI or other app logic.
+    /// - Parameters:
+    ///   - peripheral: The `CBPeripheral` providing this information, representing the BLE device whose services have been discovered.
+    ///   - error: An optional `Error` object containing details of the failure if the service discovery process did not succeed.
     public func peripheral(_ peripheral: CBPeripheral, didDiscoverServices error: Error?) {
         guard error == nil else {
             channel.invokeMethod("error", arguments: "Service discovery failed: \(error!.localizedDescription)")
@@ -208,26 +246,90 @@ public class FlutterBlePlugin: NSObject, FlutterPlugin, CBCentralManagerDelegate
         }
     }
     
+    /// Invoked when the characteristics of a specific service have been discovered.
+    /// This delegate method is called following a successful call to `discoverCharacteristics(_:for:)`.
+    /// If characteristics are discovered successfully, it compiles the characteristic information into a structured format
+    /// and communicates this back to the Flutter layer for further processing or UI updates.
+    /// In case of an error during characteristics discovery, it reports the error back to the Flutter layer.
+    /// - Parameters:
+    ///   - peripheral: The `CBPeripheral` providing this information, representing the BLE device whose service characteristics have been discovered.
+    ///   - service: The `CBService` object containing the characteristics that were discovered.
+    ///   - error: An optional `Error` object containing details of the failure if the characteristics discovery process did not succeed.
     public func peripheral(_ peripheral: CBPeripheral, didDiscoverCharacteristicsFor service: CBService, error: Error?) {
         guard error == nil else {
+            // Notify the Flutter layer about the characteristics discovery failure with an error message.
             channel.invokeMethod("error", arguments: "Characteristics discovery failed for service \(service.uuid): \(error!.localizedDescription)")
             return
         }
         
+        // Prepare a dictionary to hold service and characteristic data.
         var serviceData = [String: Any]()
         var characteristicsData = [[String: Any]]()
         
+        // Iterate over each characteristic discovered and append its details to the characteristics data array.
         service.characteristics?.forEach { characteristic in
             characteristicsData.append([
-                "address": peripheral.identifier.uuidString,
-                "uuid": characteristic.uuid.uuidString,
-                "properties": characteristic.properties.rawValue,
+                "address": peripheral.identifier.uuidString, // The address of the peripheral.
+                "uuid": characteristic.uuid.uuidString,     // The UUID of the characteristic.
+                "properties": characteristic.properties.rawValue, // The properties of the characteristic, as a raw value.
             ])
         }
         
+        // Assign the array of characteristic data to the corresponding service UUID in the service data dictionary.
         serviceData[service.uuid.uuidString] = characteristicsData
         
+        // Invoke a method on the Flutter side with the service data, signaling that characteristics have been discovered.
         channel.invokeMethod("bleServicesDiscovered_\(peripheral.identifier.uuidString)", arguments: serviceData)
+    }
+    
+    /// Invoked when the notification state has been updated for a characteristic.
+    /// This callback is triggered as a response to a call to `setNotifyValue(_:for:)` on a `CBPeripheral` instance,
+    /// indicating whether notifications or indications are enabled or disabled for a given characteristic.
+    /// If there's an error, it is handled internally, and further error handling or user notification may be implemented as needed.
+    /// Upon a successful update, additional logic to handle the new notification state can be implemented.
+    /// - Parameters:
+    ///   - peripheral: The `CBPeripheral` providing this update, representing the BLE device whose characteristic's notification state has changed.
+    ///   - characteristic: The `CBCharacteristic` for which the notification state has been updated.
+    ///   - error: An optional `Error` object that contains the reason for the failure if the notification state update was unsuccessful.
+    public func peripheral(_ peripheral: CBPeripheral, didUpdateNotificationStateFor characteristic: CBCharacteristic, error: Error?) {
+        guard error == nil else {
+            channel.invokeMethod("error", arguments: "Failed to update notification state for characteristic \(characteristic.uuid): \(error!.localizedDescription)")
+            return
+        }
+        
+        // TODO Handle the notification state update if needed
+    }
+    
+    /// Invoked when a peripheral has updated the value for a characteristic.
+    /// This delegate method is called when a peripheral sends a notification or indication that a characteristic's value has changed,
+    /// or in response to a read request either initiated by the `readValue(for:)` method or a direct read request from the central device.
+    /// Errors encountered during the operation are handled within this callback. If no error occurs, the new value is processed and
+    /// communicated to the Flutter side through a method channel call. This facilitates real-time data communication with the Flutter app.
+    /// - Parameters:
+    ///   - peripheral: The `CBPeripheral` that has sent the updated value. It represents the BLE device from which the data is coming.
+    ///   - characteristic: The `CBCharacteristic` containing the updated value.
+    ///   - error: An optional `Error` detailing what went wrong during the operation, if anything.
+    public func peripheral(_ peripheral: CBPeripheral, didUpdateValueFor characteristic: CBCharacteristic, error: Error?) {
+        guard error == nil else {
+            // Error handling logic here, for example:
+            // channel.invokeMethod("error", arguments: "Failed to update value for characteristic \(characteristic.uuid): \(error!.localizedDescription)")
+            return
+        }
+        
+        // If the value update was successful, the new characteristic value is formatted into a list of integers.
+        let valueList = characteristic.value?.map { Int($0) } ?? []
+        
+        // Prepare the information to be sent to the Flutter side, including the device address and characteristic details.
+        let deviceAddress = peripheral.identifier.uuidString
+        let characteristicMap: [String: Any] = [
+            "deviceAddress": deviceAddress,
+            "characteristicUuid": characteristic.uuid.uuidString,
+            "value": valueList
+        ]
+        
+        // Send the updated characteristic value to the Flutter app using a method channel.
+        // This enables the Flutter app to react to the updated data, such as displaying it to the user or processing it further.
+        channel.invokeMethod("onCharacteristicChanged", arguments: characteristicMap)
     }
     
     // MARK: Bluetooth Permissions Helper Methods
@@ -369,6 +471,66 @@ public class FlutterBlePlugin: NSObject, FlutterPlugin, CBCentralManagerDelegate
         @unknown default:
             return "UNKNOWN"
         }
+    }
+    
+    // MethodChannel handler for subscribing to a BLE characteristic
+    private func subscribeToCharacteristic(call: FlutterMethodCall, result: @escaping FlutterResult) {
+        guard let args = call.arguments as? [String: Any],
+              let deviceAddress = args["address"] as? String,
+              let characteristicUuidStr = args["characteristicUuid"] as? String
+        else {
+            result(FlutterError(code: "INVALID_ARGUMENT",
+                                message: "Characteristic subscription error: device address or characteristic UUID cannot be null.",
+                                details: nil))
+            return
+        }
+        
+        guard let peripheral = getPeripheralByIdentifier(deviceAddress: deviceAddress) else {
+            result(FlutterError(code: "INVALID_ARGUMENT",
+                                message: "No peripheral found for device address: \(deviceAddress)",
+                                details: nil))
+            return
+        }
+        
+        guard let characteristicUuid = UUID(uuidString: characteristicUuidStr) else {
+            result(FlutterError(code: "INVALID_ARGUMENT",
+                                message: "Invalid characteristic UUID format",
+                                details: nil))
+            return
+        }
+        
+        
+        if let characteristic = getCharacteristicByUuid(peripheral: peripheral, uuid: characteristicUuid) {
+            peripheral.setNotifyValue(true, for: characteristic)
+            result(nil) // Indicate that the request was processed
+        } else {
+            result(FlutterError(code: "NOT_FOUND",
+                                message: "Characteristic with UUID \(characteristicUuidStr) not found.",
+                                details: nil))
+        }
+    }
+    
+    // MARK: Utility Methods
+    
+    // Utility method to get a CBPeripheral by its identifier
+    private func getPeripheralByIdentifier(deviceAddress: String) -> CBPeripheral? {
+        guard let peripheral = peripheralsMap[deviceAddress] else {
+            channel.invokeMethod("error", arguments: "Device not found.")
+            return nil
+        }
+        
+        return peripheral
+    }
+    
+    // Utility method to find a characteristic on a peripheral by its UUID
+    private func getCharacteristicByUuid(peripheral: CBPeripheral, uuid: UUID) -> CBCharacteristic? {
+        let cbuuid = CBUUID(nsuuid: uuid)
+        for service in peripheral.services ?? [] {
+            if let characteristic = service.characteristics?.first(where: { $0.uuid == cbuuid }) {
+                return characteristic
+            }
+        }
+        return nil
     }
 }
 
