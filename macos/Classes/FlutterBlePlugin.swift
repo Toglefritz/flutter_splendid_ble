@@ -26,6 +26,9 @@ public class FlutterBlePlugin: NSObject, FlutterPlugin, CBCentralManagerDelegate
     /// An optional `FlutterEventSink` which allows for sending scanning result data back to the Flutter side in real-time.
     private var scanResultSink: FlutterEventSink?
     
+    // Holds the UUIDs of characteristics for which a read operation has been initiated.
+    private var pendingReadRequests: [CBUUID: Bool] = [:]
+    
     /// Initializes the `FlutterBlePlugin` and sets up the central manager.
     override init() {
         super.init()
@@ -138,6 +141,21 @@ public class FlutterBlePlugin: NSObject, FlutterPlugin, CBCentralManagerDelegate
             }
             
             peripheral.writeValue(dataValue, for: characteristic, type: writeType)
+            result(nil)
+            
+        case "readCharacteristic":
+            guard let arguments = call.arguments as? [String: Any],
+                  let characteristicUuidStr = arguments["characteristicUuid"] as? String,
+                  let deviceAddress = arguments["address"] as? String,
+                  let peripheral = getPeripheralByIdentifier(deviceAddress: deviceAddress),
+                  let characteristicUuid = UUID(uuidString: characteristicUuidStr),
+                  let characteristic = getCharacteristicByUuid(peripheral: peripheral, uuid: characteristicUuid) else {
+                result(FlutterError(code: "INVALID_ARGUMENT", message: "Device address or characteristic UUID cannot be null", details: nil))
+                return
+            }
+            
+            setReadRequestFlag(for: characteristic)
+            peripheral.readValue(for: characteristic)
             result(nil)
             
         case "subscribeToCharacteristic":
@@ -311,8 +329,7 @@ public class FlutterBlePlugin: NSObject, FlutterPlugin, CBCentralManagerDelegate
     ///   - error: An optional `Error` detailing what went wrong during the operation, if anything.
     public func peripheral(_ peripheral: CBPeripheral, didUpdateValueFor characteristic: CBCharacteristic, error: Error?) {
         guard error == nil else {
-            // Error handling logic here, for example:
-            // channel.invokeMethod("error", arguments: "Failed to update value for characteristic \(characteristic.uuid): \(error!.localizedDescription)")
+            channel.invokeMethod("error", arguments: "Failed to update value for characteristic \(characteristic.uuid): \(error!.localizedDescription)")
             return
         }
         
@@ -327,12 +344,19 @@ public class FlutterBlePlugin: NSObject, FlutterPlugin, CBCentralManagerDelegate
             "value": valueList
         ]
         
-        // Send the updated characteristic value to the Flutter app using a method channel.
-        // This enables the Flutter app to react to the updated data, such as displaying it to the user or processing it further.
-        channel.invokeMethod("onCharacteristicChanged", arguments: characteristicMap)
+        // Check if this update is the result of a read request or a notification.
+        if isReadResponse(characteristic: characteristic) {
+            // This is a read response
+            channel.invokeMethod("onCharacteristicRead", arguments: characteristicMap)
+            clearReadResponseFlag(characteristic: characteristic)
+        } else {
+            // This is a notification update
+            channel.invokeMethod("onCharacteristicChanged", arguments: characteristicMap)
+        }
     }
     
     // MARK: Bluetooth Permissions Helper Methods
+    
     /// The methods in this section manage Bluetooth permissions on a macOS device and communicate statuses to the Dart side of a Flutter app.
     ///
     /// Methods in this section are responsible for requesting and checking Bluetooth permissions on macOS devices.
@@ -531,6 +555,21 @@ public class FlutterBlePlugin: NSObject, FlutterPlugin, CBCentralManagerDelegate
             }
         }
         return nil
+    }
+    
+    /// Registers a read operation on a Bluetooth characteristic
+    func setReadRequestFlag(for characteristic: CBCharacteristic) {
+        pendingReadRequests[characteristic.uuid] = true
+    }
+    
+    /// Determines if a read operation on a Bluetooth characteristic is currently in progress,
+    func isReadResponse(characteristic: CBCharacteristic) -> Bool {
+        return pendingReadRequests[characteristic.uuid] ?? false
+    }
+    
+    /// Clears the flag that determines if a read operation on a Bluetooth characteristic is currently in progress.
+    func clearReadResponseFlag(characteristic: CBCharacteristic) {
+        pendingReadRequests[characteristic.uuid] = nil
     }
 }
 
