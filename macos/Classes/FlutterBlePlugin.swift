@@ -8,7 +8,7 @@ import CoreBluetooth
 /// It's crucial to have only one `CBCentralManager` instance in order to manage and centralize the state and delegate callbacks for BLE operations consistently.
 /// This is particularly important for operations like scanning, where the discovery of peripherals should be consistent with the instances used for actual communication.
 /// Maintaining a single source of truth for peripheral instances avoids duplication and state inconsistencies.
-public class FlutterBlePlugin: NSObject, FlutterPlugin, CBCentralManagerDelegate {
+public class FlutterBlePlugin: NSObject, FlutterPlugin, CBCentralManagerDelegate, CBPeripheralDelegate {
     /// A `FlutterMethodChannel` used for communication with the Dart side of the app.
     private var channel: FlutterMethodChannel!
     
@@ -101,6 +101,17 @@ public class FlutterBlePlugin: NSObject, FlutterPlugin, CBCentralManagerDelegate
                 result(FlutterError(code: "INVALID_ARGUMENT", message: "Device address cannot be null.", details: nil))
             }
             
+        case "discoverServices":
+            guard let args = call.arguments as? [String: Any],
+                  let deviceAddress = args["address"] as? String,
+                  let peripheral = peripheralsMap[deviceAddress] else {
+                result(FlutterError(code: "INVALID_ARGUMENT", message: "Device address cannot be null.", details: nil))
+                return
+            }
+            peripheral.delegate = self
+            peripheral.discoverServices(nil)
+            result(nil)
+            
         default:
             result(FlutterMethodNotImplemented)
         }
@@ -182,9 +193,44 @@ public class FlutterBlePlugin: NSObject, FlutterPlugin, CBCentralManagerDelegate
         channel.invokeMethod("bleConnectionState_\(peripheral.identifier.uuidString)", arguments: "DISCONNECTED")
     }
     
-    // Add additional delegate methods if needed
+    // MARK: CBPeripheralDelegate Methods
     
-    // MARK: - Bluetooth Permissions Helper Methods
+    public func peripheral(_ peripheral: CBPeripheral, didDiscoverServices error: Error?) {
+        guard error == nil else {
+            channel.invokeMethod("error", arguments: "Service discovery failed: \(error!.localizedDescription)")
+            return
+        }
+        
+        guard let services = peripheral.services else { return }
+        
+        for service in services {
+            peripheral.discoverCharacteristics(nil, for: service)
+        }
+    }
+    
+    public func peripheral(_ peripheral: CBPeripheral, didDiscoverCharacteristicsFor service: CBService, error: Error?) {
+        guard error == nil else {
+            channel.invokeMethod("error", arguments: "Characteristics discovery failed for service \(service.uuid): \(error!.localizedDescription)")
+            return
+        }
+        
+        var serviceData = [String: Any]()
+        var characteristicsData = [[String: Any]]()
+        
+        service.characteristics?.forEach { characteristic in
+            characteristicsData.append([
+                "address": peripheral.identifier.uuidString,
+                "uuid": characteristic.uuid.uuidString,
+                "properties": characteristic.properties.rawValue,
+            ])
+        }
+        
+        serviceData[service.uuid.uuidString] = characteristicsData
+        
+        channel.invokeMethod("bleServicesDiscovered_\(peripheral.identifier.uuidString)", arguments: serviceData)
+    }
+    
+    // MARK: Bluetooth Permissions Helper Methods
     /// The methods in this section manage Bluetooth permissions on a macOS device and communicate statuses to the Dart side of a Flutter app.
     ///
     /// Methods in this section are responsible for requesting and checking Bluetooth permissions on macOS devices.

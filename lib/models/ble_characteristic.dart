@@ -24,7 +24,7 @@ class BleCharacteristic {
 
   /// An integer value representing the permissions of the characteristic that is converted into a
   /// [List<BleCharacteristicPermission>] representing the permissions of the Bluetooth characteristic.
-  final List<BleCharacteristicPermission> permissions;
+  final List<BleCharacteristicPermission>? permissions;
 
   /// Creates a [BleCharacteristic] instance.
   ///
@@ -45,7 +45,7 @@ class BleCharacteristic {
       address: map['address'] as String,
       uuid: map['uuid'] as String,
       properties: BleCharacteristicProperty.fromInt(map['properties'] as int),
-      permissions: BleCharacteristicPermission.fromInt(map['permissions'] as int),
+      permissions: map['permissions'] != null ? BleCharacteristicPermission.fromInt(map['permissions'] as int) : null,
     );
   }
 
@@ -138,6 +138,6 @@ class BleCharacteristic {
   /// This includes the UUID and the decoded properties and permissions.
   @override
   String toString() {
-    return 'BleCharacteristic(uuid: $uuid, properties: ${_propertiesListToString(properties)}, permissions: ${_permissionsListToString(permissions)})';
+    return 'BleCharacteristic(uuid: $uuid, properties: ${_propertiesListToString(properties)}, permissions: ${permissions == null ? 'null' : _permissionsListToString(permissions!)})';
   }
 }
