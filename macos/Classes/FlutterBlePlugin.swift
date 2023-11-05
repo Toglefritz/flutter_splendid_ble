@@ -18,10 +18,11 @@ public class FlutterBlePlugin: NSObject, FlutterPlugin, CBCentralManagerDelegate
     /// the state and delegate callbacks for all BLE operations consistently.
     private var centralManager: CBCentralManager!
     
-    /// A dictionary that maintains a connection with the peripherals that are currently connected.
-    /// The keys are the string representations of the peripheral's unique identifiers, and the values are the `CBPeripheral` instances themselves.
-    /// This allows for quick retrieval and management of peripherals that the application has established a connection with.
-    private var connectedPeripherals = [String: CBPeripheral]()
+    /// A dictionary to store peripheral devices.
+    ///
+    /// The dictionary uses the peripheral's UUID string as the key and the `CBPeripheral` object as the value.
+    /// This enables easy retrieval and management of peripheral connections.
+    private var peripheralsMap: [String: CBPeripheral] = [:]
     
     /// An optional `FlutterEventSink` which allows for sending scanning result data back to the Flutter side in real-time.
     private var scanResultSink: FlutterEventSink?
@@ -161,6 +162,9 @@ public class FlutterBlePlugin: NSObject, FlutterPlugin, CBCentralManagerDelegate
         case "subscribeToCharacteristic":
             subscribeToCharacteristic(call: call, result: result)
             
+        case "unsubscribeFromCharacteristic":
+            unsubscribeFromCharacteristic(call: call, result: result)
+        
         default:
             result(FlutterMethodNotImplemented)
         }
@@ -433,12 +437,6 @@ public class FlutterBlePlugin: NSObject, FlutterPlugin, CBCentralManagerDelegate
     ///
     /// The methods in this section are responsible for establishing and terminating connections to BLE devices.
     
-    /// A dictionary to store peripheral devices.
-    ///
-    /// The dictionary uses the peripheral's UUID string as the key and the `CBPeripheral` object as the value.
-    /// This enables easy retrieval and management of peripheral connections.
-    private var peripheralsMap: [String: CBPeripheral] = [:]
-    
     /// Initiates a connection to a Bluetooth Low Energy (BLE) device.
     ///
     /// This function tries to initiate a connection to a BLE peripheral device with the provided UUID string.
@@ -530,6 +528,31 @@ public class FlutterBlePlugin: NSObject, FlutterPlugin, CBCentralManagerDelegate
         } else {
             result(FlutterError(code: "NOT_FOUND",
                                 message: "Characteristic with UUID \(characteristicUuidStr) not found.",
+                                details: nil))
+        }
+    }
+    
+    func unsubscribeFromCharacteristic(call: FlutterMethodCall, result: @escaping FlutterResult) {
+        guard let args = call.arguments as? [String: Any],
+              let deviceAddress = args["address"] as? String,
+              let characteristicUuidStr = args["characteristicUuid"] as? String,
+              let characteristicUuid = UUID(uuidString: characteristicUuidStr),
+              let peripheral = peripheralsMap[deviceAddress] else {
+            result(FlutterError(code: "INVALID_ARGUMENT",
+                                message: "Device address or characteristic UUID cannot be null.",
+                                details: nil))
+            return
+        }
+        
+        let cbCharacteristicUuid = CBUUID(nsuuid: characteristicUuid)
+        
+        if let service = peripheral.services?.first(where: { $0.characteristics?.contains(where: { $0.uuid == cbCharacteristicUuid }) == true }),
+           let characteristic = service.characteristics?.first(where: { $0.uuid == cbCharacteristicUuid }) {
+            peripheral.setNotifyValue(false, for: characteristic)
+            result(nil) // Success
+        } else {
+            result(FlutterError(code: "SUBSCRIBE_ERROR",
+                                message: "Failed to unsubscribe from characteristic: Characteristic not found.",
                                 details: nil))
         }
     }
