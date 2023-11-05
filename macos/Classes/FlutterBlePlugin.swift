@@ -256,7 +256,7 @@ public class FlutterBlePlugin: NSObject, FlutterPlugin, CBCentralManagerDelegate
     }
     
     // MARK: Device Interface Helper Methods
-    /// The methods in this section collectivly serve as an interface for managing connections and interactions with BLE devices and communicating
+    /// The methods in this section collectively serve as an interface for managing connections and interactions with BLE devices and communicating
     /// with Bluetooth devices.
     ///
     /// The methods in this section are responsible for establishing and terminating connections to BLE devices.
