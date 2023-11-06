@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/services.dart';
+import 'package:flutter_ble/models/exceptions/service_discovery_exception.dart';
 
 import '../../flutter_ble_platform_interface.dart';
 import '../../models/ble_characteristic.dart';
@@ -175,7 +176,7 @@ class MethodChannelFlutterBle extends FlutterBlePlatform {
         final BleConnectionState state =
             BleConnectionState.values.firstWhere((value) => value.identifier == connectionStateString.toLowerCase());
         connectionStateStreamController.add(state);
-      } else if(call.method == 'error') {
+      } else if (call.method == 'error') {
         connectionStateStreamController.addError(Exception(call.arguments));
       }
     });
@@ -270,6 +271,8 @@ class MethodChannelFlutterBle extends FlutterBlePlatform {
             .toList();
 
         servicesDiscoveredController.add(services);
+      } else if (call.method == 'error') {
+        servicesDiscoveredController.addError(ServiceDiscoveryException(call.arguments));
       }
     });
   }
