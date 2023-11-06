@@ -11,6 +11,7 @@ import '../../models/ble_device.dart';
 import '../../models/ble_service.dart';
 import '../../models/bluetooth_permission_status.dart';
 import '../../models/bluetooth_status.dart';
+import '../../models/exceptions/bluetooth_connection_exception.dart';
 import '../../models/exceptions/bluetooth_scan_exception.dart';
 import '../../models/scan_filter.dart';
 import '../../models/scan_settings.dart';
@@ -177,7 +178,7 @@ class MethodChannelFlutterBle extends FlutterBlePlatform {
             BleConnectionState.values.firstWhere((value) => value.identifier == connectionStateString.toLowerCase());
         connectionStateStreamController.add(state);
       } else if (call.method == 'error') {
-        connectionStateStreamController.addError(Exception(call.arguments));
+        connectionStateStreamController.addError(BluetoothConnectionException(call.arguments));
       }
     });
 
