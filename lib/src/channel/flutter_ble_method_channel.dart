@@ -12,7 +12,11 @@ import '../../models/ble_service.dart';
 import '../../models/bluetooth_permission_status.dart';
 import '../../models/bluetooth_status.dart';
 import '../../models/exceptions/bluetooth_connection_exception.dart';
+import '../../models/exceptions/bluetooth_permission_exception.dart';
+import '../../models/exceptions/bluetooth_read_exception.dart';
 import '../../models/exceptions/bluetooth_scan_exception.dart';
+import '../../models/exceptions/bluetooth_subscription_exception.dart';
+import '../../models/exceptions/bluetooth_write_exception.dart';
 import '../../models/scan_filter.dart';
 import '../../models/scan_settings.dart';
 
@@ -145,9 +149,12 @@ class MethodChannelFlutterBle extends FlutterBlePlatform {
       // Stop the scan and wait for the method to complete.
       await _channel.invokeMethod('stopScan');
     } on PlatformException catch (e) {
-      // If an error occurs on the platform side, it will be converted into a PlatformException.
-      // You can throw an appropriate exception or handle it as needed.
-      throw BluetoothScanException('Failed to stop the scan: ${e.message}');
+      // Handle different error types accordingly.
+      if (e.message?.contains('permissions') == true) {
+        throw BluetoothPermissionException('Permission error: ${e.message}');
+      } else {
+        throw BluetoothScanException('Failed to stop Bluetooth scan: ${e.message}');
+      }
     }
   }
 
@@ -306,13 +313,22 @@ class MethodChannelFlutterBle extends FlutterBlePlatform {
   /// of the BLE device with the specified address.
   @override
   Future<BleConnectionState> getCurrentConnectionState(String deviceAddress) async {
-    // Invoke the method channel to fetch the current connection state for the BLE device.
-    final String connectionStateString = await _channel.invokeMethod('getCurrentConnectionState', {
-      'address': deviceAddress,
-    });
+    try {
+      // Invoke the method channel to fetch the current connection state for the BLE device.
+      final String connectionStateString = await _channel.invokeMethod('getCurrentConnectionState', {
+        'address': deviceAddress,
+      });
 
-    // Convert the string received from Kotlin to the Dart enum value.
-    return BleConnectionState.values.firstWhere((e) => e.identifier == connectionStateString);
+      // Convert the string received from Kotlin to the Dart enum value.
+      return BleConnectionState.values.firstWhere((e) => e.identifier == connectionStateString);
+    } on PlatformException catch (e) {
+      // Handle different error types accordingly.
+      if (e.message?.contains('permissions') == true) {
+        throw BluetoothPermissionException('Permission error: ${e.message}');
+      } else {
+        throw BluetoothConnectionException('Failed to get current connection state: ${e.message}');
+      }
+    }
   }
 
   /// Asynchronously writes data to a specified Bluetooth Low Energy (BLE) characteristic.
@@ -352,8 +368,13 @@ class MethodChannelFlutterBle extends FlutterBlePlatform {
         'value': value,
         if (writeType != null) 'writeType': writeType,
       });
-    } catch (e) {
-      rethrow;
+    } on PlatformException catch (e) {
+      // Handle different error types accordingly.
+      if (e.message?.contains('permissions') == true) {
+        throw BluetoothPermissionException('Permission error: ${e.message}');
+      } else {
+        throw BluetoothWriteException('Failed to write BLE characteristic: ${e.message}');
+      }
     }
   }
 
@@ -415,10 +436,19 @@ class MethodChannelFlutterBle extends FlutterBlePlatform {
     });
 
     // Read the value of the characteristic.
-    _channel.invokeMethod('readCharacteristic', {
-      'address': characteristic.address,
-      'characteristicUuid': characteristic.uuid,
-    });
+    try {
+      _channel.invokeMethod('readCharacteristic', {
+        'address': characteristic.address,
+        'characteristicUuid': characteristic.uuid,
+      });
+    } on PlatformException catch (e) {
+      // Handle different error types accordingly.
+      if (e.message?.contains('permissions') == true) {
+        throw BluetoothPermissionException('Permission error: ${e.message}');
+      } else {
+        throw BluetoothReadException('Failed to read BLE characteristic: ${e.message}');
+      }
+    }
 
     // Implement the timeout logic.
     return completer.future.timeout(
@@ -447,17 +477,30 @@ class MethodChannelFlutterBle extends FlutterBlePlatform {
         try {
           value = BleCharacteristicValue.fromMap(call.arguments);
         } catch (e) {
-          rethrow;
+          streamController.addError(Exception('Failed to parse characteristic value: $e'));
+          return;
         }
         streamController.add(value);
       }
     });
 
     // Trigger the subscription to the characteristic on the platform side.
-    _channel.invokeMethod('subscribeToCharacteristic', {
-      'address': characteristic.address,
-      'characteristicUuid': characteristic.uuid,
-    });
+    try {
+      _channel.invokeMethod('subscribeToCharacteristic', {
+        'address': characteristic.address,
+        'characteristicUuid': characteristic.uuid,
+      });
+    } on PlatformException catch (e) {
+      // Handle different error types accordingly.
+      if (e.message?.contains('permissions') == true) {
+        streamController.addError(BluetoothPermissionException('Permission error: ${e.message}'));
+        throw BluetoothPermissionException('Permission error: ${e.message}');
+      } else {
+        streamController
+            .addError(BluetoothSubscriptionException('Failed to subscribe to BLE characteristic: ${e.message}'));
+        throw BluetoothSubscriptionException('Failed to subscribe to BLE characteristic: ${e.message}');
+      }
+    }
 
     return streamController.stream;
   }
@@ -467,10 +510,19 @@ class MethodChannelFlutterBle extends FlutterBlePlatform {
   /// This method stops listening for updates for a given characteristic on a specified device.
   @override
   void unsubscribeFromCharacteristic(BleCharacteristic characteristic) {
-    _channel.invokeMethod('unsubscribeFromCharacteristic', {
-      'address': characteristic.address,
-      'characteristicUuid': characteristic.uuid,
-    });
+    try {
+      _channel.invokeMethod('unsubscribeFromCharacteristic', {
+        'address': characteristic.address,
+        'characteristicUuid': characteristic.uuid,
+      });
+    } on PlatformException catch (e) {
+      // Handle different error types accordingly.
+      if (e.message?.contains('permissions') == true) {
+        throw BluetoothPermissionException('Permission error: ${e.message}');
+      } else {
+        throw BluetoothSubscriptionException('Failed to unsubscribe from BLE characteristic: ${e.message}');
+      }
+    }
   }
 
   /// Requests Bluetooth permissions from the user.

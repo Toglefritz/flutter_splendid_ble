@@ -25,5 +25,5 @@ class BluetoothConnectionException implements Exception {
   BluetoothConnectionException(this.message);
 
   @override
-  String toString() => 'BluetoothScanException: $message';
+  String toString() => 'BluetoothConnectionException: $message';
 }
