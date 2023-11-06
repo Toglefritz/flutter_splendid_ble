@@ -100,21 +100,25 @@ class MethodChannelFlutterBle extends FlutterBlePlatform {
 
     // Listen to the platform side for scanned devices.
     _channel.setMethodCallHandler((MethodCall call) async {
-      if (call.method == 'bleDeviceScanned') {
-        try {
-          BleDevice device;
-          // Different operating systems will send the arguments in different formats. So, normalize the arguments
-          // as a Map<dynamic, dynamic> for use in the BleDevice.fromMap factory constructor.
-          if (call.arguments is String) {
-            Map<dynamic, dynamic> argumentsParsed = json.decode(call.arguments);
-            device = BleDevice.fromMap(argumentsParsed);
-          } else {
-            device = BleDevice.fromMap(call.arguments);
+      switch (call.method) {
+        case 'bleDeviceScanned':
+          try {
+            BleDevice device;
+            // Different operating systems will send the arguments in different formats. So, normalize the arguments
+            // as a Map<dynamic, dynamic> for use in the BleDevice.fromMap factory constructor.
+            if (call.arguments is String) {
+              Map<dynamic, dynamic> argumentsParsed = json.decode(call.arguments);
+              device = BleDevice.fromMap(argumentsParsed);
+            } else {
+              device = BleDevice.fromMap(call.arguments);
+            }
+            streamController.add(device);
+          } catch (e) {
+            streamController.addError(FormatException('Failed to parse discovered device info: $e'));
           }
-          streamController.add(device);
-        } catch (e) {
-          throw FormatException('Failed to parse discovered device info with exception, $e');
-        }
+        case 'error':
+          streamController.addError(Exception(call.arguments));
+          break;
       }
     });
 

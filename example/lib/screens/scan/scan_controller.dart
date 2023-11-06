@@ -37,9 +37,30 @@ class ScanController extends State<ScanRoute> {
   ///
   /// The
   void _startBluetoothScan() {
-    _scanStream = _ble
-        .startScan(filters: widget.filters, settings: widget.settings)
-        .listen((device) => _onDeviceDetected(device));
+    _scanStream = _ble.startScan(filters: widget.filters, settings: widget.settings).listen(
+      (device) => _onDeviceDetected(device),
+      onError: (error) {
+        // Handle the error here
+        _handleScanError(error);
+      },
+    );
+  }
+
+  /// Handles errors returned on the [_scanStream].
+  void _handleScanError(error) {
+    // Create the SnackBar with the error message
+    final snackBar = SnackBar(
+      content: Text('Error scanning for Bluetooth devices: $error'),
+      action: SnackBarAction(
+        label: 'Dismiss',
+        onPressed: () {
+          // If you need to do anything when the user dismisses the SnackBar
+        },
+      ),
+    );
+
+    // Show the SnackBar using the ScaffoldMessenger
+    ScaffoldMessenger.of(context).showSnackBar(snackBar);
   }
 
   /// A callback used each time a new device is discovered by the Bluetooth scan.
