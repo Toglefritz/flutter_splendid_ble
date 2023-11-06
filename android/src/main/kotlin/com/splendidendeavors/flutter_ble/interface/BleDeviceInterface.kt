@@ -217,7 +217,6 @@ class BleDeviceInterface(
                 "Required Bluetooth permissions are missing: ${e.message}"
             )
         }
-
     }
 
     /**

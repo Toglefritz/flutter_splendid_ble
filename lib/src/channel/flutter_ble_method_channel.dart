@@ -175,6 +175,8 @@ class MethodChannelFlutterBle extends FlutterBlePlatform {
         final BleConnectionState state =
             BleConnectionState.values.firstWhere((value) => value.identifier == connectionStateString.toLowerCase());
         connectionStateStreamController.add(state);
+      } else if(call.method == 'error') {
+        connectionStateStreamController.addError(Exception(call.arguments));
       }
     });
 

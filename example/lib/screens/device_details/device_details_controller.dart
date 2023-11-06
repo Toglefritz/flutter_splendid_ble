@@ -84,10 +84,31 @@ class DeviceDetailsController extends State<DeviceDetailsRoute> {
     });
 
     try {
-      _ble.connect(deviceAddress: widget.device.address).listen((state) => onConnectionStateUpdate(state));
+      _ble.connect(deviceAddress: widget.device.address).listen((state) => onConnectionStateUpdate(state),
+          onError: (error) {
+        // Handle the error here
+        _handleConnectionError(error);
+      });
     } catch (e) {
       debugPrint('Failed to connect to device, ${widget.device.address}, with exception, $e');
     }
+  }
+
+  /// Handles errors resulting from an attempt to connect to a peripheral.
+  void _handleConnectionError(error) {
+    // Create the SnackBar with the error message
+    final snackBar = SnackBar(
+      content: Text('Error connecting to Bluetooth device: $error'),
+      action: SnackBarAction(
+        label: 'Dismiss',
+        onPressed: () {
+          // If you need to do anything when the user dismisses the SnackBar
+        },
+      ),
+    );
+
+    // Show the SnackBar using the ScaffoldMessenger
+    ScaffoldMessenger.of(context).showSnackBar(snackBar);
   }
 
   /// Handles taps on the "Discover Services" button, which starts the BLE service and characteristic discovery

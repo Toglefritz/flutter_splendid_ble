@@ -287,11 +287,19 @@ class BLEConnector {
   void connectToDevice() {
     try {
       // `widget.device.address` should be replaced with the actual device address to which you wish to connect.
-      _ble.connect(deviceAddress: widget.device.address)
-          .listen((state) => _onConnectionStateUpdate(state));
+      _ble.connect(deviceAddress: widget.device.address).listen((state) => onConnectionStateUpdate(state),
+          onError: (error) {
+            // Handle the error here
+            _handleConnectionError(error);
+          });
     } catch (e) {
       debugPrint('Failed to connect to device, ${widget.device.address}, with exception, $e');
     }
+  }
+
+  /// Handles errors resulting from an attempt to connect to a peripheral.
+  void _handleConnectionError(error) {
+    // Handle errors in connecting to a peripheral.
   }
 
   /// Called when the connection state is updated.
