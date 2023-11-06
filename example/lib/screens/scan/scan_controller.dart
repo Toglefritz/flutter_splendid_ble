@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_ble/flutter_ble.dart';
 import 'package:flutter_ble/models/ble_device.dart';
+import 'package:flutter_ble/models/exceptions/bluetooth_scan_exception.dart';
 import 'package:flutter_ble_example/screens/device_details/device_details_route.dart';
 
 import 'package:flutter_ble_example/screens/scan/scan_route.dart';
@@ -98,7 +99,14 @@ class ScanController extends State<ScanRoute> {
 
   /// Handles taps on a scan result.
   void onResultTap(BleDevice device) {
-    _ble.stopScan();
+    try {
+      _ble.stopScan();
+    } on BluetoothScanException catch (e) {
+      // Handle the exception, possibly by showing an error message to the user.
+      _showErrorMessage(e.message);
+      return;
+    }
+
     _scanStream?.cancel();
 
     Navigator.pushReplacement<void, void>(
@@ -108,6 +116,13 @@ class ScanController extends State<ScanRoute> {
           device: device,
         ),
       ),
+    );
+  }
+
+  /// Displays an error message to the user.
+  void _showErrorMessage(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
     );
   }
 

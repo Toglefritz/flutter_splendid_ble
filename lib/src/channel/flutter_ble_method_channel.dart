@@ -10,6 +10,7 @@ import '../../models/ble_device.dart';
 import '../../models/ble_service.dart';
 import '../../models/bluetooth_permission_status.dart';
 import '../../models/bluetooth_status.dart';
+import '../../models/exceptions/bluetooth_scan_exception.dart';
 import '../../models/scan_filter.dart';
 import '../../models/scan_settings.dart';
 
@@ -135,10 +136,17 @@ class MethodChannelFlutterBle extends FlutterBlePlatform {
     return streamController.stream;
   }
 
-  /// Stops an ongoing Bluetooth scan.
+  /// Stops an ongoing Bluetooth scan and handles any potential errors.
   @override
-  void stopScan() {
-    _channel.invokeMethod('stopScan');
+  Future<void> stopScan() async {
+    try {
+      // Stop the scan and wait for the method to complete.
+      await _channel.invokeMethod('stopScan');
+    } on PlatformException catch (e) {
+      // If an error occurs on the platform side, it will be converted into a PlatformException.
+      // You can throw an appropriate exception or handle it as needed.
+      throw BluetoothScanException('Failed to stop the scan: ${e.message}');
+    }
   }
 
   /// Initiates a connection to a BLE peripheral and returns a Stream representing the connection state.

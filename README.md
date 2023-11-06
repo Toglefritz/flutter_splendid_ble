@@ -213,8 +213,13 @@ class BLEScanner {
   }
 
   /// Stops the Bluetooth scan.
-  void stopScan() {
-    _scanStream?.cancel();
+  Future<void> stopScan() async {
+    try {
+      await flutterBleMethodChannel.stopScan();
+      // Handle successful scan stop if necessary.
+    } on BluetoothScanException catch (e) {
+      // Handle the exception, possibly by showing an error message to the user.
+    }
   }
 
   /// Disposes of the stream subscription when it's no longer needed to prevent memory leaks.
