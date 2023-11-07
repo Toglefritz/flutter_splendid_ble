@@ -45,5 +45,9 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSBluetoothAlwaysUsageDescription</key>
+    <string>Bluetooth capabilities are used to connect to BLE devices.</string>
+    <key>NSBluetoothPeripheralUsageDescription</key>
+    <string>Bluetooth peripheral usage permissions are used to discover and interact with BLE devices.</string>
 </dict>
 </plist>
