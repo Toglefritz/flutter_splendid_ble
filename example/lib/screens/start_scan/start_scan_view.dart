@@ -4,7 +4,6 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 import '../components/fancy_outlined_text.dart';
 import '../components/main_app_bar.dart';
-import '../components/static_pattern_background.dart';
 import 'package:flutter_ble_example/screens/start_scan/start_scan_controller.dart';
 
 import 'components/error_message.dart';
@@ -21,36 +20,34 @@ class StartScanView extends StatelessWidget {
     return Scaffold(
       appBar: const MainAppBar(),
       extendBodyBehindAppBar: true,
-      body: StaticPatternBackground(
-        child: Container(
-          alignment: Alignment.center,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              GestureDetector(
-                onTap: state.onStartScanTap,
-                child: FancyOutlinedText(
-                  text: AppLocalizations.of(context)!.startScan.toUpperCase(),
+      body: Container(
+        alignment: Alignment.center,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            GestureDetector(
+              onTap: state.onStartScanTap,
+              child: FancyOutlinedText(
+                text: AppLocalizations.of(context)!.startScan.toUpperCase(),
+              ),
+            ),
+            if (state.permissionsGranted == false)
+              Padding(
+                padding: const EdgeInsets.only(top: 16),
+                child: ErrorMessage(
+                  error: AppLocalizations.of(context)!.missingPermissions,
                 ),
               ),
-              if (state.permissionsGranted == false)
-                Padding(
-                  padding: const EdgeInsets.only(top: 16),
-                  child: ErrorMessage(
-                    error: AppLocalizations.of(context)!.missingPermissions,
-                  ),
+            if (state.bluetoothStatus != BluetoothStatus.enabled)
+              Padding(
+                padding: const EdgeInsets.only(top: 16),
+                child: ErrorMessage(
+                  error: state.bluetoothStatus == BluetoothStatus.disabled
+                      ? AppLocalizations.of(context)!.bluetoothDisabled
+                      : AppLocalizations.of(context)!.notAvailable,
                 ),
-              if (state.bluetoothStatus != BluetoothStatus.enabled)
-                Padding(
-                  padding: const EdgeInsets.only(top: 16),
-                  child: ErrorMessage(
-                    error: state.bluetoothStatus == BluetoothStatus.disabled
-                        ? AppLocalizations.of(context)!.bluetoothDisabled
-                        : AppLocalizations.of(context)!.notAvailable,
-                  ),
-                ),
-            ],
-          ),
+              ),
+          ],
         ),
       ),
     );
