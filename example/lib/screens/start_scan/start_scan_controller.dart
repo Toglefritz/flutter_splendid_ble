@@ -27,6 +27,10 @@ class StartScanController extends State<StartScanRoute> {
   /// value of [_bluetoothStatus].
   StreamSubscription<BluetoothStatus>? _bluetoothStatusStream;
 
+  /// A [Stream] used to listen for changes in the status of the Bluetooth permissions required for the app to operate
+  /// and set the value of [_permissionsGranted].
+  StreamSubscription<BluetoothPermissionStatus>? _bluetoothPermissionsStream;
+
   /// The status of the Bluetooth adapter on the host device.
   BluetoothStatus? _bluetoothStatus;
 
@@ -94,30 +98,28 @@ class StartScanController extends State<StartScanRoute> {
   /// permissions must be granted for the app to function since its whole deal is doing Bluetooth stuff.
   Future<void> _requestApplePermissions() async {
     // Request the Bluetooth Scan permission
-    BluetoothPermissionStatus bluetoothPermissionStatus = await _ble.requestBluetoothPermissions();
+    _bluetoothPermissionsStream = _ble.emitCurrentPermissionStatus().listen((event) {
+      // Check if permission has been granted or not
+      if (event != BluetoothPermissionStatus.granted) {
+        // If permission is denied, show a SnackBar with a relevant message
+        debugPrint('Bluetooth permissions denied or are unknown.');
 
-    // Check if permission has been granted or not
-    if (bluetoothPermissionStatus != BluetoothPermissionStatus.granted) {
-      // If permission is denied, show a SnackBar with a relevant message
-      debugPrint('Bluetooth permissions denied or are unknown.');
+        setState(() {
+          _permissionsGranted = false;
+        });
+      }
+      // If permissions were granted, we go on our merry way
+      else {
+        debugPrint('Bluetooth and location permissions granted.');
 
-      setState(() {
-        _permissionsGranted = false;
-      });
+        setState(() {
+          _permissionsGranted = true;
+        });
 
-      _showPermissionsErrorSnackBar();
-    }
-    // If permissions were granted, we go on our merry way
-    else {
-      debugPrint('Bluetooth and location permissions granted.');
-
-      setState(() {
-        _permissionsGranted = true;
-      });
-
-      // Check the adapter status
-      _checkAdapterStatus();
-    }
+        // Check the adapter status
+        _checkAdapterStatus();
+      }
+    });
   }
 
   /// Checks the status of the Bluetooth adapter on the host device (assuming one is present).
@@ -179,6 +181,7 @@ class StartScanController extends State<StartScanRoute> {
   @override
   void dispose() {
     _bluetoothStatusStream?.cancel();
+    _bluetoothPermissionsStream?.cancel();
 
     super.dispose();
   }

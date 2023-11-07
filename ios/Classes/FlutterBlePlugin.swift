@@ -24,9 +24,6 @@ public class FlutterBlePlugin: NSObject, FlutterPlugin, CBCentralManagerDelegate
     /// This enables easy retrieval and management of peripheral connections.
     private var peripheralsMap: [String: CBPeripheral] = [:]
     
-    /// An optional `FlutterEventSink` which allows for sending scanning result data back to the Flutter side in real-time.
-    private var scanResultSink: FlutterEventSink?
-    
     // Holds the UUIDs of characteristics for which a read operation has been initiated.
     private var pendingReadRequests: [CBUUID: Bool] = [:]
     
@@ -404,7 +401,7 @@ public class FlutterBlePlugin: NSObject, FlutterPlugin, CBCentralManagerDelegate
     private func emitCurrentPermissionStatus() {
         let status: String = requestBluetoothPermissions().rawValue
         // Invoke method on Flutter side
-        channel.invokeMethod("permissionStateUpdated", arguments: status)
+        channel.invokeMethod("permissionStatusUpdated", arguments: status)
     }
     
     // MARK: Adapter Status Helper Methods
