@@ -287,7 +287,8 @@ class BLEConnector {
   void connectToDevice() {
     try {
       // `widget.device.address` should be replaced with the actual device address to which you wish to connect.
-      _ble.connect(deviceAddress: widget.device.address).listen((state) => onConnectionStateUpdate(state),
+      _ble.connect(deviceAddress: widget.device.address).listen((state) =>
+          onConnectionStateUpdate(state),
           onError: (error) {
             // Handle the error here
             _handleConnectionError(error);
@@ -714,6 +715,61 @@ Flutter application.
 
 <*other details coming soon*>
 
+## Viewing Documentation Locally
+
+**Prerequisites**
+Before you begin, make sure you have the following installed:
+
+- *Dart SDK*: `dhttpd` is a Dart tools, which requires the Dart SDK.
+- *dartdoc*: This tool generates the documentation. You can get it by
+  running `dart pub global activate dartdoc`.
+- *dhttpd*: This is the server for hosting the documentation. Install it by
+  running `dart pub global activate dhttpd`.
+
+**Generating Documentation**
+To generate the documentation for the Flutter BLE plugin, run the following command from the root of
+the plugin's directory:
+
+```zsh
+dart doc .
+```
+
+This command will process the Dart comments in the codebase and produce HTML documentation in the
+*doc/api* directory.
+
+**Hosting Documentation with dhttpd**
+First, navigate to the directory where the documentation was generated:
+
+```zsh
+cd doc/api
+```
+
+Then, activate the `dhttpd` tool:
+
+```zsh
+dart pub global activate dhttpd
+```
+
+Start the dhttpd server:
+
+```zsh
+dhttpd --path .
+```
+
+By default, `dhttpd` will serve files on port 8080. You can specify a different port with
+the `--port` argument if needed.
+
+**Accessing the Documentation**
+Once `dhttpd` is running, open your web browser and navigate to http://localhost:8080. This will
+open the locally hosted version of the documentation.
+
+You'll be able to browse all the classes, methods, and properties of the Flutter BLE plugin, along
+with detailed comments and explanations as provided in the source code.
+
+**Stopping the Server**
+When you are done viewing the documentation, return to the terminal and press `Ctrl+C` to stop
+the `dhttpd` server.
+
 ## Feedback and Contributions
 
 Contributions, suggestions, and feedback are all welcome and very much appreciated. Please open an
@@ -723,3 +779,26 @@ on the GitHub repository.
 ## License:
 
 MIT License
+
+## Disclaimer
+
+In the creation of this Flutter Bluetooth Low Energy plugin, artificial intelligence (AI) tools have
+been utilized. These tools have assisted in various stages of the plugin's development, from initial
+code generation to the optimization of algorithms.
+
+It is emphasized that the AI's contributions have been thoroughly overseen. Each segment of
+AI-assisted code has undergone meticulous scrutiny to ensure adherence to high standards of quality,
+reliability, and performance. This scrutiny was conducted by the sole developer responsible for the
+plugin's creation.
+
+Rigorous testing has been applied to all AI-suggested outputs, encompassing a wide array of
+conditions and use cases. Modifications have been implemented where necessary, ensuring that the
+AI's contributions are well-suited to the specific requirements and limitations inherent in
+Bluetooth Low Energy technology.
+
+Commitment to the plugin's accuracy and functionality is paramount, and feedback or issue reports
+from users are invited to facilitate continuous improvement.
+
+It is to be understood that this plugin, like all software, is subject to evolution over time. The
+developer is dedicated to its progressive refinement and is actively working to surpass the
+expectations of the Flutter community.
