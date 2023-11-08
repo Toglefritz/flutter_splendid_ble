@@ -1,7 +1,7 @@
 # FlutterSplendidBLE: Flutter Bluetooth Low Energy (BLE) Plugin
 
 <p align="center">
-<image src="./assets/flutter_splendid_ble_logo.png" alt="flutter_splendid_ble plugin logo" width="200"></image></p>
+<image src="https://github.com/Toglefritz/flutter_splendid_ble/blob/main/assets/flutter_splendid_ble_logo.png?raw=true" alt="flutter_splendid_ble plugin logo" width="200"></image></p>
 
 A comprehensive Flutter plugin for interacting with Bluetooth Low Energy (BLE) devices. This plugin
 provides functionalities such as scanning for BLE devices, connecting to them, managing the bonding
