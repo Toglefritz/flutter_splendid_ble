@@ -1,5 +1,7 @@
 name: flutter_splendid_ble_example
 description: Demonstrates how to use the flutter_splendid_ble plugin.
+homepage: https://github.com/Toglefritz/flutter_splendid_ble
+repository: https://github.com/Toglefritz/flutter_splendid_ble
 
 environment:
   sdk: '>=3.0.6 <4.0.0'
@@ -19,7 +21,7 @@ dependencies:
   # Provides localized string values
   flutter_localizations:
     sdk: flutter
-  intl: any
+  intl: ^0.18.1
   # Provides a cross-platform (iOS, Android) API to request and check permissions
   permission_handler: ^10.4.3
 

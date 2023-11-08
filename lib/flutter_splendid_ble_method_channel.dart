@@ -23,6 +23,9 @@ import 'models/scan_filter.dart';
 import 'models/scan_settings.dart';
 
 /// An implementation of [FlutterSplendidBlePlatform] that uses method channels.
+// Several methods in this class use SteamControllers. Callers to these functions should ensure that they are
+// closing these StreamControllers when they are no longer needed to avoid memory leaks
+// ignore_for_file: close_sinks
 class MethodChannelFlutterSplendidBle extends FlutterSplendidBlePlatform {
   /// The method channel used to interact with the native platform.
   @visibleForTesting
@@ -57,9 +60,9 @@ class MethodChannelFlutterSplendidBle extends FlutterSplendidBlePlatform {
   ///
   /// Listeners on the Dart side will receive one of the following enum values from [BluetoothStatus]:
   ///
-  /// * [BluetoothStatus.enabled]: Indicates that Bluetooth is enabled and ready for connections.
-  /// * [BluetoothStatus.disabled]: Indicates that Bluetooth is disabled and not available for use.
-  /// * [BluetoothStatus.notAvailable]: Indicates that Bluetooth is not available on the device.
+  /// * `BluetoothStatus.enabled`: Indicates that Bluetooth is enabled and ready for connections.
+  /// * `BluetoothStatus.disabled`: Indicates that Bluetooth is disabled and not available for use.
+  /// * `BluetoothStatus.notAvailable`: Indicates that Bluetooth is not available on the device.
   ///
   /// Returns a [Future] containing a [Stream] of [BluetoothStatus] values representing the current status
   /// of the Bluetooth adapter on the device.
@@ -390,12 +393,12 @@ class MethodChannelFlutterSplendidBle extends FlutterSplendidBlePlatform {
   /// that a response was not received in the given timeframe. Ensure that the timeout value is appropriate for the
   /// expected device response times and consider retrying the operation if necessary.
   ///
-  /// - [address]: The MAC address of the Bluetooth device. This uniquely identifies
+  /// - `address`: The MAC address of the Bluetooth device. This uniquely identifies
   ///   the device and is used to fetch the associated BluetoothGatt instance.
-  /// - [characteristicUuid]: The UUID of the characteristic whose value is to be read.
+  /// - `characteristicUuid`: The UUID of the characteristic whose value is to be read.
   ///   This UUID should match one of the characteristics available on the connected
   ///   Bluetooth device.
-  /// - [timeout]: The maximum amount of time this function will wait for a response from
+  /// - `timeout`: The maximum amount of time this function will wait for a response from
   ///   the platform side. If this duration is exceeded without receiving a response,
   ///   a [TimeoutException] will be thrown. Ensure that this duration accounts for
   ///   potential delays in device communication.
@@ -530,8 +533,8 @@ class MethodChannelFlutterSplendidBle extends FlutterSplendidBlePlatform {
   /// This method communicates with the native platform code to request Bluetooth permissions.
   /// It returns one of the values from the [BluetoothPermissionStatus] enumeration.
   ///
-  /// * [BluetoothPermissionStatus.GRANTED]: Permission is granted.
-  /// * [BluetoothPermissionStatus.DENIED]: Permission is denied.
+  /// * `BluetoothPermissionStatus.GRANTED`: Permission is granted.
+  /// * `BluetoothPermissionStatus.DENIED`: Permission is denied.
   ///
   /// Returns a [Future] containing the [BluetoothPermissionStatus] representing whether permission was granted or not.
   @override
@@ -546,8 +549,8 @@ class MethodChannelFlutterSplendidBle extends FlutterSplendidBlePlatform {
   ///
   /// Listeners on the Dart side will receive one of the following enum values from [BluetoothPermissionStatus]:
   ///
-  /// * [BluetoothPermissionStatus.GRANTED]: Indicates that Bluetooth permission is granted.
-  /// * [BluetoothPermissionStatus.DENIED]: Indicates that Bluetooth permission is denied.
+  /// * `BluetoothPermissionStatus.GRANTED`: Indicates that Bluetooth permission is granted.
+  /// * `BluetoothPermissionStatus.DENIED`: Indicates that Bluetooth permission is denied.
   ///
   /// Returns a [Stream] of [BluetoothPermissionStatus] values representing the current Bluetooth permission status on the device.
   @override

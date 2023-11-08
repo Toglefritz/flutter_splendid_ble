@@ -51,9 +51,9 @@ class BleCharacteristic {
 
   /// Writes data to a specified characteristic.
   ///
-  /// [characteristic] - The Bluetooth characteristic to which the method will write.
-  /// [value] - The string value to be written.
-  /// [writeType] - Optional write type, defaulting to `BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT`.
+  /// `characteristic` - The Bluetooth characteristic to which the method will write.
+  /// `value` - The string value to be written.
+  /// `writeType` - Optional write type, defaulting to `BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT`.
   Future<void> writeValue({
     required String value,
     int? writeType,
@@ -83,7 +83,6 @@ class BleCharacteristic {
   /// ```
   ///
   /// If a type other than `String` or `List<int>` is used, an `ArgumentError` is thrown.
-  // TODO should this method return a BleCharacteristicValue instance instead?
   Future<T> readValue<T>({
     Duration timeout = const Duration(seconds: 5),
   }) async {

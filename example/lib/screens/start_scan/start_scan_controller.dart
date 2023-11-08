@@ -177,6 +177,7 @@ class StartScanController extends State<StartScanRoute> {
 
   @override
   void dispose() {
+    // It is important to close the streams when they are no longer needed
     _bluetoothStatusStream?.cancel();
     _bluetoothPermissionsStream?.cancel();
 
