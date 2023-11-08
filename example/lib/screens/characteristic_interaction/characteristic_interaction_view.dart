@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_ble_example/screens/characteristic_interaction/models/message_source.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 import '../components/main_app_bar.dart';
 import 'characteristic_interaction_controller.dart';
+import 'models/message_source.dart';
 
 /// View for the [CharacteristicInteractionRoute]. The view is dumb, and purely declarative. References values
 /// on the controller and widget.

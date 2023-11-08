@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_ble/models/scan_filter.dart';
-import 'package:flutter_ble/models/scan_settings.dart';
-
-import 'package:flutter_ble_example/screens/scan/scan_controller.dart';
+import 'package:flutter_splendid_ble/models/scan_filter.dart';
+import 'package:flutter_splendid_ble/models/scan_settings.dart';
+import 'package:flutter_splendid_ble_example/screens/scan/scan_controller.dart';
 
 /// Automatically starts a scan for nearby Bluetooth devices and presents the detected devices in a list.
 class ScanRoute extends StatefulWidget {

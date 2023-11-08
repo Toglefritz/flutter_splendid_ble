@@ -1,4 +1,4 @@
-package com.splendidendeavors.flutter_ble.`interface`
+package com.splendidendeavors.flutter_splendid_ble.`interface`
 
 import android.bluetooth.BluetoothGatt
 import android.bluetooth.BluetoothGattCallback

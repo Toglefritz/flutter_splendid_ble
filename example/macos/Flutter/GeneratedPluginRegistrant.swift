@@ -5,8 +5,8 @@
 import FlutterMacOS
 import Foundation
 
-import flutter_ble
+import flutter_splendid_ble
 
 func RegisterGeneratedPlugins(registry: FlutterPluginRegistry) {
-  FlutterBlePlugin.register(with: registry.registrar(forPlugin: "FlutterBlePlugin"))
+  FlutterSplendidBlePlugin.register(with: registry.registrar(forPlugin: "FlutterSplendidBlePlugin"))
 }

@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_ble/models/scan_filter.dart';
-import 'package:flutter_ble/models/scan_settings.dart';
-import 'package:flutter_ble_example/screens/scan/scan_route.dart';
+import 'package:flutter_splendid_ble/models/scan_filter.dart';
+import 'package:flutter_splendid_ble/models/scan_settings.dart';
+import 'package:flutter_splendid_ble_example/screens/scan_configuration/scan_configuration_route.dart';
+import 'package:flutter_splendid_ble_example/screens/scan_configuration/scan_configuration_view.dart';
 
-import 'package:flutter_ble_example/screens/scan_configuration/scan_configuration_route.dart';
-import 'package:flutter_ble_example/screens/scan_configuration/scan_configuration_view.dart';
+import '../scan/scan_route.dart';
 
 /// A controller for the [ScanConfigurationRoute] that manages the state and owns all business logic.
 class ScanConfigurationController extends State<ScanConfigurationRoute> {

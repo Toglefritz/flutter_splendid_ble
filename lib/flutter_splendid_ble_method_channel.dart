@@ -1,32 +1,32 @@
 import 'dart:async';
 import 'dart:convert';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_ble/models/exceptions/service_discovery_exception.dart';
 
-import '../../flutter_ble_platform_interface.dart';
-import '../../models/ble_characteristic.dart';
-import '../../models/ble_characteristic_value.dart';
-import '../../models/ble_connection_state.dart';
-import '../../models/ble_device.dart';
-import '../../models/ble_service.dart';
-import '../../models/bluetooth_permission_status.dart';
-import '../../models/bluetooth_status.dart';
-import '../../models/exceptions/bluetooth_connection_exception.dart';
-import '../../models/exceptions/bluetooth_permission_exception.dart';
-import '../../models/exceptions/bluetooth_read_exception.dart';
-import '../../models/exceptions/bluetooth_scan_exception.dart';
-import '../../models/exceptions/bluetooth_subscription_exception.dart';
-import '../../models/exceptions/bluetooth_write_exception.dart';
-import '../../models/scan_filter.dart';
-import '../../models/scan_settings.dart';
+import 'flutter_splendid_ble_platform_interface.dart';
+import 'models/ble_characteristic.dart';
+import 'models/ble_characteristic_value.dart';
+import 'models/ble_connection_state.dart';
+import 'models/ble_device.dart';
+import 'models/ble_service.dart';
+import 'models/bluetooth_permission_status.dart';
+import 'models/bluetooth_status.dart';
+import 'models/exceptions/bluetooth_connection_exception.dart';
+import 'models/exceptions/bluetooth_permission_exception.dart';
+import 'models/exceptions/bluetooth_read_exception.dart';
+import 'models/exceptions/bluetooth_scan_exception.dart';
+import 'models/exceptions/bluetooth_subscription_exception.dart';
+import 'models/exceptions/bluetooth_write_exception.dart';
+import 'models/exceptions/service_discovery_exception.dart';
+import 'models/scan_filter.dart';
+import 'models/scan_settings.dart';
 
-/// An implementation of [FlutterBlePlatform] that uses method channels allowing the Dart code in a Flutter app
-/// to utilize platform specific functionality and APIs. In this case, the systems allowing Android applications
-/// to perform operations on the devices' Bluetooth radios are accessible via APIs that are part of the Android
-/// operating system.
-class MethodChannelFlutterBle extends FlutterBlePlatform {
+/// An implementation of [FlutterSplendidBlePlatform] that uses method channels.
+class MethodChannelFlutterSplendidBle extends FlutterSplendidBlePlatform {
   /// The method channel used to interact with the native platform.
-  final MethodChannel _channel = const MethodChannel('flutter_ble');
+  @visibleForTesting
+  final channel = const MethodChannel('flutter_splendid_ble');
 
   /// Checks the status of the Bluetooth adapter on the device.
   ///
@@ -46,7 +46,7 @@ class MethodChannelFlutterBle extends FlutterBlePlatform {
   /// role while the Bluetooth capabilities of the host device are disabled.
   @override
   Future<BluetoothStatus> checkBluetoothAdapterStatus() async {
-    final String statusString = await _channel.invokeMethod('checkBluetoothAdapterStatus');
+    final String statusString = await channel.invokeMethod('checkBluetoothAdapterStatus');
     return BluetoothStatus.values.firstWhere((e) => e.identifier == statusString);
   }
 
@@ -68,7 +68,7 @@ class MethodChannelFlutterBle extends FlutterBlePlatform {
     final StreamController<BluetoothStatus> streamController = StreamController<BluetoothStatus>.broadcast();
 
     // Listen to the platform side for Bluetooth adapter status updates.
-    _channel.setMethodCallHandler((MethodCall call) async {
+    channel.setMethodCallHandler((MethodCall call) async {
       if (call.method == 'adapterStateUpdated') {
         final String statusString = call.arguments as String;
 
@@ -83,7 +83,7 @@ class MethodChannelFlutterBle extends FlutterBlePlatform {
     });
 
     // Begin emitting Bluetooth adapter status updates from the platform side.
-    _channel.invokeMethod('emitCurrentBluetoothStatus');
+    channel.invokeMethod('emitCurrentBluetoothStatus');
 
     return streamController.stream;
   }
@@ -106,7 +106,7 @@ class MethodChannelFlutterBle extends FlutterBlePlatform {
     StreamController<BleDevice> streamController = StreamController<BleDevice>.broadcast();
 
     // Listen to the platform side for scanned devices.
-    _channel.setMethodCallHandler((MethodCall call) async {
+    channel.setMethodCallHandler((MethodCall call) async {
       switch (call.method) {
         case 'bleDeviceScanned':
           try {
@@ -134,7 +134,7 @@ class MethodChannelFlutterBle extends FlutterBlePlatform {
     final Map<String, dynamic>? settingsMap = settings?.toMap();
 
     // Begin the scan on the platform side, including the filters and settings in the method call if provided.
-    _channel.invokeMethod('startScan', {
+    channel.invokeMethod('startScan', {
       'filters': filtersMap,
       'settings': settingsMap,
     });
@@ -147,7 +147,7 @@ class MethodChannelFlutterBle extends FlutterBlePlatform {
   Future<void> stopScan() async {
     try {
       // Stop the scan and wait for the method to complete.
-      await _channel.invokeMethod('stopScan');
+      await channel.invokeMethod('stopScan');
     } on PlatformException catch (e) {
       // Handle different error types accordingly.
       if (e.message?.contains('permissions') == true) {
@@ -178,7 +178,7 @@ class MethodChannelFlutterBle extends FlutterBlePlatform {
 
     // Listen to the platform side for connection state updates. The platform side differentiates connection state
     // updates for different Bluetooth peripherals by appending the device address to the method name.
-    _channel.setMethodCallHandler((MethodCall call) async {
+    channel.setMethodCallHandler((MethodCall call) async {
       if (call.method == 'bleConnectionState_$deviceAddress') {
         final String connectionStateString = call.arguments as String;
         final BleConnectionState state =
@@ -189,7 +189,7 @@ class MethodChannelFlutterBle extends FlutterBlePlatform {
       }
     });
 
-    _channel.invokeMethod('connect', {'address': deviceAddress});
+    channel.invokeMethod('connect', {'address': deviceAddress});
     return connectionStateStreamController.stream;
   }
 
@@ -221,7 +221,7 @@ class MethodChannelFlutterBle extends FlutterBlePlatform {
     // services discovered for different Bluetooth peripherals by appending the device address to the method name.
     _handleBleServicesDiscovered(deviceAddress, servicesDiscoveredController);
 
-    _channel.invokeMethod('discoverServices', {'address': deviceAddress});
+    channel.invokeMethod('discoverServices', {'address': deviceAddress});
     return servicesDiscoveredController.stream;
   }
 
@@ -243,7 +243,7 @@ class MethodChannelFlutterBle extends FlutterBlePlatform {
     String deviceAddress,
     StreamController<List<BleService>> servicesDiscoveredController,
   ) {
-    _channel.setMethodCallHandler((MethodCall call) async {
+    channel.setMethodCallHandler((MethodCall call) async {
       if (call.method == 'bleServicesDiscovered_$deviceAddress') {
         final Map rawServicesMap = call.arguments as Map;
 
@@ -298,7 +298,7 @@ class MethodChannelFlutterBle extends FlutterBlePlatform {
   /// 4. **Connection Limits**: BLE peripherals often have a limit on the number of concurrent connections. Disconnecting when done ensures that other devices can connect.
   @override
   Future<void> disconnect(String deviceAddress) async {
-    _channel.invokeMethod('disconnect', {'address': deviceAddress});
+    channel.invokeMethod('disconnect', {'address': deviceAddress});
   }
 
   /// Fetches the current connection state of a Bluetooth Low Energy (BLE) device.
@@ -315,7 +315,7 @@ class MethodChannelFlutterBle extends FlutterBlePlatform {
   Future<BleConnectionState> getCurrentConnectionState(String deviceAddress) async {
     try {
       // Invoke the method channel to fetch the current connection state for the BLE device.
-      final String connectionStateString = await _channel.invokeMethod('getCurrentConnectionState', {
+      final String connectionStateString = await channel.invokeMethod('getCurrentConnectionState', {
         'address': deviceAddress,
       });
 
@@ -362,7 +362,7 @@ class MethodChannelFlutterBle extends FlutterBlePlatform {
     int? writeType,
   }) async {
     try {
-      await _channel.invokeMethod('writeCharacteristic', {
+      await channel.invokeMethod('writeCharacteristic', {
         'address': characteristic.address,
         'characteristicUuid': characteristic.uuid,
         'value': value,
@@ -422,7 +422,7 @@ class MethodChannelFlutterBle extends FlutterBlePlatform {
   }) async {
     final completer = Completer<BleCharacteristicValue>();
 
-    _channel.setMethodCallHandler((MethodCall call) async {
+    channel.setMethodCallHandler((MethodCall call) async {
       if (call.method == 'onCharacteristicRead') {
         final BleCharacteristicValue response;
         try {
@@ -431,13 +431,13 @@ class MethodChannelFlutterBle extends FlutterBlePlatform {
           rethrow;
         }
         completer.complete(response);
-        _channel.setMethodCallHandler(null); // Reset the handler to avoid future calls.
+        channel.setMethodCallHandler(null); // Reset the handler to avoid future calls.
       }
     });
 
     // Read the value of the characteristic.
     try {
-      _channel.invokeMethod('readCharacteristic', {
+      channel.invokeMethod('readCharacteristic', {
         'address': characteristic.address,
         'characteristicUuid': characteristic.uuid,
       });
@@ -455,7 +455,7 @@ class MethodChannelFlutterBle extends FlutterBlePlatform {
       timeout,
       onTimeout: () {
         // If the timeout occurs, reset the method call handler and throw an error.
-        _channel.setMethodCallHandler(null);
+        channel.setMethodCallHandler(null);
         throw TimeoutException('Failed to read characteristic within the given timeout', timeout);
       },
     );
@@ -471,7 +471,7 @@ class MethodChannelFlutterBle extends FlutterBlePlatform {
     StreamController<BleCharacteristicValue> streamController = StreamController<BleCharacteristicValue>.broadcast();
 
     // Listen for characteristic updates from the platform side.
-    _channel.setMethodCallHandler((MethodCall call) async {
+    channel.setMethodCallHandler((MethodCall call) async {
       if (call.method == 'onCharacteristicChanged') {
         final BleCharacteristicValue value;
         try {
@@ -486,7 +486,7 @@ class MethodChannelFlutterBle extends FlutterBlePlatform {
 
     // Trigger the subscription to the characteristic on the platform side.
     try {
-      _channel.invokeMethod('subscribeToCharacteristic', {
+      channel.invokeMethod('subscribeToCharacteristic', {
         'address': characteristic.address,
         'characteristicUuid': characteristic.uuid,
       });
@@ -511,7 +511,7 @@ class MethodChannelFlutterBle extends FlutterBlePlatform {
   @override
   void unsubscribeFromCharacteristic(BleCharacteristic characteristic) {
     try {
-      _channel.invokeMethod('unsubscribeFromCharacteristic', {
+      channel.invokeMethod('unsubscribeFromCharacteristic', {
         'address': characteristic.address,
         'characteristicUuid': characteristic.uuid,
       });
@@ -536,7 +536,7 @@ class MethodChannelFlutterBle extends FlutterBlePlatform {
   /// Returns a [Future] containing the [BluetoothPermissionStatus] representing whether permission was granted or not.
   @override
   Future<BluetoothPermissionStatus> requestBluetoothPermissions() async {
-    final String permissionStatusString = await _channel.invokeMethod('requestBluetoothPermissions');
+    final String permissionStatusString = await channel.invokeMethod('requestBluetoothPermissions');
     return BluetoothPermissionStatus.values.firstWhere((status) => status.identifier == permissionStatusString);
   }
 
@@ -555,7 +555,7 @@ class MethodChannelFlutterBle extends FlutterBlePlatform {
     final StreamController<BluetoothPermissionStatus> streamController =
         StreamController<BluetoothPermissionStatus>.broadcast();
 
-    _channel.setMethodCallHandler((MethodCall call) async {
+    channel.setMethodCallHandler((MethodCall call) async {
       if (call.method == 'permissionStatusUpdated') {
         final String permissionStatusString = call.arguments as String;
 
@@ -569,7 +569,7 @@ class MethodChannelFlutterBle extends FlutterBlePlatform {
     });
 
     // Begin emitting Bluetooth permission status updates from the platform side.
-    _channel.invokeMethod('emitCurrentPermissionStatus');
+    channel.invokeMethod('emitCurrentPermissionStatus');
 
     return streamController.stream;
   }

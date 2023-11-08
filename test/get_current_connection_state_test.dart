@@ -1,13 +1,13 @@
 import 'package:flutter/services.dart';
-import 'package:flutter_ble/models/ble_connection_state.dart';
-import 'package:flutter_ble/src/channel/flutter_ble_method_channel.dart';
+import 'package:flutter_splendid_ble/flutter_splendid_ble_method_channel.dart';
+import 'package:flutter_splendid_ble/models/ble_connection_state.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  const MethodChannel channel = MethodChannel('flutter_ble');
-  final MethodChannelFlutterBle methodChannelFlutterBle = MethodChannelFlutterBle();
+  const MethodChannel channel = MethodChannel('flutter_splendid_ble');
+  final MethodChannelFlutterSplendidBle methodChannelFlutterBle = MethodChannelFlutterSplendidBle();
 
   setUp(() {
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(channel,(MethodCall methodCall) async {

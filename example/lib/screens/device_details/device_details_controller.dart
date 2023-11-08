@@ -1,20 +1,20 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_ble/flutter_ble.dart';
-import 'package:flutter_ble/models/ble_characteristic.dart';
-import 'package:flutter_ble/models/ble_connection_state.dart';
-import 'package:flutter_ble/models/ble_service.dart';
-import 'package:flutter_ble_example/screens/start_scan/start_scan_route.dart';
+import 'package:flutter_splendid_ble/flutter_splendid_ble.dart';
+import 'package:flutter_splendid_ble/models/ble_characteristic.dart';
+import 'package:flutter_splendid_ble/models/ble_connection_state.dart';
+import 'package:flutter_splendid_ble/models/ble_service.dart';
 
 import '../characteristic_interaction/characteristic_interaction_route.dart';
+import '../start_scan/start_scan_route.dart';
 import 'device_details_route.dart';
 import 'device_details_view.dart';
 
 /// A controller for the [DeviceDetailsRoute] that manages the state and owns all business logic.
 class DeviceDetailsController extends State<DeviceDetailsRoute> {
   /// A [FlutterBle] instance used for Bluetooth operations conducted by this route.
-  final FlutterBle _ble = FlutterBle();
+  final FlutterSplendidBle _ble = FlutterSplendidBle();
 
   /// The current connection state between the host mobile device and the [BleDevice] provided to this route.
   BleConnectionState _currentConnectionState = BleConnectionState.unknown;

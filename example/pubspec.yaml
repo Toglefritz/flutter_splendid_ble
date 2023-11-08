@@ -1,7 +1,5 @@
-name: flutter_ble_example
-description: Demonstrates how to use the flutter_ble plugin.
-
-publish_to: 'none'
+name: flutter_splendid_ble_example
+description: Demonstrates how to use the flutter_splendid_ble plugin.
 
 environment:
   sdk: '>=3.0.6 <4.0.0'
@@ -10,7 +8,7 @@ dependencies:
   flutter:
     sdk: flutter
 
-  flutter_ble:
+  flutter_splendid_ble:
     # When depending on this package from a real application you should use:
     #   flutter_ble: ^x.y.z
     # See https://dart.dev/tools/pub/dependencies#version-constraints

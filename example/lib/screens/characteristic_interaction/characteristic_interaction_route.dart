@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_ble/models/ble_characteristic.dart';
-import 'package:flutter_ble/models/ble_device.dart';
+import 'package:flutter_splendid_ble/models/ble_characteristic.dart';
+import 'package:flutter_splendid_ble/models/ble_device.dart';
 
 import 'characteristic_interaction_controller.dart';
 

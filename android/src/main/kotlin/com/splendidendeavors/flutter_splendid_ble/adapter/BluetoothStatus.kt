@@ -1,4 +1,4 @@
-package com.splendidendeavors.flutter_ble.adapter
+package com.splendidendeavors.flutter_splendid_ble.adapter
 
 /**
  * Enumeration representing the possible statuses of the Bluetooth adapter.

@@ -1,72 +1,57 @@
-# Contributing to FlutterBle Plugin
+# FlutterSplendidBLE Example App
 
-First of all, thank you for considering contributing to the FlutterBle Plugin! We're delighted you'
-re interested and we're looking forward to seeing what you'll bring to the project. The following
-document outlines the process for contributing, so please read these guidelines carefully before
-submitting your contribution.
+This example app demonstrates how to use the flutter_splendid_ble plugin to interact with Bluetooth
+Low Energy (BLE) devices on both Android and iOS platforms.
 
 ## Getting Started
 
-1. **Fork the Repository**: Start by forking the original repository to your personal GitHub
-   account.
-   This will allow you to propose changes without access to the main codebase.
-2. **Clone the Repository**: Once the repository is forked, clone it locally on your machine using:
+### Prerequisites
+
+- Flutter SDK installed and configured
+- A real Android or iOS device (the plugin doesn't support simulators/emulators)
+- A real BLE device or a test device created with an ESP32 board (find the
+  code [here](https://github.com/Toglefritz/esp32_ble_tester))
+
+### Running the Example
+
+1. **Clone the Repository**: Clone the flutter_splendid_ble repository, including this example app.
+2. **Navigate to the Example Directory**: Use your terminal or command line to navigate to the
+   example directory:
 
 ```bash
-git clone https://github.com/Toglefritz/flutter_ble.git
+cd path/to/flutter_splendid_ble/example
 ```
 
-3. **Create a New Branch**: Create a new branch where you'll do your work.
+3. Run the App: Connect your Android or iOS device and run the app using:
 
 ```bash
-git checkout -b feature/your-feature-name
+flutter run
 ```
 
-## Development Process
+## Features
 
-1. **Set up the Development Environment**: Make sure to set up the development environment according
-   to the instructions in the README.md. *more details coming soon*
-2. **Write Code**: Add your contributions, following the code style guidelines described below. Make
-   your changes, including adding appropriate tests and documentation.
-3. **Commit Your Changes**: Make small, incremental commits with clear, descriptive commit messages.
+This example app showcases the following features of the flutter_splendid_ble plugin:
 
-```bash
-git commit -m "Your detailed commit message"
-```
+- Scanning for nearby BLE devices
+- Connecting to a BLE device
+- Managing the bonding process
+- Reading from and writing to BLE characteristics
+- Subscribing to characteristics via notifications or indications
+- Handling connection errors and other exceptions
+- Monitoring connection status and other state changes
 
-4. **Keep Up to Date**: Regularly pull the latest changes from the upstream main or development
-   branch.
+## How to Use
 
-```bash
-git pull origin main
-```
+1. **Start Scanning**: Tap the "Start Scanning" button to begin scanning for nearby BLE devices.
+2. **Connect to a Device**: Select a device from the list to connect.
+3. **Interact with the Device**: Explore various options like reading/writing characteristics.
+4. **Stop Scanning**: Tap the "Stop Scanning" button to stop scanning for devices.
 
-## Documentation and Code Style
+## Support and Feedback
 
-- Code must be adequately documented. Follow the documentation guidelines and use DartDoc comments
-  for Dart code.
-- Ensure that the code adheres to the Flutter project's existing coding style.
-- Include comments explaining tricky or complex code.
+For any issues, feedback, or contributions, please refer to the main flutter_splendid_ble
+repository.
 
-## Submitting the Contribution
+## License
 
-1. **Push Changes**: Push your changes to your forked repository.
-
-```bash
-git push origin feature/your-feature-name
-```
-
-2. **Create Pull Request**: Navigate to your forked repository on GitHub and click on the "New Pull
-   Request" button. Make sure to select the correct base and compare branches.
-3. **Describe Your Changes**: In the pull request, describe the changes you have made, any issues
-   you're addressing, and any questions you may have.
-4. **Review**: The maintainers of the repository will review your changes. They may suggest changes,
-   ask for improvements or clarification, or accept the pull request as is.
-5. **Merge**: Once your pull request is accepted, your changes will be merged into the main
-   codebase.
-
-## Questions?
-
-If you have any questions or issues, feel free to open an issue in the GitHub repository.
-
-Thank you for your contributions!
+This project is licensed under the MIT License. See the LICENSE file for details.

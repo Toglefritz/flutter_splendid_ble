@@ -1,47 +1,16 @@
-# Flutter BLE Example App
+# flutter_splendid_ble_example
 
-This example app demonstrates how to use the flutter_ble plugin to interact with Bluetooth Low 
-Energy (BLE) devices on both Android and iOS platforms.
+Demonstrates how to use the flutter_splendid_ble plugin.
 
 ## Getting Started
-### Prerequisites
-- Flutter SDK installed and configured
-- A real Android or iOS device (the plugin doesn't support simulators/emulators)
-- A real BLE device or a test device created with an ESP32 board (find the code [here](https://github.com/Toglefritz/esp32_ble_tester))
 
-### Running the Example
-1. **Clone the Repository**: Clone the flutter_ble repository, including this example app.
-2. **Navigate to the Example Directory**: Use your terminal or command line to navigate to the example directory:
+This project is a starting point for a Flutter application.
 
-```bash
-cd path/to/flutter_ble/example
-```
+A few resources to get you started if this is your first Flutter project:
 
-3. Run the App: Connect your Android or iOS device and run the app using:
+- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
+- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
 
-```bash
-flutter run
-```
-
-## Features
-This example app showcases the following features of the flutter_ble plugin:
-
-- Scanning for nearby BLE devices
-- Connecting to a BLE device
-- Managing the bonding process
-- Reading from and writing to BLE characteristics
-- Subscribing to characteristics via notifications or indications
-- Handling connection errors and other exceptions
-- Monitoring connection status and other state changes
-
-## How to Use
-1. **Start Scanning**: Tap the "Start Scanning" button to begin scanning for nearby BLE devices.
-2. **Connect to a Device**: Select a device from the list to connect.
-3. **Interact with the Device**: Explore various options like reading/writing characteristics.
-4. **Stop Scanning**: Tap the "Stop Scanning" button to stop scanning for devices.
-
-## Support and Feedback
-For any issues, feedback, or contributions, please refer to the main flutter_ble repository.
-
-## License
-This project is licensed under the MIT License. See the LICENSE file for details.
+For help getting started with Flutter development, view the
+[online documentation](https://docs.flutter.dev/), which offers tutorials,
+samples, guidance on mobile development, and a full API reference.

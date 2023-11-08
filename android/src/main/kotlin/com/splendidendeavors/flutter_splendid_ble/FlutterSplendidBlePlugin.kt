@@ -1,11 +1,6 @@
-package com.splendidendeavors.flutter_ble
+package com.splendidendeavors.flutter_splendid_ble
 
-import android.bluetooth.BluetoothGattCharacteristic
-import com.splendidendeavors.flutter_ble.adapter.BluetoothAdapterHandler
-import android.os.Build
-import androidx.annotation.RequiresApi
-import com.splendidendeavors.flutter_ble.`interface`.BleDeviceInterface
-import com.splendidendeavors.flutter_ble.scanner.BleScannerHandler
+import androidx.annotation.NonNull
 
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.plugin.common.EventChannel
@@ -13,10 +8,17 @@ import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
+
+import android.bluetooth.BluetoothGattCharacteristic
+import com.splendidendeavors.flutter_splendid_ble.adapter.BluetoothAdapterHandler
+import com.splendidendeavors.flutter_splendid_ble.`interface`.BleDeviceInterface
+import com.splendidendeavors.flutter_splendid_ble.scanner.BleScannerHandler
+
+
 import java.util.UUID
 
-/** FlutterBlePlugin */
-class FlutterBlePlugin : FlutterPlugin, MethodCallHandler {
+/** FlutterSplendidBlePlugin */
+class FlutterSplendidBlePlugin : FlutterPlugin, MethodCallHandler {
     /// The MethodChannel that will the communication between Flutter and native Android
     ///
     /// This local reference serves to register the plugin with the Flutter Engine and unregister it
@@ -47,7 +49,7 @@ class FlutterBlePlugin : FlutterPlugin, MethodCallHandler {
     private lateinit var bleDeviceInterface: BleDeviceInterface
 
     override fun onAttachedToEngine(flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
-        channel = MethodChannel(flutterPluginBinding.binaryMessenger, "flutter_ble")
+        channel = MethodChannel(flutterPluginBinding.binaryMessenger, "flutter_splendid_ble")
         channel.setMethodCallHandler(this)
         eventChannel = EventChannel(flutterPluginBinding.binaryMessenger, "flutter_ble_events")
 
@@ -65,7 +67,6 @@ class FlutterBlePlugin : FlutterPlugin, MethodCallHandler {
         bleDeviceInterface = BleDeviceInterface(channel, flutterPluginBinding.applicationContext)
     }
 
-    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onMethodCall(call: MethodCall, result: Result) {
         when (call.method) {
             "checkBluetoothAdapterStatus" -> {

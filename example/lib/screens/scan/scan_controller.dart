@@ -1,20 +1,19 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_ble/flutter_ble.dart';
-import 'package:flutter_ble/models/ble_device.dart';
-import 'package:flutter_ble/models/exceptions/bluetooth_scan_exception.dart';
-import 'package:flutter_ble_example/screens/device_details/device_details_route.dart';
+import 'package:flutter_splendid_ble/flutter_splendid_ble.dart';
+import 'package:flutter_splendid_ble/models/ble_device.dart';
+import 'package:flutter_splendid_ble/models/exceptions/bluetooth_scan_exception.dart';
+import 'package:flutter_splendid_ble_example/screens/scan/scan_route.dart';
+import 'package:flutter_splendid_ble_example/screens/scan/scan_view.dart';
 
-import 'package:flutter_ble_example/screens/scan/scan_route.dart';
-import 'package:flutter_ble_example/screens/scan/scan_view.dart';
-
+import '../device_details/device_details_route.dart';
 import '../scan_configuration/scan_configuration_route.dart';
 
 /// A controller for the [ScanRoute] that manages the state and owns all business logic.
 class ScanController extends State<ScanRoute> {
   /// A [FlutterBle] instance used for Bluetooth operations conducted by this route.
-  final FlutterBle _ble = FlutterBle();
+  final FlutterSplendidBle _ble = FlutterSplendidBle();
 
   /// Determines if a scan is currently in progress.
   bool _scanInProgress = false;

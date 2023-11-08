@@ -1,4 +1,4 @@
-package com.splendidendeavors.flutter_ble.scanner
+package com.splendidendeavors.flutter_splendid_ble.scanner
 
 import android.bluetooth.BluetoothManager
 import android.bluetooth.le.BluetoothLeScanner

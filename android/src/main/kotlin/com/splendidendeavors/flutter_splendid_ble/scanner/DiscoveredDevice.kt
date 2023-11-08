@@ -1,4 +1,4 @@
-package com.splendidendeavors.flutter_ble.scanner
+package com.splendidendeavors.flutter_splendid_ble.scanner
 
 /**
  * The `DiscoveredDevice` class encapsulates information about a Bluetooth Low Energy (BLE) device

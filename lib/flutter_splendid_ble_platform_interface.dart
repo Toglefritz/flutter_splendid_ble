@@ -1,35 +1,33 @@
-import 'package:flutter_ble/models/ble_device.dart';
-import 'package:flutter_ble/models/scan_filter.dart';
-import 'package:flutter_ble/models/scan_settings.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 
+import 'flutter_splendid_ble_method_channel.dart';
 import 'models/ble_characteristic.dart';
 import 'models/ble_characteristic_value.dart';
 import 'models/ble_connection_state.dart';
+import 'models/ble_device.dart';
 import 'models/ble_service.dart';
 import 'models/bluetooth_permission_status.dart';
 import 'models/bluetooth_status.dart';
-import 'src/channel/flutter_ble_method_channel.dart';
+import 'models/scan_filter.dart';
+import 'models/scan_settings.dart';
 
-/// This abstract class defines methods made available by the *flutter_ble* plugin. The concrete implementations
-/// of these methods can be found in */src/channel/flutter_ble_method_channel.dart*.
-abstract class FlutterBlePlatform extends PlatformInterface {
-  /// Constructs a FlutterBlePlatform.
-  FlutterBlePlatform() : super(token: _token);
+abstract class FlutterSplendidBlePlatform extends PlatformInterface {
+  /// Constructs a FlutterSplendidBlePlatform.
+  FlutterSplendidBlePlatform() : super(token: _token);
 
   static final Object _token = Object();
 
-  static FlutterBlePlatform _instance = MethodChannelFlutterBle();
+  static FlutterSplendidBlePlatform _instance = MethodChannelFlutterSplendidBle();
 
-  /// The default instance of [FlutterBlePlatform] to use.
+  /// The default instance of [FlutterSplendidBlePlatform] to use.
   ///
-  /// Defaults to [MethodChannelFlutterBle].
-  static FlutterBlePlatform get instance => _instance;
+  /// Defaults to [MethodChannelFlutterSplendidBle].
+  static FlutterSplendidBlePlatform get instance => _instance;
 
   /// Platform-specific implementations should set this with their own
-  /// platform-specific class that extends [FlutterBlePlatform] when
+  /// platform-specific class that extends [FlutterSplendidBlePlatform] when
   /// they register themselves.
-  static set instance(FlutterBlePlatform instance) {
+  static set instance(FlutterSplendidBlePlatform instance) {
     PlatformInterface.verifyToken(instance, _token);
     _instance = instance;
   }
@@ -58,8 +56,7 @@ abstract class FlutterBlePlatform extends PlatformInterface {
     throw UnimplementedError('stopScan() has not been implemented.');
   }
 
-  /// Initiates a connection to a BLE peripheral and returns a Stream representing
-  /// the connection state.
+  /// Initiates a connection to a BLE peripheral and returns a Stream representing the connection state.
   Stream<BleConnectionState> connect({required String deviceAddress}) {
     throw UnimplementedError('connect() has not been implemented.');
   }
@@ -69,9 +66,8 @@ abstract class FlutterBlePlatform extends PlatformInterface {
     throw UnimplementedError('discoverServices() has not been implemented.');
   }
 
-  /// Terminates the connection to a BLE peripheral.
-  /// Initiates a connection to a BLE peripheral and returns a Stream representing
-  /// the connection state.
+  /// Terminates the connection to a BLE peripheral. Initiates a connection to a BLE peripheral and returns a
+  /// [Stream] representing the connection state.
   Future<void> disconnect(String deviceAddress) async {
     throw UnimplementedError('disconnect() has not been implemented.');
   }

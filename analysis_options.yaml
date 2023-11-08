@@ -1,8 +1,4 @@
 include: package:flutter_lints/flutter.yaml
 
-linter:
-  rules:
-    - cancel_subscriptions
-    - prefer_single_quotes
-    - type_annotate_public_apis
-    - require_trailing_commas
+# Additional information about this file can be found at
+# https://dart.dev/guides/language/analysis-options

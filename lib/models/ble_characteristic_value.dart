@@ -54,7 +54,7 @@ class BleCharacteristicValue {
   });
 
   /// Factory constructor that creates an instance of [BleCharacteristicValue] from a map. This is typically used to
-  /// convert data coming from the platform side using methods provided by the *flutter_ble* plugin.
+  /// convert data coming from the platform side using methods provided by the *flutter_splendid_ble* plugin.
   ///
   /// The map is expected to have the keys 'characteristicUuid', 'deviceAddress',
   /// and 'value'.

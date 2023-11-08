@@ -1,14 +1,15 @@
+import Cocoa
 import FlutterMacOS
 import CoreBluetooth
 
-/// `FlutterBlePlugin` serves as the central bridge between Flutter code in a Dart environment and the native Bluetooth capabilities on MacOS devices.
+/// `FlutterSplendidBlePlugin` serves as the central bridge between Flutter code in a Dart environment and the native Bluetooth capabilities on MacOS devices.
 /// It adheres to the `FlutterPlugin` protocol to interface with Flutter, and `CBCentralManagerDelegate` to interact with the MacOS Bluetooth stack.
 ///
 /// The design ensures that there is a single instance of `CBCentralManager` to maintain the state of the Bluetooth adapter across the entire application.
 /// It's crucial to have only one `CBCentralManager` instance in order to manage and centralize the state and delegate callbacks for BLE operations consistently.
 /// This is particularly important for operations like scanning, where the discovery of peripherals should be consistent with the instances used for actual communication.
 /// Maintaining a single source of truth for peripheral instances avoids duplication and state inconsistencies.
-public class FlutterBlePlugin: NSObject, FlutterPlugin, CBCentralManagerDelegate, CBPeripheralDelegate {
+public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManagerDelegate, CBPeripheralDelegate {
     /// A `FlutterMethodChannel` used for communication with the Dart side of the app.
     private var channel: FlutterMethodChannel!
     
@@ -39,8 +40,8 @@ public class FlutterBlePlugin: NSObject, FlutterPlugin, CBCentralManagerDelegate
     /// Registers the plugin with the given registrar by creating a method channel and setting the current instance as its delegate.
     /// - Parameter registrar: The `FlutterPluginRegistrar` that handles plugin registration.
     public static func register(with registrar: FlutterPluginRegistrar) {
-        let channel = FlutterMethodChannel(name: "flutter_ble", binaryMessenger: registrar.messenger)
-        let instance = FlutterBlePlugin()
+        let channel = FlutterMethodChannel(name: "flutter_splendid_ble", binaryMessenger: registrar.messenger)
+        let instance = FlutterSplendidBlePlugin()
         instance.channel = channel
         registrar.addMethodCallDelegate(instance, channel: channel)
     }

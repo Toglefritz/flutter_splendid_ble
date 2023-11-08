@@ -1,15 +1,15 @@
 import 'package:flutter/services.dart';
-import 'package:flutter_ble/models/ble_connection_state.dart';
-import 'package:flutter_ble/src/channel/flutter_ble_method_channel.dart';
+import 'package:flutter_splendid_ble/flutter_splendid_ble_method_channel.dart';
+import 'package:flutter_splendid_ble/models/ble_connection_state.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  const MethodChannel channel = MethodChannel('flutter_ble');
+  const MethodChannel channel = MethodChannel('flutter_splendid_ble');
 
   // Initialize the class containing the `connect` method
-  final MethodChannelFlutterBle methodChannelFlutterBle = MethodChannelFlutterBle();
+  final MethodChannelFlutterSplendidBle methodChannelFlutterBle = MethodChannelFlutterSplendidBle();
 
   setUp(() {
     // Set up a default method channel mock

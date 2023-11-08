@@ -2,13 +2,13 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_ble/models/ble_characteristic_value.dart';
-import 'package:flutter_ble_example/screens/characteristic_interaction/models/message_source.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:flutter_splendid_ble/models/ble_characteristic_value.dart';
 
 import 'characteristic_interaction_route.dart';
 import 'characteristic_interaction_view.dart';
 import 'models/message.dart';
+import 'models/message_source.dart';
 
 /// A controller for the [CharacteristicInteractionRoute] that manages the state and owns all business logic.
 class CharacteristicInteractionController extends State<CharacteristicInteractionRoute> {

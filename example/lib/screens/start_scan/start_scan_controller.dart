@@ -1,20 +1,21 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter_ble/flutter_ble.dart';
-import 'package:flutter_ble/models/bluetooth_permission_status.dart';
-import 'package:flutter_ble/models/bluetooth_status.dart';
-import 'package:flutter_ble_example/screens/scan/scan_route.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:flutter_splendid_ble/flutter_splendid_ble.dart';
+import 'package:flutter_splendid_ble/models/bluetooth_permission_status.dart';
+import 'package:flutter_splendid_ble/models/bluetooth_status.dart';
+import 'package:flutter_splendid_ble_example/screens/start_scan/start_scan_route.dart';
+import 'package:flutter_splendid_ble_example/screens/start_scan/start_scan_view.dart';
 import 'dart:io' show Platform;
 
-import 'package:flutter_ble_example/screens/start_scan/start_scan_route.dart';
-import 'package:flutter_ble_example/screens/start_scan/start_scan_view.dart';
 import 'package:permission_handler/permission_handler.dart';
+
+import '../scan/scan_route.dart';
 
 /// A controller for the [StartScanRoute] that manages the state and owns all business logic.
 class StartScanController extends State<StartScanRoute> {
   /// A [FlutterBle] instance used for Bluetooth operations conducted by this route.
-  final FlutterBle _ble = FlutterBle();
+  final FlutterSplendidBle _ble = FlutterSplendidBle();
 
   /// Determines if Bluetooth permissions have been granted.
   ///
@@ -66,8 +67,6 @@ class StartScanController extends State<StartScanRoute> {
       setState(() {
         _permissionsGranted = false;
       });
-
-      _showPermissionsErrorSnackBar();
     }
     // If permission is denied, show a SnackBar with a relevant message
     else if (locationPermissionStatus.isDenied) {
@@ -76,8 +75,6 @@ class StartScanController extends State<StartScanRoute> {
       setState(() {
         _permissionsGranted = false;
       });
-
-      _showPermissionsErrorSnackBar();
     }
     // If permissions were granted, we go on our merry way
     else {

@@ -1,14 +1,15 @@
 import Flutter
+import UIKit
 import CoreBluetooth
 
-/// `FlutterBlePlugin` serves as the central bridge between Flutter code in a Dart environment and the native Bluetooth capabilities on iOS devices.
+/// `FlutterSplendidBlePlugin` serves as the central bridge between Flutter code in a Dart environment and the native Bluetooth capabilities on iOS devices.
 /// It adheres to the `FlutterPlugin` protocol to interface with Flutter, and `CBCentralManagerDelegate` to interact with the iOS Bluetooth stack.
 ///
 /// The design ensures that there is a single instance of `CBCentralManager` to maintain the state of the Bluetooth adapter across the entire application.
 /// It's crucial to have only one `CBCentralManager` instance in order to manage and centralize the state and delegate callbacks for BLE operations consistently.
 /// This is particularly important for operations like scanning, where the discovery of peripherals should be consistent with the instances used for actual communication.
 /// Maintaining a single source of truth for peripheral instances avoids duplication and state inconsistencies.
-public class FlutterBlePlugin: NSObject, FlutterPlugin, CBCentralManagerDelegate, CBPeripheralDelegate {
+public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManagerDelegate, CBPeripheralDelegate {
     /// A `FlutterMethodChannel` used for communication with the Dart side of the app.
     private var channel: FlutterMethodChannel!
     
@@ -27,25 +28,21 @@ public class FlutterBlePlugin: NSObject, FlutterPlugin, CBCentralManagerDelegate
     // Holds the UUIDs of characteristics for which a read operation has been initiated.
     private var pendingReadRequests: [CBUUID: Bool] = [:]
     
-    /// Initializes the `FlutterBlePlugin` and sets up the central manager.
+    /// Initializes the `FlutterSplendidBlePlugin` and sets up the central manager.
     override init() {
         super.init()
         centralManager = CBCentralManager(delegate: self, queue: nil)
     }
     
-    /// Registers the plugin with the given registrar by creating a method channel and setting the current instance as its delegate.
+    /// registerWiths the plugin with the given registrar by creating a method channel and setting the current instance as its delegate.
     /// - Parameter registrar: The `FlutterPluginRegistrar` that handles plugin registration.
     public static func register(with registrar: FlutterPluginRegistrar) {
-        let channel = FlutterMethodChannel(name: "flutter_ble", binaryMessenger: registrar.messenger())
-        let instance = FlutterBlePlugin()
+        let channel = FlutterMethodChannel(name: "flutter_splendid_ble", binaryMessenger: registrar.messenger())
+        let instance = FlutterSplendidBlePlugin()
         instance.channel = channel
         registrar.addMethodCallDelegate(instance, channel: channel)
     }
     
-    /// Handles incoming method calls from Flutter and directs them to the appropriate functions based on the method name.
-    /// - Parameters:
-    ///   - call: The `FlutterMethodCall` object containing the method name and arguments from Flutter.
-    ///   - result: The `FlutterResult` callback to return results or errors back to the Flutter side.
     public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
         switch call.method {
         case "requestBluetoothPermissions":
@@ -418,7 +415,7 @@ public class FlutterBlePlugin: NSObject, FlutterPlugin, CBCentralManagerDelegate
     /// - Enabled: Bluetooth is powered on and functional.
     /// - Disabled: Bluetooth is in any state other than powered on (e.g., powered off, resetting, unauthorized, or unknown).
     ///
-    /// The result is used within the `FlutterBlePlugin` to inform the Dart side about the adapter's status, which is crucial for managing Bluetooth operations such as scanning, connecting, and interacting with peripherals.
+    /// The result is used within the `FlutterSplendidBlePlugin` to inform the Dart side about the adapter's status, which is crucial for managing Bluetooth operations such as scanning, connecting, and interacting with peripherals.
     ///
     /// - Returns: A `BluetoothStatus` enumeration that represents the current status of the Bluetooth adapter.
     func checkBluetoothAdapterStatus() -> BluetoothStatus {
