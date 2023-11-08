@@ -39,7 +39,7 @@ First, add the following line to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  flutter_splendid_ble: ^0.4.0
+  flutter_splendid_ble: ^0.4.1
 ```
 
 Then run:

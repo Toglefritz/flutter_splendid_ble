@@ -47,7 +47,11 @@ All notable changes to the `flutter_splendid_ble` plugin will be documented in t
 - Comprehensive documentation for iOS functionality.
 - Added extensive usage/tutorials content to README.
 
-## [0.4.0] 2023/11/07
+## [0.4.0] 2023/11/08
 
 - Fixed linter issues
 - Updated documentation, especially around handling of streams
+
+## [0.4.1] 2023/11/08
+
+- Cosmetic updates to README
