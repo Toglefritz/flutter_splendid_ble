@@ -27,9 +27,8 @@ class _CharacteristicInfoState extends State<CharacteristicInfo> {
 
   /// Reads the value of the provided Bluetooth characteristic and returns the value as a String.
   ///
-  /// If reading the characteristic value is successful, this function returns the characteristic value as a String.
-  /// However, if reading the characteristic is unsuccessful (the process throws an exception), this function
-  /// returns the string "-" to indicate in the UI that the characteristic does not currently have a value.
+  /// If reading the characteristic value is successful, this function returns the characteristic value as a
+  /// [BleCharacteristicValue].
   Future<void> _readCharacteristicValue(BleCharacteristic characteristic) async {
     try {
       BleCharacteristicValue characteristicValue = await characteristic.readValue<BleCharacteristicValue>();

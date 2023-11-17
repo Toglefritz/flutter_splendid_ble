@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_splendid_ble/flutter_splendid_ble.dart';
 import 'package:flutter_splendid_ble/models/ble_characteristic.dart';
+import 'package:flutter_splendid_ble/models/ble_characteristic_permission.dart';
+import 'package:flutter_splendid_ble/models/ble_characteristic_property.dart';
 import 'package:flutter_splendid_ble/models/ble_connection_state.dart';
 import 'package:flutter_splendid_ble/models/ble_service.dart';
 
@@ -15,6 +17,9 @@ import 'device_details_view.dart';
 class DeviceDetailsController extends State<DeviceDetailsRoute> {
   /// A [FlutterBle] instance used for Bluetooth operations conducted by this route.
   final FlutterSplendidBle _ble = FlutterSplendidBle();
+
+  /// A [StreamSubscription] for the connection state between the Flutter app and the Bluetooth peripheral.
+  StreamSubscription<BleConnectionState>? _connectionStateStream;
 
   /// The current connection state between the host mobile device and the [BleDevice] provided to this route.
   BleConnectionState _currentConnectionState = BleConnectionState.unknown;
@@ -35,7 +40,7 @@ class DeviceDetailsController extends State<DeviceDetailsRoute> {
   bool get discoveringServices => _discoveringServices;
 
   /// A [StreamController] used to listen for updates during the BLE service discovery process.
-  StreamSubscription? _servicesDiscoveredStream;
+  StreamSubscription<List<BleService>>? _servicesDiscoveredStream;
 
   /// A list of Bluetooth service information that includes a list of characteristics under each service.
   final List<BleService> _discoveredServices = [];
@@ -84,8 +89,9 @@ class DeviceDetailsController extends State<DeviceDetailsRoute> {
     });
 
     try {
-      _ble.connect(deviceAddress: widget.device.address).listen((state) => onConnectionStateUpdate(state),
-          onError: (error) {
+      _connectionStateStream = _ble
+          .connect(deviceAddress: widget.device.address)
+          .listen((state) => onConnectionStateUpdate(state), onError: (error) {
         // Handle the error here
         _handleConnectionError(error);
       });
@@ -170,6 +176,7 @@ class DeviceDetailsController extends State<DeviceDetailsRoute> {
 
   @override
   void dispose() {
+    _connectionStateStream?.cancel();
     _servicesDiscoveredStream?.cancel();
 
     super.dispose();

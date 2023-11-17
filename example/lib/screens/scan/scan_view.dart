@@ -4,7 +4,7 @@ import 'package:flutter_splendid_ble_example/screens/scan/scan_controller.dart';
 
 import '../components/loading_indicator.dart';
 import '../components/main_app_bar.dart';
-import 'components/scan_result_title.dart';
+import 'components/scan_result_tile.dart';
 
 /// View for the [ScanRoute]. The view is dumb, and purely declarative. References values
 /// on the controller and widget.

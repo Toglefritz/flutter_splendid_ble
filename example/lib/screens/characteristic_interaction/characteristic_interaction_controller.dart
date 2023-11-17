@@ -19,14 +19,14 @@ class CharacteristicInteractionController extends State<CharacteristicInteractio
   final TextEditingController controller = TextEditingController();
 
   /// A [StreamSubscription] used to listen for changes in the value of the characteristic.
-  StreamSubscription<BleCharacteristicValue>? characteristicValueListener;
+  StreamSubscription<BleCharacteristicValue>? _characteristicValueListener;
 
   @override
   void initState() {
     super.initState();
 
     // Set a lister for changes in the characteristic value
-    characteristicValueListener = widget.characteristic.subscribe().listen(
+    _characteristicValueListener = widget.characteristic.subscribe().listen(
           (event) => onCharacteristicChanged(event),
         );
   }
@@ -98,7 +98,7 @@ class CharacteristicInteractionController extends State<CharacteristicInteractio
   void dispose() {
     // When this controller is disposed, make sure that the listener is cleaned up
     widget.characteristic.unsubscribe();
-    characteristicValueListener?.cancel();
+    _characteristicValueListener?.cancel();
 
     super.dispose();
   }
