@@ -7,10 +7,12 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   const MethodChannel channel = MethodChannel('flutter_splendid_ble');
-  final MethodChannelFlutterSplendidBle methodChannelFlutterBle = MethodChannelFlutterSplendidBle();
+  final MethodChannelFlutterSplendidBle methodChannelFlutterBle =
+      MethodChannelFlutterSplendidBle();
 
   setUp(() {
-    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(channel,(MethodCall methodCall) async {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(channel, (MethodCall methodCall) async {
       if (methodCall.method == 'getCurrentConnectionState') {
         return 'connected';
       }
@@ -22,20 +24,23 @@ void main() {
     const String deviceAddress = '00:00:00:00:00:01';
 
     // Listen for method calls on the channel and validate the parameters
-    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(channel,(MethodCall methodCall) async {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(channel, (MethodCall methodCall) async {
       expect(methodCall.method, 'getCurrentConnectionState');
       expect(methodCall.arguments, {'address': deviceAddress});
       return 'connected';
     });
 
     // Execute the function
-    final BleConnectionState state = await methodChannelFlutterBle.getCurrentConnectionState(deviceAddress);
+    final BleConnectionState state =
+        await methodChannelFlutterBle.getCurrentConnectionState(deviceAddress);
 
     // Validate that the function correctly converted the method channel result to a Dart enum
     expect(state, BleConnectionState.connected);
   });
 
   tearDown(() {
-    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(channel,null);
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(channel, null);
   });
 }

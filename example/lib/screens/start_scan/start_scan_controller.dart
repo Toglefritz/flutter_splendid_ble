@@ -55,12 +55,16 @@ class StartScanController extends State<StartScanRoute> {
   /// will also request location permissions, which are necessary for performing a Bluetooth scan.
   Future<void> _requestAndroidPermissions() async {
     // Request the Bluetooth Scan permission
-    PermissionStatus bluetoothScanPermissionStatus = await Permission.bluetoothScan.request();
-    PermissionStatus bluetoothConnectPermissionStatus = await Permission.bluetoothConnect.request();
-    PermissionStatus locationPermissionStatus = await Permission.location.request();
+    PermissionStatus bluetoothScanPermissionStatus =
+        await Permission.bluetoothScan.request();
+    PermissionStatus bluetoothConnectPermissionStatus =
+        await Permission.bluetoothConnect.request();
+    PermissionStatus locationPermissionStatus =
+        await Permission.location.request();
 
     // Check if permission has been granted or not
-    if (bluetoothScanPermissionStatus.isDenied || bluetoothConnectPermissionStatus.isDenied) {
+    if (bluetoothScanPermissionStatus.isDenied ||
+        bluetoothConnectPermissionStatus.isDenied) {
       // If permission is denied, show a SnackBar with a relevant message
       debugPrint('Bluetooth permissions denied.');
 
@@ -95,7 +99,8 @@ class StartScanController extends State<StartScanRoute> {
   /// permissions must be granted for the app to function since its whole deal is doing Bluetooth stuff.
   Future<void> _requestApplePermissions() async {
     // Request the Bluetooth Scan permission
-    _bluetoothPermissionsStream = _ble.emitCurrentPermissionStatus().listen((event) {
+    _bluetoothPermissionsStream =
+        _ble.emitCurrentPermissionStatus().listen((event) {
       // Check if permission has been granted or not
       if (event != BluetoothPermissionStatus.granted) {
         // If permission is denied, show a SnackBar with a relevant message
@@ -126,7 +131,8 @@ class StartScanController extends State<StartScanRoute> {
   /// of the host device's Bluetooth adapter, which is represented by the enum, [BluetoothState].
   void _checkAdapterStatus() async {
     try {
-      _bluetoothStatusStream = _ble.emitCurrentBluetoothStatus().listen((status) {
+      _bluetoothStatusStream =
+          _ble.emitCurrentBluetoothStatus().listen((status) {
         setState(() {
           _bluetoothStatus = status;
         });
@@ -146,7 +152,8 @@ class StartScanController extends State<StartScanRoute> {
   /// the boolean indicating if permissions have been granted is true by default), navigate to the [ScanRoute].
   /// Otherwise, show a [SnackBar] to indicate that permissions have not been granted yet.
   void onStartScanTap() {
-    if (_permissionsGranted == true && _bluetoothStatus == BluetoothStatus.enabled) {
+    if (_permissionsGranted == true &&
+        _bluetoothStatus == BluetoothStatus.enabled) {
       Navigator.pushReplacement<void, void>(
         context,
         MaterialPageRoute<void>(

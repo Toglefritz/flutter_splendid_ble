@@ -28,5 +28,6 @@ class CharacteristicInteractionRoute extends StatefulWidget {
   final BleCharacteristic characteristic;
 
   @override
-  CharacteristicInteractionController createState() => CharacteristicInteractionController();
+  CharacteristicInteractionController createState() =>
+      CharacteristicInteractionController();
 }

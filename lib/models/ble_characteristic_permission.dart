@@ -48,7 +48,8 @@ enum BleCharacteristicPermission {
   static List<BleCharacteristicPermission> fromInt(int value) {
     List<BleCharacteristicPermission> permissionsList = [];
 
-    for (BleCharacteristicPermission permission in BleCharacteristicPermission.values) {
+    for (BleCharacteristicPermission permission
+        in BleCharacteristicPermission.values) {
       if ((value & permission.value) != 0) {
         permissionsList.add(permission);
       }
@@ -57,7 +58,8 @@ enum BleCharacteristicPermission {
   }
 }
 
-extension BluetoothGattCharacteristicPermissionsExtension on BleCharacteristicPermission {
+extension BluetoothGattCharacteristicPermissionsExtension
+    on BleCharacteristicPermission {
   /// Retrieves the bitmask value corresponding to the characteristic permission.
   ///
   /// Each characteristic permission has a unique bitmask value. This method maps the enum value to its corresponding

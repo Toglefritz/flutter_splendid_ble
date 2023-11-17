@@ -41,7 +41,8 @@ enum BleCharacteristicProperty {
   static List<BleCharacteristicProperty> fromInt(int value) {
     List<BleCharacteristicProperty> propertiesList = [];
 
-    for (BleCharacteristicProperty property in BleCharacteristicProperty.values) {
+    for (BleCharacteristicProperty property
+        in BleCharacteristicProperty.values) {
       if ((value & property.value) != 0) {
         propertiesList.add(property);
       }
@@ -50,7 +51,8 @@ enum BleCharacteristicProperty {
   }
 }
 
-extension BluetoothGattCharacteristicPropertiesExtension on BleCharacteristicProperty {
+extension BluetoothGattCharacteristicPropertiesExtension
+    on BleCharacteristicProperty {
   /// Retrieves the bitmask value corresponding to the characteristic property.
   ///
   /// Each characteristic property has a unique bitmask value. This method maps the enum value to its corresponding

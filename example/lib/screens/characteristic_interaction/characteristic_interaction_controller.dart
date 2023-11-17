@@ -11,7 +11,8 @@ import 'models/message.dart';
 import 'models/message_source.dart';
 
 /// A controller for the [CharacteristicInteractionRoute] that manages the state and owns all business logic.
-class CharacteristicInteractionController extends State<CharacteristicInteractionRoute> {
+class CharacteristicInteractionController
+    extends State<CharacteristicInteractionRoute> {
   /// A list of "messages" sent between the host mobile device and a Bluetooth peripheral, in either direction.
   List<Message> messages = [];
 
@@ -44,7 +45,8 @@ class CharacteristicInteractionController extends State<CharacteristicInteractio
     }
 
     // Create a Message instance for the new event
-    Message newMessage = Message(contents: eventContent, source: MessageSource.peripheral);
+    Message newMessage =
+        Message(contents: eventContent, source: MessageSource.peripheral);
 
     // Add the new message to the list
     setState(() {
@@ -71,7 +73,8 @@ class CharacteristicInteractionController extends State<CharacteristicInteractio
         controller.text = '';
       });
     } catch (e) {
-      debugPrint('Writing to characteristic, ${widget.characteristic.uuid}, failed with exception, $e');
+      debugPrint(
+          'Writing to characteristic, ${widget.characteristic.uuid}, failed with exception, $e');
 
       _showWriteError();
     }

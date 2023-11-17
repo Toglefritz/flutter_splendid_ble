@@ -59,14 +59,20 @@ class ServicesInfo extends StatelessWidget {
                   ...List.generate(
                     services.length,
                     (index) => Theme(
-                      data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+                      data: Theme.of(context)
+                          .copyWith(dividerColor: Colors.transparent),
                       child: ExpansionTile(
                         title: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              AppLocalizations.of(context)!.primaryService.toUpperCase(),
-                              style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                              AppLocalizations.of(context)!
+                                  .primaryService
+                                  .toUpperCase(),
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .labelLarge
+                                  ?.copyWith(
                                     color: Theme.of(context).disabledColor,
                                   ),
                             ),
@@ -80,9 +86,11 @@ class ServicesInfo extends StatelessWidget {
                         children: List.generate(
                           services[index].characteristics.length,
                           (i) => Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 32.0),
+                            padding: const EdgeInsets.symmetric(
+                                vertical: 8.0, horizontal: 32.0),
                             child: CharacteristicInfo(
-                              characteristic: services[index].characteristics[i],
+                              characteristic:
+                                  services[index].characteristics[i],
                               characteristicOnTap: characteristicOnTap,
                             ),
                           ),

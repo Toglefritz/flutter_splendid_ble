@@ -45,7 +45,9 @@ class BleCharacteristic {
       address: map['address'] as String,
       uuid: map['uuid'] as String,
       properties: BleCharacteristicProperty.fromInt(map['properties'] as int),
-      permissions: map['permissions'] != null ? BleCharacteristicPermission.fromInt(map['permissions'] as int) : null,
+      permissions: map['permissions'] != null
+          ? BleCharacteristicPermission.fromInt(map['permissions'] as int)
+          : null,
     );
   }
 
@@ -86,7 +88,8 @@ class BleCharacteristic {
   Future<T> readValue<T>({
     Duration timeout = const Duration(seconds: 5),
   }) async {
-    BleCharacteristicValue characteristicValue = await FlutterSplendidBlePlatform.instance.readCharacteristic(
+    BleCharacteristicValue characteristicValue =
+        await FlutterSplendidBlePlatform.instance.readCharacteristic(
       characteristic: this,
       timeout: timeout,
     );
@@ -98,7 +101,8 @@ class BleCharacteristic {
     } else if (T == List<int>) {
       return characteristicValue.value as T;
     } else {
-      throw ArgumentError('Unsupported return type $T. Supported types are String and List<int>');
+      throw ArgumentError(
+          'Unsupported return type $T. Supported types are String and List<int>');
     }
   }
 
@@ -115,21 +119,27 @@ class BleCharacteristic {
   ///
   /// This method stops listening for updates for a given characteristic on a specified device.
   void unsubscribe() {
-    return FlutterSplendidBlePlatform.instance.unsubscribeFromCharacteristic(this);
+    return FlutterSplendidBlePlatform.instance
+        .unsubscribeFromCharacteristic(this);
   }
 
   /// Converts a list of [BluetoothGattCharacteristicProperties] to a string representation.
   ///
   /// Each characteristic property in the list is represented by its string name and separated by commas.
   String _propertiesListToString(List<BleCharacteristicProperty> properties) {
-    return properties.map((property) => property.toString().split('.').last).join(', ');
+    return properties
+        .map((property) => property.toString().split('.').last)
+        .join(', ');
   }
 
   /// Converts a list of [BleCharacteristicPermission] to a string representation.
   ///
   /// Each characteristic permission in the list is represented by its string name and separated by commas.
-  String _permissionsListToString(List<BleCharacteristicPermission> permissions) {
-    return permissions.map((permission) => permission.toString().split('.').last).join(', ');
+  String _permissionsListToString(
+      List<BleCharacteristicPermission> permissions) {
+    return permissions
+        .map((permission) => permission.toString().split('.').last)
+        .join(', ');
   }
 
   /// Returns a string representation of the [BleCharacteristic] instance.

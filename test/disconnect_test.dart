@@ -6,11 +6,12 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   const MethodChannel channel = MethodChannel('flutter_splendid_ble');
-  final MethodChannelFlutterSplendidBle methodChannelFlutterBle = MethodChannelFlutterSplendidBle();
+  final MethodChannelFlutterSplendidBle methodChannelFlutterBle =
+      MethodChannelFlutterSplendidBle();
 
   setUp(() {
-    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(channel,
-        (MethodCall methodCall) async {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(channel, (MethodCall methodCall) async {
       if (methodCall.method == 'disconnect') {
         return 'success';
       }
@@ -22,8 +23,8 @@ void main() {
     const String deviceAddress = '00:00:00:00:00:01';
 
     // Listen for method calls on the channel and validate the parameters
-    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(channel,
-        (MethodCall methodCall) async {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(channel, (MethodCall methodCall) async {
       expect(methodCall.method, 'disconnect');
       expect(methodCall.arguments, {'address': deviceAddress});
 
@@ -35,6 +36,7 @@ void main() {
   });
 
   tearDown(() {
-    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(channel, null);
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(channel, null);
   });
 }

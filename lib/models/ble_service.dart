@@ -34,7 +34,8 @@ class BleService {
       serviceUuid: map['serviceUuid'] as String,
       characteristics: (map['characteristics'] as List)
           .map(
-            (charMap) => BleCharacteristic.fromMap(charMap as Map<String, dynamic>),
+            (charMap) =>
+                BleCharacteristic.fromMap(charMap as Map<String, dynamic>),
           )
           .toList(),
     );

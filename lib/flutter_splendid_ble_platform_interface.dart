@@ -17,7 +17,8 @@ abstract class FlutterSplendidBlePlatform extends PlatformInterface {
 
   static final Object _token = Object();
 
-  static FlutterSplendidBlePlatform _instance = MethodChannelFlutterSplendidBle();
+  static FlutterSplendidBlePlatform _instance =
+      MethodChannelFlutterSplendidBle();
 
   /// The default instance of [FlutterSplendidBlePlatform] to use.
   ///
@@ -35,19 +36,22 @@ abstract class FlutterSplendidBlePlatform extends PlatformInterface {
   /// Checks the status of the host device's Bluetooth adapter and returns a [BluetoothStatus] to communicate the
   /// current status of the adapter.
   Future<BluetoothStatus> checkBluetoothAdapterStatus() async {
-    throw UnimplementedError('checkBluetoothAdapterStatus() has not been implemented.');
+    throw UnimplementedError(
+        'checkBluetoothAdapterStatus() has not been implemented.');
   }
 
   /// Emits the current Bluetooth adapter status to the Dart side.
   Stream<BluetoothStatus> emitCurrentBluetoothStatus() {
-    throw UnimplementedError('emitCurrentBluetoothStatus() has not been implemented.');
+    throw UnimplementedError(
+        'emitCurrentBluetoothStatus() has not been implemented.');
   }
 
   /// Starts a scan for nearby BLE devices and returns a [Stream] of [BleDevice] instances representing the BLE
   /// devices that were discovered. On the Flutter side, listeners can be added to this stream so they can
   /// respond to Bluetooth devices being discovered, for example by presenting the list in the user interface
   /// or enabling controllers to find and connect to specific devices.
-  Stream<BleDevice> startScan({List<ScanFilter>? filters, ScanSettings? settings}) {
+  Stream<BleDevice> startScan(
+      {List<ScanFilter>? filters, ScanSettings? settings}) {
     throw UnimplementedError('startScan() has not been implemented.');
   }
 
@@ -74,7 +78,8 @@ abstract class FlutterSplendidBlePlatform extends PlatformInterface {
 
   /// Returns the current connection state for the Bluetooth device with the specified address.
   Future<BleConnectionState> getCurrentConnectionState(String deviceAddress) {
-    throw UnimplementedError('getCurrentConnectionState() has not been implemented.');
+    throw UnimplementedError(
+        'getCurrentConnectionState() has not been implemented.');
   }
 
   /// Writes data to a specified characteristic.
@@ -97,22 +102,27 @@ abstract class FlutterSplendidBlePlatform extends PlatformInterface {
   }
 
   /// Subscribes to a Bluetooth characteristic to listen for updates.
-  Stream<BleCharacteristicValue> subscribeToCharacteristic(BleCharacteristic characteristic) {
-    throw UnimplementedError('subscribeToCharacteristic() has not been implemented.');
+  Stream<BleCharacteristicValue> subscribeToCharacteristic(
+      BleCharacteristic characteristic) {
+    throw UnimplementedError(
+        'subscribeToCharacteristic() has not been implemented.');
   }
 
   /// Unsubscribes from a Bluetooth characteristic.
   void unsubscribeFromCharacteristic(BleCharacteristic characteristic) {
-    throw UnimplementedError('unsubscribeFromCharacteristic() has not been implemented.');
+    throw UnimplementedError(
+        'unsubscribeFromCharacteristic() has not been implemented.');
   }
 
   /// Requests Bluetooth permissions from the user.
   Future<BluetoothPermissionStatus> requestBluetoothPermissions() async {
-    throw UnimplementedError('requestBluetoothPermissions() has not been implemented.');
+    throw UnimplementedError(
+        'requestBluetoothPermissions() has not been implemented.');
   }
 
   /// Emits the current Bluetooth permission status whenever it changes.
   Stream<BluetoothPermissionStatus> emitCurrentPermissionStatus() {
-    throw UnimplementedError('emitCurrentPermissionStatus() has not been implemented.');
+    throw UnimplementedError(
+        'emitCurrentPermissionStatus() has not been implemented.');
   }
 }

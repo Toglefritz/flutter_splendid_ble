@@ -27,7 +27,8 @@ class DeviceDetailsController extends State<DeviceDetailsRoute> {
   BleConnectionState get currentConnectionState => _currentConnectionState;
 
   /// A utility for checking if the device is connected.
-  bool get isConnected => currentConnectionState == BleConnectionState.connected;
+  bool get isConnected =>
+      currentConnectionState == BleConnectionState.connected;
 
   /// Determine if a connection attempt is currently in progress.
   bool _connecting = false;
@@ -96,7 +97,8 @@ class DeviceDetailsController extends State<DeviceDetailsRoute> {
         _handleConnectionError(error);
       });
     } catch (e) {
-      debugPrint('Failed to connect to device, ${widget.device.address}, with exception, $e');
+      debugPrint(
+          'Failed to connect to device, ${widget.device.address}, with exception, $e');
     }
   }
 
@@ -124,9 +126,10 @@ class DeviceDetailsController extends State<DeviceDetailsRoute> {
       _discoveringServices = true;
     });
 
-    _servicesDiscoveredStream = _ble.discoverServices(widget.device.address).listen(
-          (service) => _onServiceDiscovered(service),
-        );
+    _servicesDiscoveredStream =
+        _ble.discoverServices(widget.device.address).listen(
+              (service) => _onServiceDiscovered(service),
+            );
   }
 
   /// A callback used each time a new service is discovered and emitted to the [Stream].

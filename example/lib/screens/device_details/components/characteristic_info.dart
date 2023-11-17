@@ -29,9 +29,11 @@ class _CharacteristicInfoState extends State<CharacteristicInfo> {
   ///
   /// If reading the characteristic value is successful, this function returns the characteristic value as a
   /// [BleCharacteristicValue].
-  Future<void> _readCharacteristicValue(BleCharacteristic characteristic) async {
+  Future<void> _readCharacteristicValue(
+      BleCharacteristic characteristic) async {
     try {
-      BleCharacteristicValue characteristicValue = await characteristic.readValue<BleCharacteristicValue>();
+      BleCharacteristicValue characteristicValue =
+          await characteristic.readValue<BleCharacteristicValue>();
 
       setState(() {
         _characteristicValue = characteristicValue;
@@ -88,7 +90,8 @@ class _CharacteristicInfoState extends State<CharacteristicInfo> {
                 ),
             ],
           ),
-          if (widget.characteristic.properties.contains(BleCharacteristicProperty.read))
+          if (widget.characteristic.properties
+              .contains(BleCharacteristicProperty.read))
             InkWell(
               onTap: () => _readCharacteristicValue(widget.characteristic),
               child: Icon(

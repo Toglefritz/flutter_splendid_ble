@@ -77,7 +77,8 @@ class BleCharacteristicValue {
         value: (map['value'] as List).map((e) => e as int).toList(),
       );
     } catch (e) {
-      throw FormatException('Failed to construct BleCharacteristicValue from Map, $map, with exception, $e');
+      throw FormatException(
+          'Failed to construct BleCharacteristicValue from Map, $map, with exception, $e');
     }
   }
 }

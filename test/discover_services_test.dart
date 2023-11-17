@@ -7,11 +7,12 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   const MethodChannel channel = MethodChannel('flutter_splendid_ble');
-  final MethodChannelFlutterSplendidBle methodChannelFlutterBle = MethodChannelFlutterSplendidBle();
+  final MethodChannelFlutterSplendidBle methodChannelFlutterBle =
+      MethodChannelFlutterSplendidBle();
 
   setUp(() {
-    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(channel,
-        (MethodCall methodCall) async {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(channel, (MethodCall methodCall) async {
       // Mock your native function if needed
       if (methodCall.method == 'discoverServices') {
         return 'success';
@@ -21,7 +22,8 @@ void main() {
   });
 
   test('Test discoverServices method', () async {
-    final Stream<List<BleService>> serviceStream = methodChannelFlutterBle.discoverServices('00:00:00:00:00:01');
+    final Stream<List<BleService>> serviceStream =
+        methodChannelFlutterBle.discoverServices('00:00:00:00:00:01');
     final List<List<BleService>> emittedServices = [];
 
     // Listen to the emitted services
@@ -61,9 +63,11 @@ void main() {
       ],
     };
 
-    await TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.handlePlatformMessage(
+    await TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .handlePlatformMessage(
       channel.name,
-      channel.codec.encodeMethodCall(MethodCall('bleServicesDiscovered_00:00:00:00:00:01', fakeServices)),
+      channel.codec.encodeMethodCall(
+          MethodCall('bleServicesDiscovered_00:00:00:00:00:01', fakeServices)),
       (ByteData? data) {},
     );
 
@@ -72,6 +76,7 @@ void main() {
   });
 
   tearDown(() {
-    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(channel, null);
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(channel, null);
   });
 }

@@ -46,10 +46,18 @@ class TableButton extends StatelessWidget {
       style: OutlinedButton.styleFrom(
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.only(
-            topLeft: side == ButtonSide.top ? const Radius.circular(12.0) : Radius.zero,
-            topRight: side == ButtonSide.top ? const Radius.circular(12.0) : Radius.zero,
-            bottomLeft: side == ButtonSide.bottom ? const Radius.circular(12.0) : Radius.zero,
-            bottomRight: side == ButtonSide.bottom ? const Radius.circular(12.0) : Radius.zero,
+            topLeft: side == ButtonSide.top
+                ? const Radius.circular(12.0)
+                : Radius.zero,
+            topRight: side == ButtonSide.top
+                ? const Radius.circular(12.0)
+                : Radius.zero,
+            bottomLeft: side == ButtonSide.bottom
+                ? const Radius.circular(12.0)
+                : Radius.zero,
+            bottomRight: side == ButtonSide.bottom
+                ? const Radius.circular(12.0)
+                : Radius.zero,
           ),
         ),
         side: BorderSide(

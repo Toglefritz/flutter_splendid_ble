@@ -16,7 +16,8 @@ void main() {
 void _testCheckBluetoothAdapterStatus(MethodChannel channel) {
   for (BluetoothStatus status in BluetoothStatus.values) {
     setUp(() {
-      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(
         channel,
         ((MethodCall methodCall) async {
           if (methodCall.method == 'checkBluetoothAdapterStatus') {
@@ -28,8 +29,10 @@ void _testCheckBluetoothAdapterStatus(MethodChannel channel) {
     });
 
     test('checkBluetoothAdapterStatus returns correct status', () async {
-      final MethodChannelFlutterSplendidBle methodChannelFlutterBle = MethodChannelFlutterSplendidBle();
-      final BluetoothStatus status = await methodChannelFlutterBle.checkBluetoothAdapterStatus();
+      final MethodChannelFlutterSplendidBle methodChannelFlutterBle =
+          MethodChannelFlutterSplendidBle();
+      final BluetoothStatus status =
+          await methodChannelFlutterBle.checkBluetoothAdapterStatus();
 
       // Check if the function returns the expected value
       expect(status, status);
@@ -37,7 +40,8 @@ void _testCheckBluetoothAdapterStatus(MethodChannel channel) {
   }
 
   tearDown(() {
-    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(
       channel,
       null,
     );

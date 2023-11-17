@@ -42,7 +42,9 @@ class ScanController extends State<ScanRoute> {
   ///
   /// The
   void _startBluetoothScan() {
-    _scanStream = _ble.startScan(filters: widget.filters, settings: widget.settings).listen(
+    _scanStream = _ble
+        .startScan(filters: widget.filters, settings: widget.settings)
+        .listen(
       (device) => _onDeviceDetected(device),
       onError: (error) {
         // Handle the error here
@@ -78,7 +80,9 @@ class ScanController extends State<ScanRoute> {
     debugPrint('Discovered BLE device: ${device.name}');
 
     // Add the newly discovered device to the list only if it not already in the list
-    if (discoveredDevices.where((discoveredDevice) => discoveredDevice.address == device.address).isEmpty) {
+    if (discoveredDevices
+        .where((discoveredDevice) => discoveredDevice.address == device.address)
+        .isEmpty) {
       setState(() {
         discoveredDevices.add(device);
       });
@@ -104,7 +108,7 @@ class ScanController extends State<ScanRoute> {
   /// [_scanInProgress] boolean value, the function stops the scan. If, on the other hand, there is not a scan
   /// in progress, a scan is started.
   void onActionButtonPressed() {
-    if(_scanInProgress) {
+    if (_scanInProgress) {
       _ble.stopScan();
       _scanStream?.cancel();
 

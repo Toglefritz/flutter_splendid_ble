@@ -30,7 +30,8 @@ class FlutterSplendidBle {
   /// Asks the platform to start scanning for Bluetooth devices.
   ///
   /// Returns a [Stream] of [BleDevice] found during the scan.
-  Stream<BleDevice> startScan({List<ScanFilter>? filters, ScanSettings? settings}) {
+  Stream<BleDevice> startScan(
+      {List<ScanFilter>? filters, ScanSettings? settings}) {
     return FlutterSplendidBlePlatform.instance.startScan();
   }
 
@@ -38,7 +39,8 @@ class FlutterSplendidBle {
   ///
   /// Returns a [Stream] of [BleConnectionState].
   Stream<BleConnectionState> connect({required String deviceAddress}) {
-    return FlutterSplendidBlePlatform.instance.connect(deviceAddress: deviceAddress);
+    return FlutterSplendidBlePlatform.instance
+        .connect(deviceAddress: deviceAddress);
   }
 
   /// Asks the platform to discover available services for a connected device by its address.
@@ -57,7 +59,8 @@ class FlutterSplendidBle {
   ///
   /// Returns a [Future] of [BleConnectionState].
   Future<BleConnectionState> getCurrentConnectionState(String deviceAddress) {
-    return FlutterSplendidBlePlatform.instance.getCurrentConnectionState(deviceAddress);
+    return FlutterSplendidBlePlatform.instance
+        .getCurrentConnectionState(deviceAddress);
   }
 
   /// Asks the platform to request Bluetooth permissions from the user.

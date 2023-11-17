@@ -49,8 +49,13 @@ class CharacteristicInteractionView extends StatelessWidget {
                 // TODO update widget
                 return Card(
                   margin: EdgeInsets.only(
-                    left: state.messages[index].source == MessageSource.mobile ? 48.0 : 16.0,
-                    right: state.messages[index].source == MessageSource.peripheral ? 48.0 : 16.0,
+                    left: state.messages[index].source == MessageSource.mobile
+                        ? 48.0
+                        : 16.0,
+                    right:
+                        state.messages[index].source == MessageSource.peripheral
+                            ? 48.0
+                            : 16.0,
                     top: 8.0,
                     bottom: 8.0,
                   ),
@@ -71,7 +76,9 @@ class CharacteristicInteractionView extends StatelessWidget {
                           style: Theme.of(context).textTheme.bodyMedium,
                         ),
                         Icon(
-                          state.messages[index].source == MessageSource.mobile ? Icons.upload : Icons.download,
+                          state.messages[index].source == MessageSource.mobile
+                              ? Icons.upload
+                              : Icons.download,
                           color: Theme.of(context).disabledColor,
                         ),
                       ],
@@ -114,7 +121,10 @@ class CharacteristicInteractionView extends StatelessWidget {
                                 borderSide: BorderSide.none,
                               ),
                             ),
-                            style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                            style: Theme.of(context)
+                                .textTheme
+                                .labelLarge
+                                ?.copyWith(
                                   color: Theme.of(context).primaryColor,
                                 ),
                             cursorColor: Theme.of(context).primaryColor,
@@ -135,7 +145,8 @@ class CharacteristicInteractionView extends StatelessWidget {
                           ),
                           child: OutlinedButton(
                             style: OutlinedButton.styleFrom(
-                              side: BorderSide.none, // No border as it's already set by Container.
+                              side: BorderSide
+                                  .none, // No border as it's already set by Container.
                               shape: const RoundedRectangleBorder(
                                 borderRadius: BorderRadius.only(
                                   topRight: Radius.circular(12.0),

@@ -104,7 +104,10 @@ class ScanConfigurationView extends StatelessWidget {
                       children: [
                         Text(
                           AppLocalizations.of(context)!.done.toUpperCase(),
-                          style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                          style: Theme.of(context)
+                              .textTheme
+                              .displaySmall
+                              ?.copyWith(
                                 fontSize: 32,
                               ),
                         ),

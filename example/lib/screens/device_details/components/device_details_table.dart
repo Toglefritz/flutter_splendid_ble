@@ -37,8 +37,8 @@ class DeviceDetailsTable extends StatelessWidget {
                 child: Text(
                   AppLocalizations.of(context)!.address,
                   style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    fontSize: 18.0,
-                  ),
+                        fontSize: 18.0,
+                      ),
                   textAlign: TextAlign.center,
                 ),
               ),
@@ -65,8 +65,8 @@ class DeviceDetailsTable extends StatelessWidget {
                 child: Text(
                   AppLocalizations.of(context)!.connectionStatus,
                   style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    fontSize: 18.0,
-                  ),
+                        fontSize: 18.0,
+                      ),
                   textAlign: TextAlign.center,
                 ),
               ),
@@ -93,8 +93,8 @@ class DeviceDetailsTable extends StatelessWidget {
                 child: Text(
                   AppLocalizations.of(context)!.rssi,
                   style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    fontSize: 18.0,
-                  ),
+                        fontSize: 18.0,
+                      ),
                   textAlign: TextAlign.center,
                 ),
               ),
@@ -121,8 +121,8 @@ class DeviceDetailsTable extends StatelessWidget {
                 child: Text(
                   AppLocalizations.of(context)!.manufacturerData,
                   style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    fontSize: 18.0,
-                  ),
+                        fontSize: 18.0,
+                      ),
                   textAlign: TextAlign.center,
                 ),
               ),
