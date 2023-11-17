@@ -39,7 +39,7 @@ First, add the following line to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  flutter_splendid_ble: ^0.4.2
+  flutter_splendid_ble: ^0.5.0
 ```
 
 Then run:
@@ -700,6 +700,9 @@ Future<void> disconnectFromDevice(BleDevice device) async {
   the disconnected peripheral and updating the UI to reflect the disconnection status.
 - Some peripherals might have special requirements for disconnection; consult the device's
   documentation for any additional steps that might need to be performed.
+
+## Tutorial article
+For a detailed tutorial article, please visit https://medium.com/@Toglefritz/flutter-bluetooth-a669fcf4bb44?sk=cbbae5ffb7bd42490448c478bae6a6d7
 
 ## Error Handling
 

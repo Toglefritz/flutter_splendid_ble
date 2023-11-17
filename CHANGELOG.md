@@ -59,3 +59,8 @@ All notable changes to the `flutter_splendid_ble` plugin will be documented in t
 ## [0.4.2] 2023/11/08
 
 - README updates
+
+## [0.5.0] 2023/11/17
+
+- Updated example app
+- Wrote extensive tutorial article
