@@ -1,0 +1,28 @@
+PODS:
+  - Flutter (1.0.0)
+  - flutter_splendid_ble (0.0.1):
+    - Flutter
+  - permission_handler_apple (9.1.1):
+    - Flutter
+
+DEPENDENCIES:
+  - Flutter (from `Flutter`)
+  - flutter_splendid_ble (from `.symlinks/plugins/flutter_splendid_ble/ios`)
+  - permission_handler_apple (from `.symlinks/plugins/permission_handler_apple/ios`)
+
+EXTERNAL SOURCES:
+  Flutter:
+    :path: Flutter
+  flutter_splendid_ble:
+    :path: ".symlinks/plugins/flutter_splendid_ble/ios"
+  permission_handler_apple:
+    :path: ".symlinks/plugins/permission_handler_apple/ios"
+
+SPEC CHECKSUMS:
+  Flutter: f04841e97a9d0b0a8025694d0796dd46242b2854
+  flutter_splendid_ble: cc42af57896fbf378eca9cedff58dfbfb70f9395
+  permission_handler_apple: e76247795d700c14ea09e3a2d8855d41ee80a2e6
+
+PODFILE CHECKSUM: 70d9d25280d0dd177a5f637cdb0f0b0b12c6a189
+
+COCOAPODS: 1.12.1
