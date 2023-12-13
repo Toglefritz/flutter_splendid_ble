@@ -23,7 +23,7 @@ dependencies:
     sdk: flutter
   intl: ^0.18.1
   # Provides a cross-platform (iOS, Android) API to request and check permissions
-  permission_handler: ^10.4.3
+  permission_handler: ^11.1.0
 
 dev_dependencies:
   integration_test:

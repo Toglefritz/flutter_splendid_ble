@@ -3,8 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_splendid_ble/flutter_splendid_ble.dart';
 import 'package:flutter_splendid_ble/models/ble_characteristic.dart';
-import 'package:flutter_splendid_ble/models/ble_characteristic_permission.dart';
-import 'package:flutter_splendid_ble/models/ble_characteristic_property.dart';
 import 'package:flutter_splendid_ble/models/ble_connection_state.dart';
 import 'package:flutter_splendid_ble/models/ble_service.dart';
 
