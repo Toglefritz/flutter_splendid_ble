@@ -64,3 +64,8 @@ All notable changes to the `flutter_splendid_ble` plugin will be documented in t
 
 - Updated example app
 - Wrote extensive tutorial article
+
+## [0.6.0] 2023/12/16
+
+- Updated dependencies
+- Updated scan filtering by UUID

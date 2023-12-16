@@ -58,6 +58,12 @@ enum BleCharacteristicPermission {
   }
 }
 
+/// Extension on [BleCharacteristicPermission] to retrieve the bitmask value for Bluetooth GATT characteristic
+/// permissions.
+///
+/// This extension adds a property `value` to the `BleCharacteristicPermission` enum, providing a convenient way to
+/// access the bitmask value of each permission. Bitmask values are essential in Bluetooth communication to
+/// represent permissions in a compact, bitwise format.
 extension BluetoothGattCharacteristicPermissionsExtension
     on BleCharacteristicPermission {
   /// Retrieves the bitmask value corresponding to the characteristic permission.
