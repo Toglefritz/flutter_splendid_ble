@@ -63,8 +63,34 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
             result(nil)
             
         case "startScan":
-            // Start scanning for BLE devices
-            centralManager.scanForPeripherals(withServices: nil, options: nil)
+            var serviceUUIDs: [CBUUID]? = nil
+            var options: [String: Any]? = nil
+            
+            if let args = call.arguments as? [String: Any] {
+                // Handle Scan Filters
+                if let filtersMap = args["filters"] as? [[String: Any]] {
+                    serviceUUIDs = filtersMap.compactMap { filterDict in
+                        if let uuidStrings = filterDict["serviceUuids"] as? [String] {
+                            return uuidStrings.compactMap { CBUUID(string: $0) }
+                        }
+                        return nil
+                    }.flatMap { $0 } // Flatten the array of arrays
+                }
+                
+                // Handle Scan Settings
+                if let settingsMap = args["settings"] as? [String: Any] {
+                    // Configure options based on settingsMap if needed.
+                    if let allowDuplicates = settingsMap["allowDuplicates"] as? Bool {
+                        options = [CBCentralManagerScanOptionAllowDuplicatesKey: NSNumber(value: allowDuplicates)]
+                    }
+                    
+                    // Note: iOS does not directly support scanMode and reportDelayMillis like Android does.
+                    // These settings will be ignored.
+                }
+            }
+            
+            // Start scanning with optional service UUIDs and options.
+            centralManager.scanForPeripherals(withServices: serviceUUIDs, options: options)
             result(nil)
             
         case "stopScan":

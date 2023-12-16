@@ -27,6 +27,7 @@ class StartScanView extends StatelessWidget {
           children: [
             GestureDetector(
               onTap: state.onStartScanTap,
+              onLongPress: state.onStartScanLongPress,
               child: FancyOutlinedText(
                 text: AppLocalizations.of(context)!.startScan.toUpperCase(),
               ),
