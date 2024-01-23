@@ -49,7 +49,7 @@ class FlutterSplendidBlePlugin : FlutterPlugin, MethodCallHandler {
     private lateinit var bleDeviceInterface: BleDeviceInterface
 
     override fun onAttachedToEngine(flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
-        channel = MethodChannel(flutterPluginBinding.binaryMessenger, "flutter_splendid_ble")
+        channel = MethodChannel(flutterPluginBinding.binaryMessenger, "flutter_splendid_ble_central")
         channel.setMethodCallHandler(this)
         eventChannel = EventChannel(flutterPluginBinding.binaryMessenger, "flutter_ble_events")
 

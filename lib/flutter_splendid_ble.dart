@@ -1,4 +1,4 @@
-import 'central/flutter_splendid_ble_platform_interface.dart';
+import 'central/central_platform_interface.dart';
 import 'central/models/ble_connection_state.dart';
 import 'central/models/ble_device.dart';
 import 'central/models/ble_service.dart';
@@ -22,19 +22,19 @@ class FlutterSplendidBle {
   ///
   /// Returns a [Future] containing the current [BluetoothStatus].
   Future<BluetoothStatus> checkBluetoothAdapterStatus() async {
-    return FlutterSplendidBlePlatform.instance.checkBluetoothAdapterStatus();
+    return CentralPlatformInterface.instance.checkBluetoothAdapterStatus();
   }
 
   /// Emits the current status of the Bluetooth adapter whenever it changes.
   ///
   /// Returns a [Stream] of [BluetoothStatus].
   Stream<BluetoothStatus> emitCurrentBluetoothStatus() {
-    return FlutterSplendidBlePlatform.instance.emitCurrentBluetoothStatus();
+    return CentralPlatformInterface.instance.emitCurrentBluetoothStatus();
   }
 
   /// Asks the platform to stop scanning for Bluetooth devices.
   void stopScan() {
-    return FlutterSplendidBlePlatform.instance.stopScan();
+    return CentralPlatformInterface.instance.stopScan();
   }
 
   /// Asks the platform to start scanning for Bluetooth devices.
@@ -42,7 +42,7 @@ class FlutterSplendidBle {
   /// Returns a [Stream] of [BleDevice] found during the scan.
   Stream<BleDevice> startScan(
       {List<ScanFilter>? filters, ScanSettings? settings}) {
-    return FlutterSplendidBlePlatform.instance.startScan(
+    return CentralPlatformInterface.instance.startScan(
       filters: filters,
       settings: settings,
     );
@@ -52,7 +52,7 @@ class FlutterSplendidBle {
   ///
   /// Returns a [Stream] of [BleConnectionState].
   Stream<BleConnectionState> connect({required String deviceAddress}) {
-    return FlutterSplendidBlePlatform.instance
+    return CentralPlatformInterface.instance
         .connect(deviceAddress: deviceAddress);
   }
 
@@ -60,19 +60,19 @@ class FlutterSplendidBle {
   ///
   /// Returns a [Stream] of [BleService].
   Stream<List<BleService>> discoverServices(String deviceAddress) {
-    return FlutterSplendidBlePlatform.instance.discoverServices(deviceAddress);
+    return CentralPlatformInterface.instance.discoverServices(deviceAddress);
   }
 
   /// Asks the platform to disconnect from a Bluetooth device by its address.
   Future<void> disconnect(String deviceAddress) {
-    return FlutterSplendidBlePlatform.instance.disconnect(deviceAddress);
+    return CentralPlatformInterface.instance.disconnect(deviceAddress);
   }
 
   /// Asks the platform to get the current connection state for a Bluetooth device by its address.
   ///
   /// Returns a [Future] of [BleConnectionState].
   Future<BleConnectionState> getCurrentConnectionState(String deviceAddress) {
-    return FlutterSplendidBlePlatform.instance
+    return CentralPlatformInterface.instance
         .getCurrentConnectionState(deviceAddress);
   }
 
@@ -80,13 +80,13 @@ class FlutterSplendidBle {
   ///
   /// Returns a [Future] containing the current [BluetoothPermissionStatus].
   Future<BluetoothPermissionStatus> requestBluetoothPermissions() async {
-    return FlutterSplendidBlePlatform.instance.requestBluetoothPermissions();
+    return CentralPlatformInterface.instance.requestBluetoothPermissions();
   }
 
   /// Emits the current Bluetooth permission status whenever it changes.
   ///
   /// Returns a [Stream] of [BluetoothPermissionStatus].
   Stream<BluetoothPermissionStatus> emitCurrentPermissionStatus() {
-    return FlutterSplendidBlePlatform.instance.emitCurrentPermissionStatus();
+    return CentralPlatformInterface.instance.emitCurrentPermissionStatus();
   }
 }

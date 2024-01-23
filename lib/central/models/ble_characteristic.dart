@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import '../flutter_splendid_ble_platform_interface.dart';
+import '../central_platform_interface.dart';
 import 'ble_characteristic_permission.dart';
 import 'ble_characteristic_property.dart';
 import 'ble_characteristic_value.dart';
@@ -60,7 +60,7 @@ class BleCharacteristic {
     required String value,
     int? writeType,
   }) async {
-    return FlutterSplendidBlePlatform.instance.writeCharacteristic(
+    return CentralPlatformInterface.instance.writeCharacteristic(
       characteristic: this,
       value: value,
       writeType: writeType,
@@ -89,7 +89,7 @@ class BleCharacteristic {
     Duration timeout = const Duration(seconds: 5),
   }) async {
     BleCharacteristicValue characteristicValue =
-        await FlutterSplendidBlePlatform.instance.readCharacteristic(
+        await CentralPlatformInterface.instance.readCharacteristic(
       characteristic: this,
       timeout: timeout,
     );
@@ -112,14 +112,14 @@ class BleCharacteristic {
   /// to this stream and establish a callback function invoked each time a new value is emitted to the stream. Once
   /// subscribed, any updates to the characteristic value will be sent as a stream of [BleCharacteristicValue] objects.
   Stream<BleCharacteristicValue> subscribe() {
-    return FlutterSplendidBlePlatform.instance.subscribeToCharacteristic(this);
+    return CentralPlatformInterface.instance.subscribeToCharacteristic(this);
   }
 
   /// Unsubscribes from a Bluetooth characteristic.
   ///
   /// This method stops listening for updates for a given characteristic on a specified device.
   void unsubscribe() {
-    return FlutterSplendidBlePlatform.instance
+    return CentralPlatformInterface.instance
         .unsubscribeFromCharacteristic(this);
   }
 

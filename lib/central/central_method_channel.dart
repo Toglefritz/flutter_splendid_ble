@@ -4,7 +4,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
-import 'flutter_splendid_ble_platform_interface.dart';
+import 'central_platform_interface.dart';
 import '../central/models/ble_characteristic.dart';
 import '../central/models/ble_characteristic_value.dart';
 import '../central/models/ble_connection_state.dart';
@@ -22,14 +22,14 @@ import '../central/models/exceptions/service_discovery_exception.dart';
 import '../central/models/scan_filter.dart';
 import '../central/models/scan_settings.dart';
 
-/// An implementation of [FlutterSplendidBlePlatform] that uses method channels.
+/// An implementation of [CentralPlatformInterface] that uses method channels.
 // Several methods in this class use SteamControllers. Callers to these functions should ensure that they are
 // closing these StreamControllers when they are no longer needed to avoid memory leaks
 // ignore_for_file: close_sinks
-class MethodChannelFlutterSplendidBle extends FlutterSplendidBlePlatform {
+class CentralMethodChannel extends CentralPlatformInterface {
   /// The method channel used to interact with the native platform.
   @visibleForTesting
-  final channel = const MethodChannel('flutter_splendid_ble');
+  final MethodChannel channel = const MethodChannel('flutter_splendid_ble_central');
 
   /// Checks the status of the Bluetooth adapter on the device.
   ///
@@ -49,10 +49,8 @@ class MethodChannelFlutterSplendidBle extends FlutterSplendidBlePlatform {
   /// role while the Bluetooth capabilities of the host device are disabled.
   @override
   Future<BluetoothStatus> checkBluetoothAdapterStatus() async {
-    final String statusString =
-        await channel.invokeMethod('checkBluetoothAdapterStatus');
-    return BluetoothStatus.values
-        .firstWhere((e) => e.identifier == statusString);
+    final String statusString = await channel.invokeMethod('checkBluetoothAdapterStatus');
+    return BluetoothStatus.values.firstWhere((e) => e.identifier == statusString);
   }
 
   /// Emits the current Bluetooth adapter status to the Dart side.
@@ -70,8 +68,7 @@ class MethodChannelFlutterSplendidBle extends FlutterSplendidBlePlatform {
   /// of the Bluetooth adapter on the device.
   @override
   Stream<BluetoothStatus> emitCurrentBluetoothStatus() {
-    final StreamController<BluetoothStatus> streamController =
-        StreamController<BluetoothStatus>.broadcast();
+    final StreamController<BluetoothStatus> streamController = StreamController<BluetoothStatus>.broadcast();
 
     // Listen to the platform side for Bluetooth adapter status updates.
     channel.setMethodCallHandler((MethodCall call) async {
@@ -108,10 +105,8 @@ class MethodChannelFlutterSplendidBle extends FlutterSplendidBlePlatform {
   /// discovered by the native platform, the 'bleDeviceScanned' method is invoked, and the device information is
   /// parsed and added to the stream.
   @override
-  Stream<BleDevice> startScan(
-      {List<ScanFilter>? filters, ScanSettings? settings}) {
-    StreamController<BleDevice> streamController =
-        StreamController<BleDevice>.broadcast();
+  Stream<BleDevice> startScan({List<ScanFilter>? filters, ScanSettings? settings}) {
+    StreamController<BleDevice> streamController = StreamController<BleDevice>.broadcast();
 
     // Listen to the platform side for scanned devices.
     channel.setMethodCallHandler((MethodCall call) async {
@@ -122,16 +117,14 @@ class MethodChannelFlutterSplendidBle extends FlutterSplendidBlePlatform {
             // Different operating systems will send the arguments in different formats. So, normalize the arguments
             // as a Map<dynamic, dynamic> for use in the BleDevice.fromMap factory constructor.
             if (call.arguments is String) {
-              Map<dynamic, dynamic> argumentsParsed =
-                  json.decode(call.arguments);
+              Map<dynamic, dynamic> argumentsParsed = json.decode(call.arguments);
               device = BleDevice.fromMap(argumentsParsed);
             } else {
               device = BleDevice.fromMap(call.arguments);
             }
             streamController.add(device);
           } catch (e) {
-            streamController.addError(
-                FormatException('Failed to parse discovered device info: $e'));
+            streamController.addError(FormatException('Failed to parse discovered device info: $e'));
           }
         case 'error':
           streamController.addError(Exception(call.arguments));
@@ -140,8 +133,7 @@ class MethodChannelFlutterSplendidBle extends FlutterSplendidBlePlatform {
     });
 
     // Convert filters and settings into map representations if provided.
-    final List<Map<String, dynamic>>? filtersMap =
-        filters?.map((filter) => filter.toMap()).toList();
+    final List<Map<String, dynamic>>? filtersMap = filters?.map((filter) => filter.toMap()).toList();
     final Map<String, dynamic>? settingsMap = settings?.toMap();
 
     // Begin the scan on the platform side, including the filters and settings in the method call if provided.
@@ -164,8 +156,7 @@ class MethodChannelFlutterSplendidBle extends FlutterSplendidBlePlatform {
       if (e.message?.contains('permissions') == true) {
         throw BluetoothPermissionException('Permission error: ${e.message}');
       } else {
-        throw BluetoothScanException(
-            'Failed to stop Bluetooth scan: ${e.message}');
+        throw BluetoothScanException('Failed to stop Bluetooth scan: ${e.message}');
       }
     }
   }
@@ -193,12 +184,11 @@ class MethodChannelFlutterSplendidBle extends FlutterSplendidBlePlatform {
     channel.setMethodCallHandler((MethodCall call) async {
       if (call.method == 'bleConnectionState_$deviceAddress') {
         final String connectionStateString = call.arguments as String;
-        final BleConnectionState state = BleConnectionState.values.firstWhere(
-            (value) => value.identifier == connectionStateString.toLowerCase());
+        final BleConnectionState state =
+            BleConnectionState.values.firstWhere((value) => value.identifier == connectionStateString.toLowerCase());
         connectionStateStreamController.add(state);
       } else if (call.method == 'error') {
-        connectionStateStreamController
-            .addError(BluetoothConnectionException(call.arguments));
+        connectionStateStreamController.addError(BluetoothConnectionException(call.arguments));
       }
     });
 
@@ -268,11 +258,10 @@ class MethodChannelFlutterSplendidBle extends FlutterSplendidBlePlatform {
 
                 try {
                   // Convert the raw characteristic maps to BleCharacteristic objects.
-                  List<BleCharacteristic> characteristics =
-                      rawCharacteristics.map((charMap) {
+                  List<BleCharacteristic> characteristics = rawCharacteristics.map((charMap) {
                     // Manually convert the map to the desired type
-                    Map<String, dynamic> typedMap = Map.from(charMap)
-                        .map((key, value) => MapEntry(key as String, value));
+                    Map<String, dynamic> typedMap =
+                        Map.from(charMap).map((key, value) => MapEntry(key as String, value));
                     return BleCharacteristic.fromMap(typedMap);
                   }).toList();
 
@@ -281,8 +270,7 @@ class MethodChannelFlutterSplendidBle extends FlutterSplendidBlePlatform {
                     characteristics: characteristics,
                   );
                 } catch (e) {
-                  throw FormatException(
-                      'Failed to get BleCharacteristic instance with exception, $e');
+                  throw FormatException('Failed to get BleCharacteristic instance with exception, $e');
                 }
               } else {
                 // Return a null BleService to be filtered out later.
@@ -295,8 +283,7 @@ class MethodChannelFlutterSplendidBle extends FlutterSplendidBlePlatform {
 
         servicesDiscoveredController.add(services);
       } else if (call.method == 'error') {
-        servicesDiscoveredController
-            .addError(ServiceDiscoveryException(call.arguments));
+        servicesDiscoveredController.addError(ServiceDiscoveryException(call.arguments));
       }
     });
   }
@@ -328,25 +315,21 @@ class MethodChannelFlutterSplendidBle extends FlutterSplendidBlePlatform {
   /// Returns a [Future] containing the [ConnectionState] representing the current connection state
   /// of the BLE device with the specified address.
   @override
-  Future<BleConnectionState> getCurrentConnectionState(
-      String deviceAddress) async {
+  Future<BleConnectionState> getCurrentConnectionState(String deviceAddress) async {
     try {
       // Invoke the method channel to fetch the current connection state for the BLE device.
-      final String connectionStateString =
-          await channel.invokeMethod('getCurrentConnectionState', {
+      final String connectionStateString = await channel.invokeMethod('getCurrentConnectionState', {
         'address': deviceAddress,
       });
 
       // Convert the string received from Kotlin to the Dart enum value.
-      return BleConnectionState.values
-          .firstWhere((e) => e.identifier == connectionStateString);
+      return BleConnectionState.values.firstWhere((e) => e.identifier == connectionStateString);
     } on PlatformException catch (e) {
       // Handle different error types accordingly.
       if (e.message?.contains('permissions') == true) {
         throw BluetoothPermissionException('Permission error: ${e.message}');
       } else {
-        throw BluetoothConnectionException(
-            'Failed to get current connection state: ${e.message}');
+        throw BluetoothConnectionException('Failed to get current connection state: ${e.message}');
       }
     }
   }
@@ -393,8 +376,7 @@ class MethodChannelFlutterSplendidBle extends FlutterSplendidBlePlatform {
       if (e.message?.contains('permissions') == true) {
         throw BluetoothPermissionException('Permission error: ${e.message}');
       } else {
-        throw BluetoothWriteException(
-            'Failed to write BLE characteristic: ${e.message}');
+        throw BluetoothWriteException('Failed to write BLE characteristic: ${e.message}');
       }
     }
   }
@@ -452,8 +434,7 @@ class MethodChannelFlutterSplendidBle extends FlutterSplendidBlePlatform {
           rethrow;
         }
         completer.complete(response);
-        channel.setMethodCallHandler(
-            null); // Reset the handler to avoid future calls.
+        channel.setMethodCallHandler(null); // Reset the handler to avoid future calls.
       }
     });
 
@@ -468,8 +449,7 @@ class MethodChannelFlutterSplendidBle extends FlutterSplendidBlePlatform {
       if (e.message?.contains('permissions') == true) {
         throw BluetoothPermissionException('Permission error: ${e.message}');
       } else {
-        throw BluetoothReadException(
-            'Failed to read BLE characteristic: ${e.message}');
+        throw BluetoothReadException('Failed to read BLE characteristic: ${e.message}');
       }
     }
 
@@ -479,8 +459,7 @@ class MethodChannelFlutterSplendidBle extends FlutterSplendidBlePlatform {
       onTimeout: () {
         // If the timeout occurs, reset the method call handler and throw an error.
         channel.setMethodCallHandler(null);
-        throw TimeoutException(
-            'Failed to read characteristic within the given timeout', timeout);
+        throw TimeoutException('Failed to read characteristic within the given timeout', timeout);
       },
     );
   }
@@ -491,10 +470,8 @@ class MethodChannelFlutterSplendidBle extends FlutterSplendidBlePlatform {
   /// to this stream and establish a callback function invoked each time a new value is emitted to the stream. Once
   /// subscribed, any updates to the characteristic value will be sent as a stream of [BleCharacteristicValue] objects.
   @override
-  Stream<BleCharacteristicValue> subscribeToCharacteristic(
-      BleCharacteristic characteristic) {
-    StreamController<BleCharacteristicValue> streamController =
-        StreamController<BleCharacteristicValue>.broadcast();
+  Stream<BleCharacteristicValue> subscribeToCharacteristic(BleCharacteristic characteristic) {
+    StreamController<BleCharacteristicValue> streamController = StreamController<BleCharacteristicValue>.broadcast();
 
     // Listen for characteristic updates from the platform side.
     channel.setMethodCallHandler((MethodCall call) async {
@@ -503,8 +480,7 @@ class MethodChannelFlutterSplendidBle extends FlutterSplendidBlePlatform {
         try {
           value = BleCharacteristicValue.fromMap(call.arguments);
         } catch (e) {
-          streamController
-              .addError(Exception('Failed to parse characteristic value: $e'));
+          streamController.addError(Exception('Failed to parse characteristic value: $e'));
           return;
         }
         streamController.add(value);
@@ -520,14 +496,12 @@ class MethodChannelFlutterSplendidBle extends FlutterSplendidBlePlatform {
     } on PlatformException catch (e) {
       // Handle different error types accordingly.
       if (e.message?.contains('permissions') == true) {
-        streamController.addError(
-            BluetoothPermissionException('Permission error: ${e.message}'));
+        streamController.addError(BluetoothPermissionException('Permission error: ${e.message}'));
         throw BluetoothPermissionException('Permission error: ${e.message}');
       } else {
-        streamController.addError(BluetoothSubscriptionException(
-            'Failed to subscribe to BLE characteristic: ${e.message}'));
-        throw BluetoothSubscriptionException(
-            'Failed to subscribe to BLE characteristic: ${e.message}');
+        streamController
+            .addError(BluetoothSubscriptionException('Failed to subscribe to BLE characteristic: ${e.message}'));
+        throw BluetoothSubscriptionException('Failed to subscribe to BLE characteristic: ${e.message}');
       }
     }
 
@@ -549,8 +523,7 @@ class MethodChannelFlutterSplendidBle extends FlutterSplendidBlePlatform {
       if (e.message?.contains('permissions') == true) {
         throw BluetoothPermissionException('Permission error: ${e.message}');
       } else {
-        throw BluetoothSubscriptionException(
-            'Failed to unsubscribe from BLE characteristic: ${e.message}');
+        throw BluetoothSubscriptionException('Failed to unsubscribe from BLE characteristic: ${e.message}');
       }
     }
   }
@@ -566,10 +539,8 @@ class MethodChannelFlutterSplendidBle extends FlutterSplendidBlePlatform {
   /// Returns a [Future] containing the [BluetoothPermissionStatus] representing whether permission was granted or not.
   @override
   Future<BluetoothPermissionStatus> requestBluetoothPermissions() async {
-    final String permissionStatusString =
-        await channel.invokeMethod('requestBluetoothPermissions');
-    return BluetoothPermissionStatus.values
-        .firstWhere((status) => status.identifier == permissionStatusString);
+    final String permissionStatusString = await channel.invokeMethod('requestBluetoothPermissions');
+    return BluetoothPermissionStatus.values.firstWhere((status) => status.identifier == permissionStatusString);
   }
 
   /// Emits the current Bluetooth permission status to the Dart side.
@@ -592,8 +563,7 @@ class MethodChannelFlutterSplendidBle extends FlutterSplendidBlePlatform {
         final String permissionStatusString = call.arguments as String;
 
         // Convert the string status to its corresponding enum value
-        final BluetoothPermissionStatus status =
-            BluetoothPermissionStatus.values.firstWhere(
+        final BluetoothPermissionStatus status = BluetoothPermissionStatus.values.firstWhere(
           (status) => status.identifier == permissionStatusString,
         );
 

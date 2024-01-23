@@ -1,14 +1,14 @@
 import 'dart:async';
 
 import 'package:flutter/services.dart';
-import 'package:flutter_splendid_ble/central/flutter_splendid_ble_method_channel.dart';
+import 'package:flutter_splendid_ble/central/central_method_channel.dart';
 import 'package:flutter_splendid_ble/central/models/bluetooth_status.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  const MethodChannel channel = MethodChannel('flutter_splendid_ble');
+  const MethodChannel channel = MethodChannel('flutter_splendid_ble_central');
 
   setUp(() {
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
@@ -21,8 +21,8 @@ void main() {
   });
 
   test('emitCurrentBluetoothStatus emits correct BluetoothStatus', () async {
-    final MethodChannelFlutterSplendidBle methodChannelFlutterBle =
-        MethodChannelFlutterSplendidBle();
+    final CentralMethodChannel methodChannelFlutterBle =
+        CentralMethodChannel();
 
     // Create a list to hold emitted statuses
     final List<BluetoothStatus> emittedStatuses = <BluetoothStatus>[];

@@ -37,10 +37,11 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
     /// registerWiths the plugin with the given registrar by creating a method channel and setting the current instance as its delegate.
     /// - Parameter registrar: The `FlutterPluginRegistrar` that handles plugin registration.
     public static func register(with registrar: FlutterPluginRegistrar) {
-        let channel = FlutterMethodChannel(name: "flutter_splendid_ble", binaryMessenger: registrar.messenger())
+        let centralChannel = FlutterMethodChannel(name: "flutter_splendid_ble_central", binaryMessenger: registrar.messenger())
+        
         let instance = FlutterSplendidBlePlugin()
-        instance.channel = channel
-        registrar.addMethodCallDelegate(instance, channel: channel)
+        instance.channel = centralChannel
+        registrar.addMethodCallDelegate(instance, channel: centralChannel)
     }
     
     public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
