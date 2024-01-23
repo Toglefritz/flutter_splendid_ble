@@ -2,9 +2,9 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_splendid_ble/flutter_splendid_ble.dart';
-import 'package:flutter_splendid_ble/models/ble_characteristic.dart';
-import 'package:flutter_splendid_ble/models/ble_connection_state.dart';
-import 'package:flutter_splendid_ble/models/ble_service.dart';
+import 'package:flutter_splendid_ble/central/models/ble_characteristic.dart';
+import 'package:flutter_splendid_ble/central/models/ble_connection_state.dart';
+import 'package:flutter_splendid_ble/central/models/ble_service.dart';
 
 import '../characteristic_interaction/characteristic_interaction_route.dart';
 import '../start_scan/start_scan_route.dart';

@@ -3,9 +3,11 @@
 <p align="center">
 <image src="https://github.com/Toglefritz/flutter_splendid_ble/blob/main/assets/flutter_splendid_ble_logo.png?raw=true" alt="flutter_splendid_ble plugin logo" width="200"></image></p>
 
-A comprehensive Flutter plugin for interacting with Bluetooth Low Energy (BLE) devices. This plugin
-provides functionalities such as scanning for BLE devices, connecting to them, managing the bonding
-process, writing to their characteristics, and disconnecting from them, among other features.
+The Flutter Splendid BLE plugin offers a robust suite of functionalities for Bluetooth Low Energy (
+BLE) interactions in Flutter applications. It equips apps with the ability to function both as a
+central and a peripheral device. This includes scanning for and connecting to BLE peripherals,
+managing bonding processes, broadcasting services, accepting connections, and handling data
+communication with other BLE devices, providing a comprehensive tool for versatile BLE operations.
 
 ## Main Goals
 
@@ -23,6 +25,7 @@ process, writing to their characteristics, and disconnecting from them, among ot
 
 ## Features
 
+### Central Mode
 - Scan for available BLE devices.
 - Connect to a BLE device.
 - Manage the bonding process.
@@ -32,6 +35,16 @@ process, writing to their characteristics, and disconnecting from them, among ot
 - Handle connection errors and other exceptions.
 - Monitor connection status and other state changes.
 - Have a really good time.
+
+### Peripheral Mode
+- Advertise as a BLE peripheral.
+- Manage connection requests from central devices.
+- Offer BLE services and characteristics.
+- Send notifications or indications to connected central devices.
+- Handle read and write requests on BLE characteristics.
+- Control the visibility and broadcast power.
+- Manage bonding with central devices.
+- Monitor and handle peripheral connection states and errors.
 
 ## Installation
 
@@ -383,7 +396,8 @@ updates asynchronously to a central device without the central having to poll fo
 words, subscribing to notifications or indications from a BLE characteristic is essential for
 real-time communication in BLE applications.
 
-When subscribing to BLE characteristic notifications or indications using the Splendid BLE plugin, the
+When subscribing to BLE characteristic notifications or indications using the Splendid BLE plugin,
+the
 values you receive are instances of BleCharacteristicValue, which contain the raw data as List<int>.
 This raw data format represents the bytes sent from the BLE device. For most applications, you will
 need to convert these bytes into a more usable format such as a String, Map<String, dynamic> (if the
@@ -702,7 +716,9 @@ Future<void> disconnectFromDevice(BleDevice device) async {
   documentation for any additional steps that might need to be performed.
 
 ## Tutorial article
-For a detailed tutorial article, please visit https://medium.com/@Toglefritz/flutter-bluetooth-a669fcf4bb44?sk=cbbae5ffb7bd42490448c478bae6a6d7
+
+For a detailed tutorial article, please
+visit https://medium.com/@Toglefritz/flutter-bluetooth-a669fcf4bb44?sk=cbbae5ffb7bd42490448c478bae6a6d7
 
 ## Error Handling
 

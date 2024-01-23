@@ -5,22 +5,22 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 import 'flutter_splendid_ble_platform_interface.dart';
-import 'models/ble_characteristic.dart';
-import 'models/ble_characteristic_value.dart';
-import 'models/ble_connection_state.dart';
-import 'models/ble_device.dart';
-import 'models/ble_service.dart';
-import 'models/bluetooth_permission_status.dart';
-import 'models/bluetooth_status.dart';
-import 'models/exceptions/bluetooth_connection_exception.dart';
-import 'models/exceptions/bluetooth_permission_exception.dart';
-import 'models/exceptions/bluetooth_read_exception.dart';
-import 'models/exceptions/bluetooth_scan_exception.dart';
-import 'models/exceptions/bluetooth_subscription_exception.dart';
-import 'models/exceptions/bluetooth_write_exception.dart';
-import 'models/exceptions/service_discovery_exception.dart';
-import 'models/scan_filter.dart';
-import 'models/scan_settings.dart';
+import '../central/models/ble_characteristic.dart';
+import '../central/models/ble_characteristic_value.dart';
+import '../central/models/ble_connection_state.dart';
+import '../central/models/ble_device.dart';
+import '../central/models/ble_service.dart';
+import '../central/models/bluetooth_permission_status.dart';
+import '../central/models/bluetooth_status.dart';
+import '../central/models/exceptions/bluetooth_connection_exception.dart';
+import '../central/models/exceptions/bluetooth_permission_exception.dart';
+import '../central/models/exceptions/bluetooth_read_exception.dart';
+import '../central/models/exceptions/bluetooth_scan_exception.dart';
+import '../central/models/exceptions/bluetooth_subscription_exception.dart';
+import '../central/models/exceptions/bluetooth_write_exception.dart';
+import '../central/models/exceptions/service_discovery_exception.dart';
+import '../central/models/scan_filter.dart';
+import '../central/models/scan_settings.dart';
 
 /// An implementation of [FlutterSplendidBlePlatform] that uses method channels.
 // Several methods in this class use SteamControllers. Callers to these functions should ensure that they are

@@ -1,11 +1,11 @@
-import 'flutter_splendid_ble_platform_interface.dart';
-import 'models/ble_connection_state.dart';
-import 'models/ble_device.dart';
-import 'models/ble_service.dart';
-import 'models/bluetooth_permission_status.dart';
-import 'models/bluetooth_status.dart';
-import 'models/scan_filter.dart';
-import 'models/scan_settings.dart';
+import 'central/flutter_splendid_ble_platform_interface.dart';
+import 'central/models/ble_connection_state.dart';
+import 'central/models/ble_device.dart';
+import 'central/models/ble_service.dart';
+import 'central/models/bluetooth_permission_status.dart';
+import 'central/models/bluetooth_status.dart';
+import 'central/models/scan_filter.dart';
+import 'central/models/scan_settings.dart';
 
 /// [FlutterSplendidBle] provides an interface to interact with Bluetooth functionalities.
 ///

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_splendid_ble/models/ble_characteristic.dart';
-import 'package:flutter_splendid_ble/models/ble_characteristic_property.dart';
-import 'package:flutter_splendid_ble/models/ble_characteristic_value.dart';
+import 'package:flutter_splendid_ble/central/models/ble_characteristic.dart';
+import 'package:flutter_splendid_ble/central/models/ble_characteristic_property.dart';
+import 'package:flutter_splendid_ble/central/models/ble_characteristic_value.dart';
 
 /// Displays information about an individual Bluetooth characteristic.
 class CharacteristicInfo extends StatefulWidget {

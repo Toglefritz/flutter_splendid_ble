@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import 'package:flutter_splendid_ble/models/ble_service.dart';
+import 'package:flutter_splendid_ble/central/models/ble_service.dart';
 
 import 'characteristic_info.dart';
 
