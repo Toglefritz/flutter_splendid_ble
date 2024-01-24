@@ -401,7 +401,7 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
     private func emitCurrentPermissionStatus() {
         let status: String = requestBluetoothPermissions().rawValue
         // Invoke method on Flutter side
-        channel.invokeMethod("permissionStateUpdated", arguments: status)
+        channel.invokeMethod("permissionStatusUpdated", arguments: status)
     }
     
     // MARK: Adapter Status Helper Methods
@@ -424,6 +424,10 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
     func checkBluetoothAdapterStatus() -> BluetoothStatus {
         switch centralManager.state {
         case .unsupported:
+            return .notAvailable
+        case .unauthorized:
+            return .notAvailable
+        case .unknown:
             return .notAvailable
         case .poweredOn:
             return .enabled
