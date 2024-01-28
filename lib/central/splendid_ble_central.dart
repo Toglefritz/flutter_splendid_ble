@@ -1,13 +1,14 @@
-import 'central/central_platform_interface.dart';
-import 'central/models/ble_connection_state.dart';
-import 'central/models/ble_device.dart';
-import 'central/models/ble_service.dart';
-import 'central/models/bluetooth_permission_status.dart';
-import 'central/models/bluetooth_status.dart';
-import 'central/models/scan_filter.dart';
-import 'central/models/scan_settings.dart';
+import 'central_platform_interface.dart';
+import 'models/ble_connection_state.dart';
+import '../models/ble_device.dart';
+import 'models/ble_service.dart';
+import 'models/bluetooth_permission_status.dart';
+import 'models/bluetooth_status.dart';
+import 'models/scan_filter.dart';
+import 'models/scan_settings.dart';
 
-/// [FlutterSplendidBle] provides an interface to interact with Bluetooth functionalities.
+/// [SplendidBleCentral] provides an interface to interact with Bluetooth functionalities from a Flutter app acting
+/// as a BLE central device.
 ///
 /// This class offers methods to check and monitor the status of the Bluetooth adapter, scan for devices,
 /// connect/disconnect to/from devices, and manage Bluetooth permissions. It serves as a bridge to the underlying
@@ -17,7 +18,7 @@ import 'central/models/scan_settings.dart';
 /// The class primarily uses asynchronous patterns like [Future] and [Stream] to provide real-time updates and
 /// responses to Bluetooth operations. The methods in this class delegate the actual operations to
 /// `FlutterSplendidBlePlatform.instance`, ensuring platform-agnostic behavior.
-class FlutterSplendidBle {
+class SplendidBleCentral {
   /// Asks the platform to check the current status of the Bluetooth adapter.
   ///
   /// Returns a [Future] containing the current [BluetoothStatus].

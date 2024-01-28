@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_splendid_ble/flutter_splendid_ble.dart';
+import 'package:flutter_splendid_ble/central/splendid_ble_central.dart';
 import 'package:flutter_splendid_ble/central/models/ble_characteristic.dart';
 import 'package:flutter_splendid_ble/central/models/ble_connection_state.dart';
 import 'package:flutter_splendid_ble/central/models/ble_service.dart';
@@ -14,7 +14,7 @@ import 'device_details_view.dart';
 /// A controller for the [DeviceDetailsRoute] that manages the state and owns all business logic.
 class DeviceDetailsController extends State<DeviceDetailsRoute> {
   /// A [FlutterBle] instance used for Bluetooth operations conducted by this route.
-  final FlutterSplendidBle _ble = FlutterSplendidBle();
+  final SplendidBleCentral _ble = SplendidBleCentral();
 
   /// A [StreamSubscription] for the connection state between the Flutter app and the Bluetooth peripheral.
   StreamSubscription<BleConnectionState>? _connectionStateStream;

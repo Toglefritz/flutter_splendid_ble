@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import 'package:flutter_splendid_ble/flutter_splendid_ble.dart';
+import 'package:flutter_splendid_ble/central/splendid_ble_central.dart';
 import 'package:flutter_splendid_ble/central/models/bluetooth_permission_status.dart';
 import 'package:flutter_splendid_ble/central/models/bluetooth_status.dart';
 import 'package:flutter_splendid_ble_example/screens/scan_configuration/scan_configuration_route.dart';
@@ -16,7 +16,7 @@ import '../scan/scan_route.dart';
 /// A controller for the [StartScanRoute] that manages the state and owns all business logic.
 class StartScanController extends State<StartScanRoute> {
   /// A [FlutterBle] instance used for Bluetooth operations conducted by this route.
-  final FlutterSplendidBle _ble = FlutterSplendidBle();
+  final SplendidBleCentral _ble = SplendidBleCentral();
 
   /// Determines if Bluetooth permissions have been granted.
   ///

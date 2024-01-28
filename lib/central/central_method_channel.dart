@@ -8,7 +8,7 @@ import 'central_platform_interface.dart';
 import '../central/models/ble_characteristic.dart';
 import '../central/models/ble_characteristic_value.dart';
 import '../central/models/ble_connection_state.dart';
-import '../central/models/ble_device.dart';
+import '../models/ble_device.dart';
 import '../central/models/ble_service.dart';
 import '../central/models/bluetooth_permission_status.dart';
 import '../central/models/bluetooth_status.dart';

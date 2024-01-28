@@ -9,6 +9,51 @@ central and a peripheral device. This includes scanning for and connecting to BL
 managing bonding processes, broadcasting services, accepting connections, and handling data
 communication with other BLE devices, providing a comprehensive tool for versatile BLE operations.
 
+## Dual Role Functionality
+
+The Flutter Splendid BLE plugin is organized into two distinct modules, catering to different roles
+in Bluetooth Low Energy (BLE) communication:
+
+### Central Module
+
+This module allows a Flutter app to act as a BLE central device. It is designed for scenarios where
+the app scans for, connects to, and interacts with BLE peripheral devices. Key functionalities
+include:
+
+- Scanning for BLE devices and filtering results.
+- Establishing and managing connections with peripherals.
+- Reading from and writing to BLE characteristics.
+- Subscribing to notifications or indications from peripherals.
+
+**Example Use-Cases:**
+
+- A smart home app managing BLE-enabled IoT devices.
+- A fitness app connecting to BLE heart rate monitors.
+- A navigation app that connects to BLE cycling computers or wearables for real-time data tracking
+  and guidance.
+
+### Peripheral Module
+
+Conversely, this module allows a Flutter app to behave as a BLE peripheral. This is ideal for
+use-cases where the app advertises BLE services, accepts connections, and handles data transactions.
+Features include:
+
+- Advertising BLE services to nearby central devices.
+- Accepting and managing incoming BLE connections.
+- Handling read and write requests from connected central devices.
+- Sending notifications to connected devices.
+
+**Example Use-Cases:**
+
+- A mobile game that uses the phone as a BLE-enabled game controller.
+- A conference app turning a tablet into an information kiosk, broadcasting BLE signals for attendee
+  engagement and navigation.
+- An app that turns the device into a BLE beacon for location tracking.
+
+Both modules are seamlessly integrated into the Flutter Splendid BLE plugin, ensuring a
+comprehensive and versatile BLE solution for Flutter developers. This plugin is designed to allow
+your app to control other BLE devices or act as one itself, or both.
+
 ## Main Goals
 
 1. **Efficient Toolset**: The primary objective is to provide developers with an efficient set of
@@ -26,6 +71,7 @@ communication with other BLE devices, providing a comprehensive tool for versati
 ## Features
 
 ### Central Mode
+
 - Scan for available BLE devices.
 - Connect to a BLE device.
 - Manage the bonding process.
@@ -37,6 +83,7 @@ communication with other BLE devices, providing a comprehensive tool for versati
 - Have a really good time.
 
 ### Peripheral Mode
+
 - Advertise as a BLE peripheral.
 - Manage connection requests from central devices.
 - Offer BLE services and characteristics.

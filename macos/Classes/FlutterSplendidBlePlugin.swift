@@ -10,8 +10,11 @@ import CoreBluetooth
 /// This is particularly important for operations like scanning, where the discovery of peripherals should be consistent with the instances used for actual communication.
 /// Maintaining a single source of truth for peripheral instances avoids duplication and state inconsistencies.
 public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManagerDelegate, CBPeripheralDelegate {
-    /// A `FlutterMethodChannel` used for communication with the Dart side of the app.
-    private var channel: FlutterMethodChannel!
+    /// A `FlutterMethodChannel` used for communication with the Dart side of the app for functionality in which the app acts as a BLE central device.
+    private var centralChannel: FlutterMethodChannel!
+    
+    /// A `FlutterMethodChannel` used for communication with the Dart side of the app for functionality in which the app acts as a BLE peripheral device.
+    private var peripheralChannel: FlutterMethodChannel!
     
     /// The central manager for managing BLE operations.
     ///
@@ -40,46 +43,72 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
     /// Registers the plugin with the given registrar by creating a method channel and setting the current instance as its delegate.
     /// - Parameter registrar: The `FlutterPluginRegistrar` that handles plugin registration.
     public static func register(with registrar: FlutterPluginRegistrar) {
-        let channel = FlutterMethodChannel(name: "flutter_splendid_ble_central", binaryMessenger: registrar.messenger)
+        let centralChannel = FlutterMethodChannel(name: "flutter_splendid_ble_central", binaryMessenger: registrar.messenger)
+        let peripheralChannel = FlutterMethodChannel(name: "flutter_splendid_ble_peripheral", binaryMessenger: registrar.messenger)
         let instance = FlutterSplendidBlePlugin()
-        instance.channel = channel
-        registrar.addMethodCallDelegate(instance, channel: channel)
+        instance.centralChannel = centralChannel
+        instance.peripheralChannel = peripheralChannel
+        registrar.addMethodCallDelegate(instance, channel: centralChannel)
+        registrar.addMethodCallDelegate(instance, channel: peripheralChannel)
     }
     
-    /// Handles incoming method calls from Flutter and directs them to the appropriate functions based on the method name.
-    /// - Parameters:
-    ///   - call: The `FlutterMethodCall` object containing the method name and arguments from Flutter.
-    ///   - result: The `FlutterResult` callback to return results or errors back to the Flutter side.
+    /// This function is the entry point for handling Method Channel calls in the Flutter plugin. It routes incoming calls to the appropriate
+    /// handler based on whether the call pertains to central or peripheral functionality. It uses the `isCentralMethod` and
+    /// `isPeripheralMethod` functions to determine the correct routing.
     public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
+        if isCentralMethod(call.method) {
+            handleCentralMethod(call, result)
+        } else if isPeripheralMethod(call.method) {
+            handlePeripheralMethod(call, result)
+        } else {
+            result(FlutterMethodNotImplemented)
+        }
+    }
+    
+    /// A utility function to check if an incoming Method Channel call is related to central device functionality. It returns true for central
+    /// device methods and false otherwise. This helps in routing the call to the correct handler.
+    private func isCentralMethod(_ methodName: String) -> Bool {
+        return CentralMethod.allCases.map { $0.rawValue }.contains(methodName)
+    }
+    
+    /// A utility function to check if an incoming Method Channel call is related to peripheral device functionality. It returns true for peripheral
+    /// device methods and false otherwise. This helps in routing the call to the correct handler.
+    private func isPeripheralMethod(_ methodName: String) -> Bool {
+        return PeripheralMethod.allCases.map { $0.rawValue }.contains(methodName)
+    }
+    
+    /// Handles all Method Channel calls related to the BLE central device functionality. This includes operations like scanning for BLE
+    /// devices, connecting to them, and managing BLE interactions as a central device.
+    private func handleCentralMethod(_ call: FlutterMethodCall, _ result: @escaping FlutterResult) {
         switch call.method {
-        case "requestBluetoothPermissions":
+        case CentralMethod.requestBluetoothPermissions.rawValue:
             let permissionStatus: String = requestBluetoothPermissions().rawValue
             result(permissionStatus)
             
-        case "emitCurrentPermissionStatus":
+        case CentralMethod.emitCurrentPermissionStatus.rawValue:
             emitCurrentPermissionStatus()
             result(nil)
             
-        case "checkBluetoothAdapterStatus":
+        case CentralMethod.checkBluetoothAdapterStatus.rawValue:
             // Check the status of the Bluetooth adapter
             let status = centralManager.state == .poweredOn ? "available" : "notAvailable"
             result(status)
             
-        case "emitCurrentBluetoothStatus":
+        case CentralMethod.emitCurrentBluetoothStatus.rawValue:
             emitCurrentBluetoothStatus()
             result(nil)
             
-        case "startScan":
+        case CentralMethod.startScan.rawValue:
             // Start scanning for BLE devices
             centralManager.scanForPeripherals(withServices: nil, options: nil)
             result(nil)
             
-        case "stopScan":
+        case CentralMethod.stopScan.rawValue:
             // Stop scanning for BLE devices
             centralManager.stopScan()
             result(nil)
             
-        case "connect":
+        case CentralMethod.connect.rawValue:
             if let arguments = call.arguments as? [String: Any],
                let deviceAddress = arguments["address"] as? String {
                 connect(deviceAddress: deviceAddress)
@@ -88,7 +117,7 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
                 result(FlutterError(code: "INVALID_ARGUMENT", message: "Device address cannot be null.", details: nil))
             }
             
-        case "disconnect":
+        case CentralMethod.disconnect.rawValue:
             if let arguments = call.arguments as? [String: Any],
                let deviceAddress = arguments["address"] as? String {
                 disconnect(deviceAddress: deviceAddress)
@@ -97,7 +126,7 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
                 result(FlutterError(code: "INVALID_ARGUMENT", message: "Device address cannot be null.", details: nil))
             }
             
-        case "getCurrentConnectionState":
+        case CentralMethod.getCurrentConnectionState.rawValue:
             if let arguments = call.arguments as? [String: Any],
                let deviceAddress = arguments["address"] as? String {
                 let connectionState = getCurrentConnectionState(deviceAddress: deviceAddress).lowercased()
@@ -106,7 +135,7 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
                 result(FlutterError(code: "INVALID_ARGUMENT", message: "Device address cannot be null.", details: nil))
             }
             
-        case "discoverServices":
+        case CentralMethod.discoverServices.rawValue:
             guard let args = call.arguments as? [String: Any],
                   let deviceAddress = args["address"] as? String,
                   let peripheral = peripheralsMap[deviceAddress] else {
@@ -117,7 +146,7 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
             peripheral.discoverServices(nil)
             result(nil)
             
-        case "writeCharacteristic":
+        case CentralMethod.writeCharacteristic.rawValue:
             // First, ensure that we're dealing with a dictionary of arguments.
             guard let arguments = call.arguments as? [String: Any] else {
                 result(FlutterError(code: "INVALID_ARGUMENT", message: "Arguments are not in the expected format", details: nil))
@@ -145,7 +174,7 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
             peripheral.writeValue(dataValue, for: characteristic, type: writeType)
             result(nil)
             
-        case "readCharacteristic":
+        case CentralMethod.readCharacteristic.rawValue:
             guard let arguments = call.arguments as? [String: Any],
                   let characteristicUuidStr = arguments["characteristicUuid"] as? String,
                   let deviceAddress = arguments["address"] as? String,
@@ -160,11 +189,22 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
             peripheral.readValue(for: characteristic)
             result(nil)
             
-        case "subscribeToCharacteristic":
+        case CentralMethod.subscribeToCharacteristic.rawValue:
             subscribeToCharacteristic(call: call, result: result)
             
-        case "unsubscribeFromCharacteristic":
+        case CentralMethod.unsubscribeFromCharacteristic.rawValue:
             unsubscribeFromCharacteristic(call: call, result: result)
+            
+        default:
+            result(FlutterMethodNotImplemented)
+        }
+    }
+    
+    /// Manages Method Channel calls specific to BLE peripheral device operations. It handles tasks where the host device acts as a
+    /// BLE peripheral, such as advertising BLE services and managing connections from central devices.
+    private func handlePeripheralMethod(_ call: FlutterMethodCall, _ result: @escaping FlutterResult) {
+        switch call.method {
+       
             
         default:
             result(FlutterMethodNotImplemented)
@@ -210,7 +250,7 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
         // Send device information to Flutter side
         let jsonData = try? JSONSerialization.data(withJSONObject: deviceMap, options: [])
         if let jsonData = jsonData, let jsonString = String(data: jsonData, encoding: .utf8) {
-            channel.invokeMethod("bleDeviceScanned", arguments: jsonString)
+            centralChannel.invokeMethod("bleDeviceScanned", arguments: jsonString)
         }
     }
     
@@ -221,7 +261,7 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
     ///   - central: The `CBCentralManager` that has initiated the connection.
     ///   - peripheral: The `CBPeripheral` to which the app has just successfully connected.
     public func centralManager(_ central: CBCentralManager, didConnect peripheral: CBPeripheral) {
-        channel.invokeMethod("bleConnectionState_\(peripheral.identifier.uuidString)", arguments: "CONNECTED")
+        centralChannel.invokeMethod("bleConnectionState_\(peripheral.identifier.uuidString)", arguments: "CONNECTED")
     }
     
     /// Called by the system when the central manager fails to create a connection with the peripheral.
@@ -232,7 +272,7 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
     ///   - peripheral: The `CBPeripheral` that the manager failed to connect to.
     ///   - error: An optional `Error` providing more details about the reason for the failure.
     public func centralManager(_ central: CBCentralManager, didFailToConnect peripheral: CBPeripheral, error: Error?) {
-        channel.invokeMethod("bleConnectionState_\(peripheral.identifier.uuidString)", arguments: "FAILED")
+        centralChannel.invokeMethod("bleConnectionState_\(peripheral.identifier.uuidString)", arguments: "FAILED")
     }
     
     /// Invoked when an existing connection with a peripheral is terminated, either by the peripheral or the system.
@@ -243,7 +283,7 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
     ///   - peripheral: The `CBPeripheral` that has disconnected.
     ///   - error: An optional `Error` that may contain the reason for the disconnection if it was not initiated by the user.
     public func centralManager(_ central: CBCentralManager, didDisconnectPeripheral peripheral: CBPeripheral, error: Error?) {
-        channel.invokeMethod("bleConnectionState_\(peripheral.identifier.uuidString)", arguments: "DISCONNECTED")
+        centralChannel.invokeMethod("bleConnectionState_\(peripheral.identifier.uuidString)", arguments: "DISCONNECTED")
     }
     
     // MARK: CBPeripheralDelegate Methods
@@ -257,7 +297,7 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
     ///   - error: An optional `Error` object containing details of the failure if the service discovery process did not succeed.
     public func peripheral(_ peripheral: CBPeripheral, didDiscoverServices error: Error?) {
         guard error == nil else {
-            channel.invokeMethod("error", arguments: "Service discovery failed: \(error!.localizedDescription)")
+            centralChannel.invokeMethod("error", arguments: "Service discovery failed: \(error!.localizedDescription)")
             return
         }
         
@@ -280,7 +320,7 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
     public func peripheral(_ peripheral: CBPeripheral, didDiscoverCharacteristicsFor service: CBService, error: Error?) {
         guard error == nil else {
             // Notify the Flutter layer about the characteristics discovery failure with an error message.
-            channel.invokeMethod("error", arguments: "Characteristics discovery failed for service \(service.uuid): \(error!.localizedDescription)")
+            centralChannel.invokeMethod("error", arguments: "Characteristics discovery failed for service \(service.uuid): \(error!.localizedDescription)")
             return
         }
         
@@ -301,7 +341,7 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
         serviceData[service.uuid.uuidString] = characteristicsData
         
         // Invoke a method on the Flutter side with the service data, signaling that characteristics have been discovered.
-        channel.invokeMethod("bleServicesDiscovered_\(peripheral.identifier.uuidString)", arguments: serviceData)
+        centralChannel.invokeMethod("bleServicesDiscovered_\(peripheral.identifier.uuidString)", arguments: serviceData)
     }
     
     /// Invoked when the notification state has been updated for a characteristic.
@@ -315,7 +355,7 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
     ///   - error: An optional `Error` object that contains the reason for the failure if the notification state update was unsuccessful.
     public func peripheral(_ peripheral: CBPeripheral, didUpdateNotificationStateFor characteristic: CBCharacteristic, error: Error?) {
         guard error == nil else {
-            channel.invokeMethod("error", arguments: "Failed to update notification state for characteristic \(characteristic.uuid): \(error!.localizedDescription)")
+            centralChannel.invokeMethod("error", arguments: "Failed to update notification state for characteristic \(characteristic.uuid): \(error!.localizedDescription)")
             return
         }
     }
@@ -331,7 +371,7 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
     ///   - error: An optional `Error` detailing what went wrong during the operation, if anything.
     public func peripheral(_ peripheral: CBPeripheral, didUpdateValueFor characteristic: CBCharacteristic, error: Error?) {
         guard error == nil else {
-            channel.invokeMethod("error", arguments: "Failed to update value for characteristic \(characteristic.uuid): \(error!.localizedDescription)")
+            centralChannel.invokeMethod("error", arguments: "Failed to update value for characteristic \(characteristic.uuid): \(error!.localizedDescription)")
             return
         }
         
@@ -349,11 +389,11 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
         // Check if this update is the result of a read request or a notification.
         if isReadResponse(characteristic: characteristic) {
             // This is a read response
-            channel.invokeMethod("onCharacteristicRead", arguments: characteristicMap)
+            centralChannel.invokeMethod("onCharacteristicRead", arguments: characteristicMap)
             clearReadResponseFlag(characteristic: characteristic)
         } else {
             // This is a notification update
-            channel.invokeMethod("onCharacteristicChanged", arguments: characteristicMap)
+            centralChannel.invokeMethod("onCharacteristicChanged", arguments: characteristicMap)
         }
     }
     
@@ -401,7 +441,7 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
     private func emitCurrentPermissionStatus() {
         let status: String = requestBluetoothPermissions().rawValue
         // Invoke method on Flutter side
-        channel.invokeMethod("permissionStatusUpdated", arguments: status)
+        centralChannel.invokeMethod("permissionStatusUpdated", arguments: status)
     }
     
     // MARK: Adapter Status Helper Methods
@@ -457,7 +497,7 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
     func emitCurrentBluetoothStatus() {
         let status = self.checkBluetoothAdapterStatus().rawValue
         // Invoke method on Flutter side
-        channel.invokeMethod("adapterStateUpdated", arguments: status)
+        centralChannel.invokeMethod("adapterStateUpdated", arguments: status)
     }
     
     // MARK: Device Interface Helper Methods
@@ -474,7 +514,7 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
     /// - Parameter deviceAddress: The UUID string of the peripheral device to connect to.
     func connect(deviceAddress: String) {
         guard let peripheral = peripheralsMap[deviceAddress] else {
-            channel.invokeMethod("error", arguments: "Device not found.")
+            centralChannel.invokeMethod("error", arguments: "Device not found.")
             return
         }
         
@@ -489,7 +529,7 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
     /// - Parameter deviceAddress: The UUID string of the peripheral device to disconnect from.
     func disconnect(deviceAddress: String) {
         guard let peripheral = peripheralsMap[deviceAddress] else {
-            channel.invokeMethod("error", arguments: "Device not found.")
+            centralChannel.invokeMethod("error", arguments: "Device not found.")
             return
         }
         
@@ -506,7 +546,7 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
     /// - Returns: A string representing the connection state ("CONNECTED", "DISCONNECTED", "FAILED", or "UNKNOWN").
     func getCurrentConnectionState(deviceAddress: String) -> String {
         guard let peripheral = peripheralsMap[deviceAddress] else {
-            channel.invokeMethod("error", arguments: "Device not found.")
+            centralChannel.invokeMethod("error", arguments: "Device not found.")
             return "UNKNOWN"
         }
         
@@ -586,12 +626,16 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
         }
     }
     
+    // MARK: - CBPeripheralManager Methods
+    
+    
+    
     // MARK: Utility Methods
     
     // Utility method to get a CBPeripheral by its identifier
     private func getPeripheralByIdentifier(deviceAddress: String) -> CBPeripheral? {
         guard let peripheral = peripheralsMap[deviceAddress] else {
-            channel.invokeMethod("error", arguments: "Device not found.")
+            centralChannel.invokeMethod("error", arguments: "Device not found.")
             return nil
         }
         

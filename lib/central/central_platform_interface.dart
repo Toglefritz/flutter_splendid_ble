@@ -4,7 +4,7 @@ import 'central_method_channel.dart';
 import '../central/models/ble_characteristic.dart';
 import '../central/models/ble_characteristic_value.dart';
 import '../central/models/ble_connection_state.dart';
-import '../central/models/ble_device.dart';
+import '../models/ble_device.dart';
 import '../central/models/ble_service.dart';
 import '../central/models/bluetooth_permission_status.dart';
 import '../central/models/bluetooth_status.dart';
@@ -12,7 +12,7 @@ import '../central/models/scan_filter.dart';
 import '../central/models/scan_settings.dart';
 
 abstract class CentralPlatformInterface extends PlatformInterface {
-  /// Constructs a FlutterSplendidBlePlatform.
+  /// Constructs a [CentralPlatformInterface].
   CentralPlatformInterface() : super(token: _token);
 
   static final Object _token = Object();
@@ -21,13 +21,10 @@ abstract class CentralPlatformInterface extends PlatformInterface {
       CentralMethodChannel();
 
   /// The default instance of [CentralPlatformInterface] to use.
-  ///
-  /// Defaults to [CentralMethodChannel].
   static CentralPlatformInterface get instance => _instance;
 
-  /// Platform-specific implementations should set this with their own
-  /// platform-specific class that extends [CentralPlatformInterface] when
-  /// they register themselves.
+  /// Platform-specific implementations should set this with their own platform-specific class that extends
+  /// [CentralPlatformInterface] when they register themselves.
   static set instance(CentralPlatformInterface instance) {
     PlatformInterface.verifyToken(instance, _token);
     _instance = instance;
