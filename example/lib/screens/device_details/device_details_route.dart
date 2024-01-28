@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_splendid_ble/models/ble_device.dart';
+import 'package:flutter_splendid_ble/shared/models/ble_device.dart';
 
 import 'device_details_controller.dart';
 

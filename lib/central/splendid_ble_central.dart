@@ -1,9 +1,9 @@
+import '../shared/models/ble_device.dart';
+import '../shared/models/bluetooth_permission_status.dart';
+import '../shared/models/bluetooth_status.dart';
 import 'central_platform_interface.dart';
 import 'models/ble_connection_state.dart';
-import '../models/ble_device.dart';
 import 'models/ble_service.dart';
-import 'models/bluetooth_permission_status.dart';
-import 'models/bluetooth_status.dart';
 import 'models/scan_filter.dart';
 import 'models/scan_settings.dart';
 
@@ -31,6 +31,21 @@ class SplendidBleCentral {
   /// Returns a [Stream] of [BluetoothStatus].
   Stream<BluetoothStatus> emitCurrentBluetoothStatus() {
     return CentralPlatformInterface.instance.emitCurrentBluetoothStatus();
+  }
+
+
+  /// Asks the platform to request Bluetooth permissions from the user.
+  ///
+  /// Returns a [Future] containing the current [BluetoothPermissionStatus].
+  Future<BluetoothPermissionStatus> requestBluetoothPermissions() async {
+    return CentralPlatformInterface.instance.requestBluetoothPermissions();
+  }
+
+  /// Emits the current Bluetooth permission status whenever it changes.
+  ///
+  /// Returns a [Stream] of [BluetoothPermissionStatus].
+  Stream<BluetoothPermissionStatus> emitCurrentPermissionStatus() {
+    return CentralPlatformInterface.instance.emitCurrentPermissionStatus();
   }
 
   /// Asks the platform to stop scanning for Bluetooth devices.
@@ -75,19 +90,5 @@ class SplendidBleCentral {
   Future<BleConnectionState> getCurrentConnectionState(String deviceAddress) {
     return CentralPlatformInterface.instance
         .getCurrentConnectionState(deviceAddress);
-  }
-
-  /// Asks the platform to request Bluetooth permissions from the user.
-  ///
-  /// Returns a [Future] containing the current [BluetoothPermissionStatus].
-  Future<BluetoothPermissionStatus> requestBluetoothPermissions() async {
-    return CentralPlatformInterface.instance.requestBluetoothPermissions();
-  }
-
-  /// Emits the current Bluetooth permission status whenever it changes.
-  ///
-  /// Returns a [Stream] of [BluetoothPermissionStatus].
-  Stream<BluetoothPermissionStatus> emitCurrentPermissionStatus() {
-    return CentralPlatformInterface.instance.emitCurrentPermissionStatus();
   }
 }

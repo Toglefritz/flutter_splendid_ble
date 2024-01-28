@@ -9,18 +9,25 @@ import CoreBluetooth
 /// It's crucial to have only one `CBCentralManager` instance in order to manage and centralize the state and delegate callbacks for BLE operations consistently.
 /// This is particularly important for operations like scanning, where the discovery of peripherals should be consistent with the instances used for actual communication.
 /// Maintaining a single source of truth for peripheral instances avoids duplication and state inconsistencies.
-public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManagerDelegate, CBPeripheralDelegate {
+public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManagerDelegate, CBPeripheralDelegate, CBPeripheralManagerDelegate {
+    
     /// A `FlutterMethodChannel` used for communication with the Dart side of the app for functionality in which the app acts as a BLE central device.
     private var centralChannel: FlutterMethodChannel!
     
     /// A `FlutterMethodChannel` used for communication with the Dart side of the app for functionality in which the app acts as a BLE peripheral device.
     private var peripheralChannel: FlutterMethodChannel!
     
-    /// The central manager for managing BLE operations.
+    /// The central manager for managing BLE operations involving the app acting as a BLE central device.
     ///
-    /// `centralManager` is the core of Bluetooth functionality, acting as the central point for managing BLE operations. It must remain a single instance to manage
+    /// `centralManager` is the core of BLE central functionality, acting as the central point for managing BLE operations. It must remain a single instance to manage
     /// the state and delegate callbacks for all BLE operations consistently.
     private var centralManager: CBCentralManager!
+    
+    /// The peripheral manager for managing BLE operations involving the app acting as a BLE perpipheral device.
+    ///
+    /// `peripheralManager` is the core of BLE peripheral functionality, acting as the central point for managing BLE operations. It must remain a single instance to manage
+    /// the state and delegate callbacks for all BLE operations consistently.
+    private var peripheralManager: CBPeripheralManager?
     
     /// A dictionary to store peripheral devices.
     ///
@@ -56,13 +63,22 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
     /// handler based on whether the call pertains to central or peripheral functionality. It uses the `isCentralMethod` and
     /// `isPeripheralMethod` functions to determine the correct routing.
     public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
-        if isCentralMethod(call.method) {
+        if isSharedMethod(call.method) {
+            handleSharedMethod(call, result)
+        } else if isCentralMethod(call.method) {
             handleCentralMethod(call, result)
         } else if isPeripheralMethod(call.method) {
             handlePeripheralMethod(call, result)
         } else {
+            // The provided method did not match any of those defined in MethodChannelMethods.swift
             result(FlutterMethodNotImplemented)
         }
+    }
+    
+    /// A utility function to check if an incoming Method Channel call is related to shared functionality used for both the central
+    /// and the peripheral roles. It returns true for shared device methods and false otherwise. This helps in routing the call to the correct handler.
+    private func isSharedMethod(_ methodName: String) -> Bool {
+        return SharedMethod.allCases.map { $0.rawValue }.contains(methodName)
     }
     
     /// A utility function to check if an incoming Method Channel call is related to central device functionality. It returns true for central
@@ -77,27 +93,38 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
         return PeripheralMethod.allCases.map { $0.rawValue }.contains(methodName)
     }
     
+    /// Handles all Method Channel calls related to functionalityh that is shared beteen the BLE central and BLE peripheral device roles. This includes
+    /// operations like requesting permissions and checking on the status of the host device's Bluetooth adapter.
+    private func handleSharedMethod(_ call: FlutterMethodCall, _ result: @escaping FlutterResult) {
+        switch call.method {
+        case SharedMethod.requestBluetoothPermissions.rawValue:
+            let permissionStatus: String = requestBluetoothPermissions().rawValue
+            result(permissionStatus)
+            
+        case SharedMethod.emitCurrentPermissionStatus.rawValue:
+            emitCurrentPermissionStatus()
+            result(nil)
+            
+        case SharedMethod.checkBluetoothAdapterStatus.rawValue:
+            // Check the status of the Bluetooth adapter. The `centralManager` is used for this purpose since
+            // the adapter status should be the same for either the `centralManager` or `peripheralManager`.
+            let status = centralManager.state == .poweredOn ? "available" : "notAvailable"
+            result(status)
+            
+        case SharedMethod.emitCurrentBluetoothStatus.rawValue:
+            emitCurrentBluetoothStatus()
+            result(nil)
+            
+        default:
+            result(FlutterMethodNotImplemented)
+        }
+    }
+    
+    
     /// Handles all Method Channel calls related to the BLE central device functionality. This includes operations like scanning for BLE
     /// devices, connecting to them, and managing BLE interactions as a central device.
     private func handleCentralMethod(_ call: FlutterMethodCall, _ result: @escaping FlutterResult) {
         switch call.method {
-        case CentralMethod.requestBluetoothPermissions.rawValue:
-            let permissionStatus: String = requestBluetoothPermissions().rawValue
-            result(permissionStatus)
-            
-        case CentralMethod.emitCurrentPermissionStatus.rawValue:
-            emitCurrentPermissionStatus()
-            result(nil)
-            
-        case CentralMethod.checkBluetoothAdapterStatus.rawValue:
-            // Check the status of the Bluetooth adapter
-            let status = centralManager.state == .poweredOn ? "available" : "notAvailable"
-            result(status)
-            
-        case CentralMethod.emitCurrentBluetoothStatus.rawValue:
-            emitCurrentBluetoothStatus()
-            result(nil)
-            
         case CentralMethod.startScan.rawValue:
             // Start scanning for BLE devices
             centralManager.scanForPeripherals(withServices: nil, options: nil)
@@ -204,8 +231,16 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
     /// BLE peripheral, such as advertising BLE services and managing connections from central devices.
     private func handlePeripheralMethod(_ call: FlutterMethodCall, _ result: @escaping FlutterResult) {
         switch call.method {
-       
-            
+        case PeripheralMethod.createPeripheralServer.rawValue:
+            if let configurationMap = call.arguments as? [String: Any] {
+                createPeripheralServer(with: configurationMap)
+                // TODO catch errors
+                result(nil)
+            } else {
+                result(FlutterError(code: "INVALID_ARGUMENTS",
+                                    message: "Invalid or missing configuration for peripheral server",
+                                    details: nil))
+            }
         default:
             result(FlutterMethodNotImplemented)
         }
@@ -214,11 +249,11 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
     // MARK: - CBCentralManagerDelegate Methods
     
     /// Invoked when the central manager's state is updated.
-    /// This method is crucial as Bluetooth operations can only be performed when the central's state is powered on.
+    /// This method is crucial as Bluetooth central operations can only be performed when the central's state is powered on.
     /// It is also used to emit the current permission and adapter status back to the Flutter side.
     /// - Parameter central: The central manager whose state has been updated.
     public func centralManagerDidUpdateState(_ central: CBCentralManager) {
-        emitCurrentPermissionStatus()
+        emitCurrentBluetoothStatus()
     }
     
     /// Called when a peripheral is discovered while scanning.
@@ -397,6 +432,16 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
         }
     }
     
+    // MARK: CBPeripheralManagerDelegate methods
+    
+    /// Invoked when the central manager's state is updated.
+    /// This method is crucial as Bluetooth peripheral operations can only be performed when the peripheral managers's state is powered on.
+    /// It is also used to emit the current adapter status back to the Flutter side.
+    /// - Parameter peripheral: The peripheral manager whose state has been updated.
+    public func peripheralManagerDidUpdateState(_ peripheral: CBPeripheralManager) {
+        emitCurrentBluetoothStatus()
+    }
+    
     // MARK: Bluetooth Permissions Helper Methods
     
     /// The methods in this section manage Bluetooth permissions on a macOS device and communicate statuses to the Dart side of a Flutter app.
@@ -442,6 +487,7 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
         let status: String = requestBluetoothPermissions().rawValue
         // Invoke method on Flutter side
         centralChannel.invokeMethod("permissionStatusUpdated", arguments: status)
+        peripheralChannel.invokeMethod("permissionStatusUpdated", arguments: status)
     }
     
     // MARK: Adapter Status Helper Methods
@@ -498,6 +544,7 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
         let status = self.checkBluetoothAdapterStatus().rawValue
         // Invoke method on Flutter side
         centralChannel.invokeMethod("adapterStateUpdated", arguments: status)
+        peripheralChannel.invokeMethod("adapterStateUpdated", arguments: status)
     }
     
     // MARK: Device Interface Helper Methods
@@ -628,7 +675,18 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
     
     // MARK: - CBPeripheralManager Methods
     
-    
+    func createPeripheralServer(with configurationMap: [String: Any]) {
+        peripheralManager = CBPeripheralManager(delegate: self, queue: nil)
+        
+        guard let serverName = configurationMap["serverName"] as? String,
+              let primaryServiceUuid = configurationMap["primaryServiceUuid"] as? String,
+              let serviceUuids = configurationMap["serviceUuids"] as? [String] else {
+            // Handle missing or incorrect configuration data
+            return
+        }
+        
+        // Use `serverName`, `primaryServiceUuid`, and `serviceUuids` to set up your BLE services and characteristics
+    }
     
     // MARK: Utility Methods
     

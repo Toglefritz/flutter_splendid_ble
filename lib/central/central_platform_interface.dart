@@ -1,13 +1,13 @@
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 
+import '../shared/models/ble_device.dart';
+import '../shared/models/bluetooth_permission_status.dart';
+import '../shared/models/bluetooth_status.dart';
 import 'central_method_channel.dart';
 import '../central/models/ble_characteristic.dart';
 import '../central/models/ble_characteristic_value.dart';
 import '../central/models/ble_connection_state.dart';
-import '../models/ble_device.dart';
 import '../central/models/ble_service.dart';
-import '../central/models/bluetooth_permission_status.dart';
-import '../central/models/bluetooth_status.dart';
 import '../central/models/scan_filter.dart';
 import '../central/models/scan_settings.dart';
 
@@ -41,6 +41,18 @@ abstract class CentralPlatformInterface extends PlatformInterface {
   Stream<BluetoothStatus> emitCurrentBluetoothStatus() {
     throw UnimplementedError(
         'emitCurrentBluetoothStatus() has not been implemented.');
+  }
+
+  /// Requests Bluetooth permissions from the user.
+  Future<BluetoothPermissionStatus> requestBluetoothPermissions() async {
+    throw UnimplementedError(
+        'requestBluetoothPermissions() has not been implemented.');
+  }
+
+  /// Emits the current Bluetooth permission status whenever it changes.
+  Stream<BluetoothPermissionStatus> emitCurrentPermissionStatus() {
+    throw UnimplementedError(
+        'emitCurrentPermissionStatus() has not been implemented.');
   }
 
   /// Starts a scan for nearby BLE devices and returns a [Stream] of [BleDevice] instances representing the BLE
@@ -109,17 +121,5 @@ abstract class CentralPlatformInterface extends PlatformInterface {
   void unsubscribeFromCharacteristic(BleCharacteristic characteristic) {
     throw UnimplementedError(
         'unsubscribeFromCharacteristic() has not been implemented.');
-  }
-
-  /// Requests Bluetooth permissions from the user.
-  Future<BluetoothPermissionStatus> requestBluetoothPermissions() async {
-    throw UnimplementedError(
-        'requestBluetoothPermissions() has not been implemented.');
-  }
-
-  /// Emits the current Bluetooth permission status whenever it changes.
-  Stream<BluetoothPermissionStatus> emitCurrentPermissionStatus() {
-    throw UnimplementedError(
-        'emitCurrentPermissionStatus() has not been implemented.');
   }
 }

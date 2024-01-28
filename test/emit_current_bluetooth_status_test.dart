@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/services.dart';
 import 'package:flutter_splendid_ble/central/central_method_channel.dart';
-import 'package:flutter_splendid_ble/central/models/bluetooth_status.dart';
+import 'package:flutter_splendid_ble/shared/models/bluetooth_status.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

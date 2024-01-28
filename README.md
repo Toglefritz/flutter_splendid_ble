@@ -118,30 +118,43 @@ import 'package:flutter_splendid_ble/splendid_ble.dart';
 
 ### Initializing the plugin:
 
-All Bluetooth functionality provided by this plugin goes through the `SplendidBlePlugin` class. So,
-wherever you need to conduct Bluetooth operations, you will need an instance of `SplendidBlePlugin`.
+All Bluetooth functionality provided by this plugin goes through either the `SplendidBleCentral`
+or `SplendidBlePeripheral` classes, depending upon whether your Flutter app is using functionality
+as a BLE central device or BLE peripheral device. So, wherever you need to conduct Bluetooth
+operations, you will need an instance of one of these two classes, depending on what operations
+you are using. Check the list of features above for help determining which class to use.
+
+Note that some functionality is shared by both the `SplendidBleCentral` and `SplendidBlePeripheral`
+classes. Namely operations related to Bluetooth permissions and checking on the status of the
+Bluetooth adapter of the host device are shared between both classes as these functions are the
+same regardless of the role your app is playing in the BLE communication architecture. This
+shared functionality can be called from either the `SplendidBleCentral` or `SplendidBlePeripheral`
+class.
 
 ```dart
 import 'package:flutter_splendid_ble/splendid_ble_plugin.dart';
 
-final SplendidBle ble = SplendidBle();
+final SplendidBleCentral bleCentral = SplendidBleCentral();
+final SplendidBlePeripheral blePeripheral = SplendidBlePeripheral();
 ```
 
-You could simply instantiate `SplendidBlePlugin` in each Dart class where it is needed or, depending
-upon your needs and the architecture of your application, you could create a centralized service
-where the `SplendidBlePlugin` instance is created once and referenced from everywhere else in your
-codebase. Some of the examples below show a central class being used to wrap functionality
-provided by this plugin.
+You could simply instantiate the `SplendidBleCentral` or `SplendidBlePeripheral` classes in each
+Dart class where Bluetooth functionality is needed or, depending upon your needs and the
+architecture of your application, you could create a centralized service where these instances are
+created once and referenced from everywhere else in your codebase. Some of the examples below show
+a service class being used to wrap functionality provided by this plugin.
 
 ### Checking the Bluetooth adapter status:
 
 Before you can perform any Bluetooth functionality, you should ensure that the device's Bluetooth
 adapter is ready. This step is crucial because attempting to use Bluetooth features when the adapter
-is not available or turned off will lead to failures and a poor user experience.
+is not available or turned off will lead to failures and a poor user experience. This is also an
+example of functionality that is shared between the `SplendidBleCentral` and `SplendidBlePeripheral`
+classes so either can be used to check on the adapter status.
 
-In the example below, the method `_checkAdapterStatus` is responsible for setting up a listener for
-the state of the host device's Bluetooth adapter. It uses a stream (`_bluetoothStatusStream`) which
-emits the current status of the Bluetooth adapter.
+In the example below, the method, `_checkAdapterStatus`, is responsible for setting up a listener
+for the state of the host device's Bluetooth adapter. It uses a stream (`_bluetoothStatusStream`)
+which emits the current status of the Bluetooth adapter.
 
 The possible states of the Bluetooth adapter are defined in the `BluetoothStatus` enum, which
 includes three possible states:
@@ -156,9 +169,8 @@ Here's how you might perform this check:
    status.
 2. When the status is emitted, update your app's state with the new Bluetooth status.
 3. Based on the received status, you can control the flow of your app — e.g., prompt the user to
-   turn
-   on Bluetooth if it's off, show a message if the device doesn't support Bluetooth, or proceed with
-   the Bluetooth operations if it's on.
+   turn on Bluetooth if it's off, show a message if the device doesn't support Bluetooth, or proceed
+   with the Bluetooth operations if it's on.
 4. Always handle exceptions. If an error occurs while trying to check the Bluetooth status, you
    should catch the exception and update the app's state accordingly, which might involve setting
    the status to `notAvailable` or showing an error message to the user.
@@ -173,8 +185,9 @@ face of changing conditions.
 import 'dart:async';
 
 class BluetoothManager {
-  /// SplendidBlePlugin instance as discussed above.
-  final SplendidBle _ble = SplendidBle();
+  /// [SplendidBleCentral] instance providing BLE functionality. This could also be a 
+  /// [SplendidBlePeripheral] instance as discussed above.
+  final SplendidBleCentral _ble = SplendidBleCentral();
 
   /// A [StreamSubscription] used to listen for changes in the state of the Bluetooth adapter.
   StreamSubscription<BluetoothStatus>? _bluetoothStatusStream;
@@ -241,8 +254,8 @@ method is then called with this device information, allowing you to handle new d
 import 'dart:async';
 
 class BLEScanner {
-  /// SplendidBlePlugin instance as discussed above.
-  final SplendidBle _ble = SplendidBle();
+  /// SplendidBleCentral instance as discussed above.
+  final SplendidBleCentral _ble = SplendidBleCentral();
 
   /// A [StreamSubscription] used to listen for newly discovered BLE devices.
   StreamSubscription<BluetoothDevice>? _scanStream;
@@ -333,8 +346,8 @@ due to the device being out of range, the device not being connectable, or other
 import 'dart:async';
 
 class BLEConnector {
-  /// SplendidBle instance as discussed above.
-  final SplendidBle _ble = SplendidBle();
+  /// SplendidBleCentral instance as discussed above.
+  final SplendidBleCentral _ble = SplendidBleCentral();
 
   /// Attempts to connect to a BLE device.
   void connectToDevice() {
@@ -400,8 +413,8 @@ Flutter BLE plugin.
 import 'dart:async';
 
 class BLEServiceDiscovery {
-  /// SplendidBle instance as discussed above.
-  final SplendidBle _ble = SplendidBle();
+  /// SplendidBleCentral instance as discussed above.
+  final SplendidBleCentral _ble = SplendidBleCentral();
 
   /// A [StreamSubscription] used to listen for discovered services.
   StreamSubscription? _servicesDiscoveredStream;
@@ -474,7 +487,7 @@ import 'dart:async';
 import 'package:flutter_splendid_ble/splendid_ble.dart';
 
 class BLECharacteristicListener {
-  SplendidBle _blePlugin;
+  SplendidBleCentral _blePlugin;
 
   /// A [BLECharacteristic] instance for a characteristic that supports indications or
   /// notifications.

@@ -1,13 +1,13 @@
-//
-//  MethodChannelMethods.swift
-//  flutter_splendid_ble
-//
-
-enum CentralMethod: String, CaseIterable {
+/// An enumeration of method channel names for functions shared between BLE central and BLE peripheral functionality.
+enum SharedMethod: String, CaseIterable {
     case requestBluetoothPermissions = "requestBluetoothPermissions"
     case emitCurrentPermissionStatus = "emitCurrentPermissionStatus"
     case checkBluetoothAdapterStatus = "checkBluetoothAdapterStatus"
     case emitCurrentBluetoothStatus = "emitCurrentBluetoothStatus"
+}
+
+/// An enumeration of of method channel names for functions called from apps acting as BLE central devices.
+enum CentralMethod: String, CaseIterable {
     case startScan = "startScan"
     case stopScan = "stopScan"
     case connect = "connect"
@@ -20,7 +20,8 @@ enum CentralMethod: String, CaseIterable {
     case unsubscribeFromCharacteristic = "unsubscribeFromCharacteristic"
 }
 
+/// An enumeration of of method channel names for functions called from apps acting as BLE peripheral devices.
 enum PeripheralMethod: String, CaseIterable {
-    case placeholder = "placeholder"
-    // ... other peripheral methods
+    case createPeripheralServer = "createPeripheralServer"
+    // TODO add other peripheral methods
 }

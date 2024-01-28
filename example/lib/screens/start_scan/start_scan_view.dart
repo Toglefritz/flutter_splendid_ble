@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import 'package:flutter_splendid_ble/central/models/bluetooth_status.dart';
+import 'package:flutter_splendid_ble/shared/models/bluetooth_status.dart';
 import 'package:flutter_splendid_ble_example/screens/start_scan/start_scan_controller.dart';
 
 import '../components/fancy_outlined_text.dart';

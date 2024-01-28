@@ -1,19 +1,10 @@
-import 'package:flutter/foundation.dart';
+import 'dart:async';
 import 'package:flutter/services.dart';
-import 'package:flutter_splendid_ble/peripheral/peripheral_platform_interface.dart';
 
-import '../shared/ble_common_utilities.dart';
-import '../shared/models/bluetooth_permission_status.dart';
-import '../shared/models/bluetooth_status.dart';
-import 'models/ble_server.dart';
-import 'models/ble_server_configuration.dart';
+import 'models/bluetooth_permission_status.dart';
+import 'models/bluetooth_status.dart';
 
-/// An implementation of [PeripheralPlatformInterface] that uses method channels.
-class PeripheralMethodChannel extends PeripheralPlatformInterface {
-  /// The method channel used to interact with the native platform.
-  @visibleForTesting
-  final MethodChannel channel = const MethodChannel('flutter_splendid_ble_peripheral');
-
+class BleCommonUtilities {
   /// Checks the status of the Bluetooth adapter on the device.
   ///
   /// This method communicates with the native Android code to obtain the current status of the Bluetooth adapter,
@@ -30,9 +21,10 @@ class PeripheralMethodChannel extends PeripheralPlatformInterface {
   /// a way of improving the user experience. Checking on the state of the Bluetooth adapter allows the user to be
   /// notified and prompted for action if they attempt to use an applications for which Bluetooth plays a critical
   /// role while the Bluetooth capabilities of the host device are disabled.
-  @override
-  Future<BluetoothStatus> checkBluetoothAdapterStatus() async {
-    return BleCommonUtilities.checkBluetoothAdapterStatus(channel);
+  static Future<BluetoothStatus> checkBluetoothAdapterStatus(MethodChannel channel) async {
+    final String statusString = await channel.invokeMethod('checkBluetoothAdapterStatus');
+
+    return BluetoothStatus.values.firstWhere((e) => e.identifier == statusString);
   }
 
   /// Emits the current Bluetooth adapter status to the Dart side.
@@ -48,9 +40,28 @@ class PeripheralMethodChannel extends PeripheralPlatformInterface {
   ///
   /// Returns a [Future] containing a [Stream] of [BluetoothStatus] values representing the current status
   /// of the Bluetooth adapter on the device.
-  @override
-  Stream<BluetoothStatus> emitCurrentBluetoothStatus() {
-    return BleCommonUtilities.emitCurrentBluetoothStatus(channel);
+  static Stream<BluetoothStatus> emitCurrentBluetoothStatus(MethodChannel channel) {
+    final StreamController<BluetoothStatus> streamController = StreamController<BluetoothStatus>.broadcast();
+
+    // Listen to the platform side for Bluetooth adapter status updates.
+    channel.setMethodCallHandler((MethodCall call) async {
+      if (call.method == 'adapterStateUpdated') {
+        final String statusString = call.arguments as String;
+
+        // Convert the string status to its corresponding enum value
+        final BluetoothStatus status = BluetoothStatus.values.firstWhere(
+              (e) => e.identifier == statusString,
+          orElse: () => BluetoothStatus.notAvailable,
+        ); // Default to notAvailable if the string does not match any enum value
+
+        streamController.add(status);
+      }
+    });
+
+    // Begin emitting Bluetooth adapter status updates from the platform side.
+    channel.invokeMethod('emitCurrentBluetoothStatus');
+
+    return streamController.stream;
   }
 
   /// Requests Bluetooth permissions from the user.
@@ -62,9 +73,9 @@ class PeripheralMethodChannel extends PeripheralPlatformInterface {
   /// * `BluetoothPermissionStatus.DENIED`: Permission is denied.
   ///
   /// Returns a [Future] containing the [BluetoothPermissionStatus] representing whether permission was granted or not.
-  @override
-  Future<BluetoothPermissionStatus> requestBluetoothPermissions() async {
-    return BleCommonUtilities.requestBluetoothPermissions(channel);
+  static Future<BluetoothPermissionStatus> requestBluetoothPermissions(MethodChannel channel) async {
+    final String permissionStatusString = await channel.invokeMethod('requestBluetoothPermissions');
+    return BluetoothPermissionStatus.values.firstWhere((status) => status.identifier == permissionStatusString);
   }
 
   /// Emits the current Bluetooth permission status to the Dart side.
@@ -77,36 +88,26 @@ class PeripheralMethodChannel extends PeripheralPlatformInterface {
   /// * `BluetoothPermissionStatus.DENIED`: Indicates that Bluetooth permission is denied.
   ///
   /// Returns a [Stream] of [BluetoothPermissionStatus] values representing the current Bluetooth permission status on the device.
-  @override
-  Stream<BluetoothPermissionStatus> emitCurrentPermissionStatus() {
-    return BleCommonUtilities.emitCurrentPermissionStatus(channel);
-  }
+  static Stream<BluetoothPermissionStatus> emitCurrentPermissionStatus(MethodChannel channel) {
+    final StreamController<BluetoothPermissionStatus> streamController =
+    StreamController<BluetoothPermissionStatus>.broadcast();
 
-  /// Sets up a BLE peripheral server with the specified configuration.
-  ///
-  /// This function initiates the creation of a BLE server on the native platform using the configuration provided.
-  /// It communicates with the native side through the [channel] method channel and sends the configuration map as
-  /// parameters.
-  ///
-  /// Upon successful execution of the native method call, this function instantiates and returns a [BleServer] object.
-  /// This object represents the BLE server in the Dart context, allowing further management like starting/stopping
-  /// advertising and managing connected devices.
-  ///
-  /// The [configuration] parameter accepts a [BleServerConfiguration] instance which should include all necessary
-  /// settings required to initialize the BLE server and configure it correctly for the needs of the Flutter
-  /// application. This might include service UUIDs, characteristic definitions, advertising parameters, etc.
-  ///
-  /// If an error occurs while setting up the BLE server on the platform side, an exception is thrown.
-  Future<BleServer> setupPeripheralServer(BleServerConfiguration configuration) async {
-    try {
-      await channel.invokeMethod('setupPeripheral', configuration.toMap());
+    channel.setMethodCallHandler((MethodCall call) async {
+      if (call.method == 'permissionStatusUpdated') {
+        final String permissionStatusString = call.arguments as String;
 
-      return BleServer(
-        configuration: configuration,
-      );
-    } catch (e) {
-      // Handle or rethrow the error as appropriate
-      throw Exception('Failed to set up peripheral server: $e');
-    }
+        // Convert the string status to its corresponding enum value
+        final BluetoothPermissionStatus status = BluetoothPermissionStatus.values.firstWhere(
+              (status) => status.identifier == permissionStatusString,
+        );
+
+        streamController.add(status);
+      }
+    });
+
+    // Begin emitting Bluetooth permission status updates from the platform side.
+    channel.invokeMethod('emitCurrentPermissionStatus');
+
+    return streamController.stream;
   }
 }
