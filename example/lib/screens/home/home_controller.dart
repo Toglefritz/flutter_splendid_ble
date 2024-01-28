@@ -5,16 +5,16 @@ import 'package:flutter_splendid_ble/central/splendid_ble_central.dart';
 import 'package:flutter_splendid_ble/shared/models/bluetooth_permission_status.dart';
 import 'package:flutter_splendid_ble/shared/models/bluetooth_status.dart';
 import 'package:flutter_splendid_ble_example/screens/scan_configuration/scan_configuration_route.dart';
-import 'package:flutter_splendid_ble_example/screens/start_scan/start_scan_route.dart';
-import 'package:flutter_splendid_ble_example/screens/start_scan/start_scan_view.dart';
 import 'dart:io' show Platform;
 
 import 'package:permission_handler/permission_handler.dart';
 
 import '../scan/scan_route.dart';
+import 'home_route.dart';
+import 'home_view.dart';
 
-/// A controller for the [StartScanRoute] that manages the state and owns all business logic.
-class StartScanController extends State<StartScanRoute> {
+/// A controller for the [HomeRoute] that manages the state and owns all business logic.
+class HomeController extends State<HomeRoute> {
   /// A [SplendidBleCentral] instance used for Bluetooth operations conducted by this route.
   final SplendidBleCentral _ble = SplendidBleCentral();
 
@@ -166,6 +166,25 @@ class StartScanController extends State<StartScanRoute> {
     }
   }
 
+  /// Handles taps on the "create server" button.
+  ///
+  /// If Bluetooth scanning permissions have been granted or if the app is running on an iOS device (in which case
+  /// the boolean indicating if permissions have been granted is true by default), navigate to the
+  /// [ServerConfigurationRoute]. Otherwise, show a [SnackBar] to indicate that permissions have not been granted yet.
+  void onCreateServerTap() {
+    if (_permissionsGranted == true &&
+        _bluetoothStatus == BluetoothStatus.enabled) {
+      /*Navigator.pushReplacement<void, void>(
+        context,
+        MaterialPageRoute<void>(
+          builder: (BuildContext context) => const ServerConfigurationRoute(),
+        ),
+      );*/
+    } else if (_permissionsGranted == false) {
+      _showPermissionsErrorSnackBar();
+    }
+  }
+
   /// Handles long presses on the "start scan" button.
   ///
   /// Long-pressing on the start scan button navigates directly to the [ScanConfigurationRoute], allowing the scan
@@ -199,7 +218,7 @@ class StartScanController extends State<StartScanRoute> {
   }
 
   @override
-  Widget build(BuildContext context) => StartScanView(this);
+  Widget build(BuildContext context) => HomeView(this);
 
   @override
   void dispose() {

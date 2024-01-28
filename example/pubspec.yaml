@@ -36,3 +36,8 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   generate: true
+
+  fonts:
+    - family: MajorMono
+      fonts:
+        - asset: assets/MajorMonoDisplay-Regular.ttf

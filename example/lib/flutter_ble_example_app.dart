@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:flutter_splendid_ble_example/screens/start_scan/start_scan_route.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:flutter_splendid_ble_example/screens/home/home_route.dart';
 
 /// A [StatelessWidget] that builds the root [MaterialApp] for the Flutter BLE Example App.
 ///
@@ -23,6 +23,13 @@ class SplendidBleExampleApp extends StatelessWidget {
       theme: ThemeData(
         brightness: Brightness.dark,
         primaryColor: Colors.white,
+        textTheme: TextTheme(
+          displayLarge: const TextStyle(
+            fontSize: 64,
+            fontWeight: FontWeight.bold,
+            fontFamily: 'MajorMono',
+          ),
+        ),
       ),
       debugShowCheckedModeBanner: false,
       localizationsDelegates: const [
@@ -34,7 +41,7 @@ class SplendidBleExampleApp extends StatelessWidget {
       supportedLocales: const [
         Locale('en'), // English
       ],
-      home: const StartScanRoute(),
+      home: const HomeRoute(),
     );
   }
 }

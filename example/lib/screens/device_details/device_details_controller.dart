@@ -7,7 +7,7 @@ import 'package:flutter_splendid_ble/central/models/ble_connection_state.dart';
 import 'package:flutter_splendid_ble/central/models/ble_service.dart';
 
 import '../characteristic_interaction/characteristic_interaction_route.dart';
-import '../start_scan/start_scan_route.dart';
+import '../home/home_route.dart';
 import 'device_details_route.dart';
 import 'device_details_view.dart';
 
@@ -75,7 +75,7 @@ class DeviceDetailsController extends State<DeviceDetailsRoute> {
     Navigator.pushReplacement<void, void>(
       context,
       MaterialPageRoute<void>(
-        builder: (BuildContext context) => const StartScanRoute(),
+        builder: (BuildContext context) => const HomeRoute(),
       ),
     );
   }

@@ -44,7 +44,12 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
     /// Initializes the `FlutterBlePlugin` and sets up the central manager.
     override init() {
         super.init()
+        // Initialize the central manager.
         centralManager = CBCentralManager(delegate: self, queue: nil)
+        
+        // Initialize the peripheral manager.
+        peripheralManager = CBPeripheralManager(delegate: self, queue: nil)
+        
     }
     
     /// Registers the plugin with the given registrar by creating a method channel and setting the current instance as its delegate.
@@ -233,9 +238,15 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
         switch call.method {
         case PeripheralMethod.createPeripheralServer.rawValue:
             if let configurationMap = call.arguments as? [String: Any] {
-                createPeripheralServer(with: configurationMap)
-                // TODO catch errors
-                result(nil)
+                do {
+                    try createPeripheralServer(with: configurationMap)
+                    result(nil) // Indicate success
+                } catch let error as NSError {
+                    // Handle the thrown error and return a FlutterError
+                    result(FlutterError(code: "SERVER_CREATION_FAILED",
+                                        message: "Failed to create peripheral server: \(error.localizedDescription)",
+                                        details: error))
+                }
             } else {
                 result(FlutterError(code: "INVALID_ARGUMENTS",
                                     message: "Invalid or missing configuration for peripheral server",
@@ -675,17 +686,42 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
     
     // MARK: - CBPeripheralManager Methods
     
-    func createPeripheralServer(with configurationMap: [String: Any]) {
-        peripheralManager = CBPeripheralManager(delegate: self, queue: nil)
-        
+    /// An enumeration of errors that can result from attempts to create a BLE peripheral service via the `createPeripheralServer` function.
+    enum PeripheralServerError: Error {
+        case invalidConfiguration
+        case invalidServiceUuid
+    }
+    
+    /// Creates a BLE peripheral server with specified configuration.
+    /// - Parameter configurationMap: A map containing the server configuration details.
+    /// - Throws: An error if the configuration is invalid or the server setup fails.
+    func createPeripheralServer(with configurationMap: [String: Any]) throws {
         guard let serverName = configurationMap["serverName"] as? String,
-              let primaryServiceUuid = configurationMap["primaryServiceUuid"] as? String,
-              let serviceUuids = configurationMap["serviceUuids"] as? [String] else {
-            // Handle missing or incorrect configuration data
-            return
+              let primaryServiceUuidStr = configurationMap["primaryServiceUuid"] as? String,
+              let primaryServiceUuid = UUID(uuidString: primaryServiceUuidStr),
+              let serviceUuidsStr = configurationMap["serviceUuids"] as? [String] else {
+            throw PeripheralServerError.invalidConfiguration
         }
         
-        // Use `serverName`, `primaryServiceUuid`, and `serviceUuids` to set up your BLE services and characteristics
+        // Create a primary service with the provided UUID.
+        let primaryService = CBMutableService(type: CBUUID(nsuuid: primaryServiceUuid), primary: true)
+        
+        // Create additional services as needed.
+        var additionalServices = [CBMutableService]()
+        for uuidStr in serviceUuidsStr {
+            guard let uuid = UUID(uuidString: uuidStr) else {
+                throw PeripheralServerError.invalidServiceUuid
+            }
+            let service = CBMutableService(type: CBUUID(nsuuid: uuid), primary: false)
+            additionalServices.append(service)
+        }
+        
+        // Add services to the peripheral manager.
+        peripheralManager!.add(primaryService)
+        additionalServices.forEach { peripheralManager!.add($0) }
+        
+        // Configure additional server properties like local name, if needed.
+        // Note: `serverName` can be used for advertising data configuration.
     }
     
     // MARK: Utility Methods
