@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../components/loading_indicator.dart';
+import '../../../components/loading_indicator.dart';
 
 /// An enumeration of values representing the sides of a neighboring widget, typically a [Table] on which the
 /// [TableButton] will appear.

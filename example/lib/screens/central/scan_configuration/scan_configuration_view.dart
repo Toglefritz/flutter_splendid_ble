@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import 'package:flutter_splendid_ble/central/models/scan_settings.dart';
-import 'package:flutter_splendid_ble_example/screens/scan_configuration/scan_configuration_controller.dart';
 
-import '../components/main_app_bar.dart';
+import 'package:flutter_splendid_ble/central/models/scan_settings.dart';
+import 'package:flutter_splendid_ble_example/screens/central/scan_configuration/scan_configuration_controller.dart';
+
+import '../../components/main_app_bar.dart';
 
 /// View for the [StartScanRoute]. The view is dumb, and purely declarative. References values
 /// on the controller and widget.

@@ -1,11 +1,11 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
+
 import 'package:flutter_splendid_ble/central/splendid_ble_central.dart';
 import 'package:flutter_splendid_ble/central/models/exceptions/bluetooth_scan_exception.dart';
 import 'package:flutter_splendid_ble/shared/models/ble_device.dart';
-import 'package:flutter_splendid_ble_example/screens/scan/scan_route.dart';
-import 'package:flutter_splendid_ble_example/screens/scan/scan_view.dart';
+import 'package:flutter_splendid_ble_example/screens/central/scan/scan_route.dart';
+import 'package:flutter_splendid_ble_example/screens/central/scan/scan_view.dart';
 
 import '../device_details/device_details_route.dart';
 import '../scan_configuration/scan_configuration_route.dart';

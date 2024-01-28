@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
-import '../components/main_app_bar.dart';
+import '../../components/main_app_bar.dart';
 import 'characteristic_interaction_controller.dart';
 import 'models/message_source.dart';
 

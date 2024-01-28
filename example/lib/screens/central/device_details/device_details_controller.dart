@@ -1,13 +1,13 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
+
 import 'package:flutter_splendid_ble/central/splendid_ble_central.dart';
 import 'package:flutter_splendid_ble/central/models/ble_characteristic.dart';
 import 'package:flutter_splendid_ble/central/models/ble_connection_state.dart';
 import 'package:flutter_splendid_ble/central/models/ble_service.dart';
 
+import '../../home/home_route.dart';
 import '../characteristic_interaction/characteristic_interaction_route.dart';
-import '../home/home_route.dart';
 import 'device_details_route.dart';
 import 'device_details_view.dart';
 

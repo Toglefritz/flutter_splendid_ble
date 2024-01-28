@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+
 import 'package:flutter_splendid_ble/central/models/scan_filter.dart';
 import 'package:flutter_splendid_ble/central/models/scan_settings.dart';
-import 'package:flutter_splendid_ble_example/screens/scan_configuration/scan_configuration_route.dart';
-import 'package:flutter_splendid_ble_example/screens/scan_configuration/scan_configuration_view.dart';
+import 'package:flutter_splendid_ble_example/screens/central/scan_configuration/scan_configuration_route.dart';
+import 'package:flutter_splendid_ble_example/screens/central/scan_configuration/scan_configuration_view.dart';
 
 import '../scan/scan_route.dart';
 
