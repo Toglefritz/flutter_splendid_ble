@@ -50,8 +50,8 @@ abstract class PeripheralPlatformInterface extends PlatformInterface {
   }
 
   /// Sets up a BLE peripheral server with the specified configuration.
-  Future<BleServer> setupPeripheralServer(BleServerConfiguration configuration) async {
+  Future<BleServer> createPeripheralServer(BleServerConfiguration configuration) async {
     throw UnimplementedError(
-        'setupPeripheralServer() has not been implemented.');
+        'createPeripheralServer() has not been implemented.');
   }
 }

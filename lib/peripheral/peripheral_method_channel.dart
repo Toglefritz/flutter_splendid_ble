@@ -97,9 +97,9 @@ class PeripheralMethodChannel extends PeripheralPlatformInterface {
   /// application. This might include service UUIDs, characteristic definitions, advertising parameters, etc.
   ///
   /// If an error occurs while setting up the BLE server on the platform side, an exception is thrown.
-  Future<BleServer> setupPeripheralServer(BleServerConfiguration configuration) async {
+  Future<BleServer> createPeripheralServer(BleServerConfiguration configuration) async {
     try {
-      await channel.invokeMethod('setupPeripheral', configuration.toMap());
+      await channel.invokeMethod('createPeripheralServer', configuration.toMap());
 
       return BleServer(
         configuration: configuration,

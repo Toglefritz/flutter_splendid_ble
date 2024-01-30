@@ -54,7 +54,7 @@ class BleServerConfiguration {
     return {
       'serverName': serverName,
       'primaryServiceUuid': primaryServiceUuid,
-      'serviceUuids': serviceUuids,
+      'serviceUuids': serviceUuids ?? [],
       // Map other fields as well
     };
   }

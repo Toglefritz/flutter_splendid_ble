@@ -29,6 +29,27 @@ class SplendidBleExampleApp extends StatelessWidget {
             fontWeight: FontWeight.bold,
             fontFamily: 'MajorMono',
           ),
+          displayMedium: const TextStyle(
+            fontSize: 36,
+            fontWeight: FontWeight.bold,
+            fontFamily: 'MajorMono',
+          ),
+          displaySmall: const TextStyle(
+            fontSize: 32,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        textSelectionTheme: TextSelectionThemeData(
+          cursorColor: Colors.white,
+        ),
+        inputDecorationTheme: InputDecorationTheme(
+          labelStyle: TextStyle(color: Colors.white),
+          focusedBorder: UnderlineInputBorder(
+            borderSide: BorderSide(
+              style: BorderStyle.solid,
+              color: Colors.white,
+            ),
+          ),
         ),
       ),
       debugShowCheckedModeBanner: false,

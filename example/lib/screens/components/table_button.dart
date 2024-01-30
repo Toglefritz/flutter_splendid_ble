@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../components/loading_indicator.dart';
+import 'loading_indicator.dart';
 
 /// An enumeration of values representing the sides of a neighboring widget, typically a [Table] on which the
 /// [TableButton] will appear.
@@ -72,9 +72,7 @@ class TableButton extends StatelessWidget {
           if (loading == false)
             Text(
               text,
-              style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                    fontSize: 32,
-                  ),
+              style: Theme.of(context).textTheme.displaySmall,
             ),
           if (loading == true)
             const Padding(

@@ -4,7 +4,7 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../../components/main_app_bar.dart';
 import 'components/device_details_table.dart';
 import 'components/services_info.dart';
-import 'components/table_button.dart';
+import '../../components/table_button.dart';
 import 'device_details_controller.dart';
 
 /// View for the [StartScanRoute]. The view is dumb, and purely declarative. References values
@@ -32,10 +32,10 @@ class DeviceDetailsView extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Padding(
-                padding: const EdgeInsets.only(bottom: 16.0),
+                padding: const EdgeInsets.symmetric(vertical: 32.0),
                 child: Text(
                   state.widget.device.name ?? state.widget.device.address,
-                  style: Theme.of(context).textTheme.headlineMedium,
+                  style: Theme.of(context).textTheme.displayMedium,
                 ),
               ),
               Padding(
@@ -50,8 +50,7 @@ class DeviceDetailsView extends StatelessWidget {
                       bottomRight:
                           Radius.circular(state.isConnected ? 12.0 : 0.0),
                     ),
-                    color:
-                        Theme.of(context).primaryColorLight.withOpacity(0.15),
+                    color: Theme.of(context).primaryColorLight.withOpacity(0.15),
                     border: Border.all(
                       color: Theme.of(context).primaryColorLight,
                       width: 2.0,
@@ -87,9 +86,7 @@ class DeviceDetailsView extends StatelessWidget {
                   child: TableButton(
                     onTap: state.onDiscoverServicesTap,
                     side: ButtonSide.top,
-                    text: AppLocalizations.of(context)!
-                        .discoverServices
-                        .toUpperCase(),
+                    text: AppLocalizations.of(context)!.discoverServices.toUpperCase(),
                     loading: state.discoveringServices,
                   ),
                 ),

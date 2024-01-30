@@ -23,6 +23,14 @@
   "@characteristicInteraction": {
     "description": "Title for the CharacteristicInteractionView"
   },
+  "characteristics": "Characteristics",
+  "@characteristics": {
+    "description": "A label for the text field used to supply characteristic UUIDs"
+  },
+  "characteristicsFieldLabel": "List of UUIDs",
+  "@characteristicsFieldLabel": {
+    "description": "Instructions for the text field used to supply characteristic UUIDs"
+  },
   "connect": "Connect",
   "@connect": {
     "description": "Text for the button used to start the connection process"
@@ -30,6 +38,10 @@
   "connectionStatus": "Connection Status",
   "@connectionStatus": {
     "description": "A label for the connection status row of the device details table"
+  },
+  "create": "Create",
+  "@create": {
+    "description": "Used on a button for submitting a BLE peripheral server"
   },
   "createServer": "Create\nserver",
   "@createServer": {
@@ -41,7 +53,7 @@
   },
   "deviceName": "Device name",
   "@deviceName": {
-    "description": "Label used for the device name filter form field"
+    "description": "Label used for the device name filter form field and for a server characteristic text field"
   },
   "discoveredDevices": "Discovered Devices",
   "@discoveredDevices": {
@@ -95,9 +107,17 @@
   "@permissionsError": {
     "description": "An error message to indicate that permissions have not been granted"
   },
+  "peripheralName": "Peripheral name",
+  "@peripheralName": {
+    "description": "Instructions for the BLE peripheral name field"
+  },
   "primaryService": "Primary service",
   "@primaryService": {
-    "description": "Label for a primary service UUID"
+    "description": "Field name for informational widgets and for a text field"
+  },
+  "primaryServiceLabel": "UUID for primary service",
+  "@primaryServiceLabel": {
+    "description": "Instructions for the primary service UUID text field"
   },
   "scanFilters": "Scan Filters",
   "@scanFilters": {
@@ -110,6 +130,10 @@
   "scanSettings": "Scan Settings",
   "@scanSettings": {
     "description": "Title for the Bluetooth scan settings form"
+  },
+  "serverConfiguration": "Server configuration",
+  "@serverConfiguration": {
+    "description": "A label for the BLE peripheral server configuration page"
   },
   "services": "Services",
   "@services": {

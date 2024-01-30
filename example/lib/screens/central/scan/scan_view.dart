@@ -21,9 +21,7 @@ class ScanView extends StatelessWidget {
         actions: [
           IconButton(
             onPressed: state.onActionButtonPressed,
-            icon: Icon(state.scanInProgress
-                ? Icons.stop_outlined
-                : Icons.play_arrow_outlined),
+            icon: Icon(state.scanInProgress ? Icons.stop_outlined : Icons.play_arrow_outlined),
           ),
           IconButton(
             onPressed: state.onFiltersPressed,
@@ -45,18 +43,20 @@ class ScanView extends StatelessWidget {
           if (state.discoveredDevices.isNotEmpty)
             SliverList.list(
               children: [
-                Text(
-                  AppLocalizations.of(context)!.discoveredDevices,
-                  style: Theme.of(context).textTheme.headlineMedium,
-                  textAlign: TextAlign.center,
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 32.0),
+                  child: Text(
+                    AppLocalizations.of(context)!.discoveredDevices,
+                    style: Theme.of(context).textTheme.displayMedium,
+                    textAlign: TextAlign.center,
+                  ),
                 ),
                 ...List.generate(
                   state.discoveredDevices.length,
                   (index) => state.discoveredDevices[index].name != null
                       ? ScanResultTile(
                           device: state.discoveredDevices[index],
-                          onTap: () =>
-                              state.onResultTap(state.discoveredDevices[index]),
+                          onTap: () => state.onResultTap(state.discoveredDevices[index]),
                         )
                       : const SizedBox.shrink(),
                 )

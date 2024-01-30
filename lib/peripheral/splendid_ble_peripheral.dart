@@ -44,7 +44,7 @@ class SplendidBlePeripheral {
   }
 
   /// Sets up a BLE peripheral server with the specified configuration.
-  Future<BleServer> setupPeripheralServer(BleServerConfiguration configuration) async {
-    return PeripheralPlatformInterface.instance.setupPeripheralServer(configuration);
+  Future<BleServer> createPeripheralServer(BleServerConfiguration configuration) async {
+    return PeripheralPlatformInterface.instance.createPeripheralServer(configuration);
   }
 }
