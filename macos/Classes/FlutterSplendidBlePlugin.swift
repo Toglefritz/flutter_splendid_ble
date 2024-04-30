@@ -696,8 +696,7 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
     /// - Parameter configurationMap: A map containing the server configuration details.
     /// - Throws: An error if the configuration is invalid or the server setup fails.
     func createPeripheralServer(with configurationMap: [String: Any]) throws {
-        guard let serverName = configurationMap["serverName"] as? String,
-              let primaryServiceUuidStr = configurationMap["primaryServiceUuid"] as? String,
+        guard let primaryServiceUuidStr = configurationMap["primaryServiceUuid"] as? String,
               let primaryServiceUuid = UUID(uuidString: primaryServiceUuidStr),
               let serviceUuidsStr = configurationMap["serviceUuids"] as? [String] else {
             throw PeripheralServerError.invalidConfiguration
@@ -719,9 +718,6 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
         // Add services to the peripheral manager.
         peripheralManager!.add(primaryService)
         additionalServices.forEach { peripheralManager!.add($0) }
-        
-        // Configure additional server properties like local name, if needed.
-        // Note: `serverName` can be used for advertising data configuration.
     }
     
     // MARK: Utility Methods

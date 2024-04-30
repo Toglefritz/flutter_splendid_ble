@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_splendid_ble/peripheral/peripheral_platform_interface.dart';
 
@@ -11,8 +10,7 @@ import 'models/ble_server_configuration.dart';
 /// An implementation of [PeripheralPlatformInterface] that uses method channels.
 class PeripheralMethodChannel extends PeripheralPlatformInterface {
   /// The method channel used to interact with the native platform.
-  @visibleForTesting
-  final MethodChannel channel = const MethodChannel('flutter_splendid_ble_peripheral');
+  static final MethodChannel channel = const MethodChannel('flutter_splendid_ble_peripheral');
 
   /// Checks the status of the Bluetooth adapter on the device.
   ///

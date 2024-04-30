@@ -23,5 +23,6 @@ enum CentralMethod: String, CaseIterable {
 /// An enumeration of of method channel names for functions called from apps acting as BLE peripheral devices.
 enum PeripheralMethod: String, CaseIterable {
     case createPeripheralServer = "createPeripheralServer"
+    case startAdvertising = "startAdvertising"
     // TODO add other peripheral methods
 }

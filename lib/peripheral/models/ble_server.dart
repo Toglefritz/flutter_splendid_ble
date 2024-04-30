@@ -1,3 +1,7 @@
+import 'package:flutter/services.dart';
+import 'package:flutter_splendid_ble/peripheral/peripheral_method_channel.dart';
+
+import 'ble_peripheral_advertisement_configuration.dart';
 import 'ble_server_configuration.dart';
 
 /// Represents a Bluetooth Low Energy (BLE) server for a Flutter application.
@@ -16,15 +20,36 @@ import 'ble_server_configuration.dart';
 /// abstracts the complexities involved in managing BLE operations, providing a streamlined way for Flutter apps to
 /// interact with BLE technology.
 class BleServer {
-  // The server's configuration details
+  /// The server's configuration details which contains information such as the name of the BLE peripheral device,
+  /// information about services offered by the peripheral, and BLE characteristic information.
   final BleServerConfiguration configuration;
 
-  // Constructor
-  BleServer({required this.configuration});
+  BleServer({
+    required this.configuration,
+  });
 
-  // Method to start advertising
-  Future<void> startAdvertising() async {
-    // Invoke a method channel to start advertising with the given configuration
+  /// Starts advertising this device as a BLE peripheral with the specified advertisement configuration.
+  ///
+  /// This function takes a [BlePeripheralAdvertisementConfiguration] object that defines the local name, service
+  /// UUIDs, and manufacturer-specific data to be included in the BLE advertisement. It then uses a method channel to
+  /// send this configuration to the platform side (iOS, Android, macOS), where the actual BLE advertising process is
+  /// initiated.
+  ///
+  /// [configuration] The BLE advertisement configuration specifying how this device should advertise itself.
+  Future<void> startAdvertising(BlePeripheralAdvertisementConfiguration configuration) async {
+    // Convert the configuration object to a map using the toMap method.
+    final Map<String, dynamic> configMap = configuration.toMap();
+
+    // The method channel used for communicating with the platform side.
+    MethodChannel channel = PeripheralMethodChannel.channel;
+
+    // Invoke a method channel to start advertising with the given configuration.
+    try {
+      await channel.invokeMethod('startAdvertising', configMap);
+    } on PlatformException catch (e) {
+      // Handle any errors that occur during the method channel invocation.
+      print("Failed to start advertising with exception, ${e.message}");
+    }
   }
 
   // Method to stop advertising
@@ -52,6 +77,4 @@ class BleServer {
   Future<void> notifyConnectedDevices(/* parameters */) async {
     // Logic to notify or send data to connected devices
   }
-
-// Additional utility methods as needed...
 }

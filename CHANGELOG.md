@@ -20,14 +20,14 @@ All notable changes to the `flutter_splendid_ble` plugin will be documented in t
 
 - Finalized support for Android.
 - Added support for Bluetooth operations MacOS:
-  - Bluetooth status checking.
-  - Emitting current Bluetooth status.
-  - Bluetooth device scanning.
-  - Bluetooth device connection handling.
-  - Bluetooth service and characteristic discovery and subscription.
-  - Reading from Bluetooth characteristics.
-  - Writing to Bluetooth characteristics.
-  - Terminating a connection to a BLE device.
+    - Bluetooth status checking.
+    - Emitting current Bluetooth status.
+    - Bluetooth device scanning.
+    - Bluetooth device connection handling.
+    - Bluetooth service and characteristic discovery and subscription.
+    - Reading from Bluetooth characteristics.
+    - Writing to Bluetooth characteristics.
+    - Terminating a connection to a BLE device.
 - Added MacOS support to the example application.
 - Comprehensive documentation for MacOS functionality.
 - Added automated test for all plugin methods.
@@ -35,14 +35,14 @@ All notable changes to the `flutter_splendid_ble` plugin will be documented in t
 ## [0.3.0] 2023/11/07
 
 - Added support for Bluetooth operations on iOS:
-  - Bluetooth status checking.
-  - Emitting current Bluetooth status.
-  - Bluetooth device scanning.
-  - Bluetooth device connection handling.
-  - Bluetooth service and characteristic discovery and subscription.
-  - Reading from Bluetooth characteristics.
-  - Writing to Bluetooth characteristics.
-  - Terminating a connection to a BLE device.
+    - Bluetooth status checking.
+    - Emitting current Bluetooth status.
+    - Bluetooth device scanning.
+    - Bluetooth device connection handling.
+    - Bluetooth service and characteristic discovery and subscription.
+    - Reading from Bluetooth characteristics.
+    - Writing to Bluetooth characteristics.
+    - Terminating a connection to a BLE device.
 - Added iOS support to the example application.
 - Comprehensive documentation for iOS functionality.
 - Added extensive usage/tutorials content to README.
@@ -75,8 +75,23 @@ All notable changes to the `flutter_splendid_ble` plugin will be documented in t
 - Updated dependencies
 - Updated documentation
 - Updated formatting to meet Dart standards
-- 
+
 ## [0.8.0] 2023/01/15
 
 - Clear scan results when restarting BLE scan
 - Updated documentation for example app
+
+## [1.0.0] 2023/01/24
+
+- Fixed bug causing failure to check Bluetooth adapter status on MacOS
+- Added support for BLE peripheral mode for iOS
+
+### Breaking Changes
+
+- Renamed FlutterSplendidBle to SplendidBleCentral as part of module division.
+- Added SplendidBlePeripheral for BLE peripheral mode support on iOS.
+
+### Migration Guide
+
+1. **Class Name Change**: Update all references of FlutterSplendidBle to SplendidBleCentral in your
+   code.

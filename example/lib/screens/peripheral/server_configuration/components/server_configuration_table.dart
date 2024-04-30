@@ -99,10 +99,11 @@ class ServerConfigurationTable extends StatelessWidget {
                   bottom: 8.0,
                 ),
                 child: TextField(
+                  controller: state.characteristicsController,
                   style: Theme.of(context).textTheme.bodyLarge,
                   textAlign: TextAlign.center,
                   decoration: InputDecoration(
-                    labelText: AppLocalizations.of(context)!.characteristicsFieldLabel,
+                    labelText: '${AppLocalizations.of(context)!.characteristicsFieldLabel} ${AppLocalizations.of(context)!.characteristicsFieldFormatHint}',
                   ),
                 ),
               ),

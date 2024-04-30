@@ -27,6 +27,10 @@
   "@characteristics": {
     "description": "A label for the text field used to supply characteristic UUIDs"
   },
+  "characteristicsFieldFormatHint": "(comma-separated)",
+  "@characteristicsFieldFormatHint": {
+    "description": "Instructions for the text field used to supply characteristic UUIDs"
+  },
   "characteristicsFieldLabel": "List of UUIDs",
   "@characteristicsFieldLabel": {
     "description": "Instructions for the text field used to supply characteristic UUIDs"

@@ -25,6 +25,11 @@ class ServerConfigurationController extends State<ServerConfigurationRoute> {
   /// The controller is initialized with a default value, which is a random UUID.
   TextEditingController primaryServiceController = TextEditingController(text: _generateRandomUUID());
 
+  /// A controller for the [TextField] used to supply a list of characteristic UUIDs for the BLE peripheral server.
+  ///
+  /// The controller is initialized with a default value, which is a list with a single random UUID.
+  TextEditingController characteristicsController = TextEditingController(text: _generateRandomUUID());
+
   /// Determines if the server is currently being created.
   bool _creatingServer = false;
 
@@ -62,7 +67,6 @@ class ServerConfigurationController extends State<ServerConfigurationRoute> {
 
     // Create a BleServerConfiguration object from the information provided in the fields in the table for this view.
     BleServerConfiguration configuration = BleServerConfiguration(
-      serverName: serverNameController.text,
       primaryServiceUuid: primaryServiceController.text,
     );
 
@@ -82,7 +86,7 @@ class ServerConfigurationController extends State<ServerConfigurationRoute> {
       _creatingServer = false;
     });
 
-    // TODO navigate
+    // TODO(Toglefritz): navigate to the server details view and pass along the server object
   }
 
   @override

@@ -5,14 +5,8 @@
 /// platform side.
 ///
 /// Parameters:
-/// - [serverName]: A string representing the name of the BLE server.
 /// - [serviceUuids]: A list of strings, each representing a UUID for services provided by the BLE server.
 class BleServerConfiguration {
-  /// A string representing the name of the BLE server. This is the name that is typically displayed on client
-  /// devices when they perform a scan for nearby BLE devices, assuming that the [BleServer] is configured to advertise
-  /// the server name in its advertisement information.
-  final String serverName;
-
   /// The UUID of the primary service provided by this BLE server.
   ///
   /// In the context of Bluetooth Low Energy (BLE) communication, the primary service UUID is a unique identifier
@@ -43,7 +37,6 @@ class BleServerConfiguration {
   // TODO add other fields
 
   BleServerConfiguration({
-    required this.serverName,
     required this.primaryServiceUuid,
     this.serviceUuids,
   });
@@ -52,7 +45,6 @@ class BleServerConfiguration {
   /// contained within the [BleServerConfiguration] to the platform side while making method channel calls.
   Map<String, dynamic> toMap() {
     return {
-      'serverName': serverName,
       'primaryServiceUuid': primaryServiceUuid,
       'serviceUuids': serviceUuids ?? [],
       // Map other fields as well
