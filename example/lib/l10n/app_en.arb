@@ -71,6 +71,10 @@
   "@done": {
     "description": "A generic label for a CTA button"
   },
+  "enableAdvertising": "Enable Advertising",
+    "@enableAdvertising": {
+        "description": "Text for the button used to enable BLE advertising"
+    },
   "errorWriting": "Writing to the Bluetooth device failed",
   "@errorWriting": {
     "description": "An error message indicating that a BLE write operation failed"

@@ -59,7 +59,7 @@ class ServerConfigurationView extends StatelessWidget {
                   ),
                   clipBehavior: Clip.antiAlias,
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 0),
+                    padding: const EdgeInsets.all(16.0),
                     child: ServerConfigurationTable(
                       state: state,
                     ),
