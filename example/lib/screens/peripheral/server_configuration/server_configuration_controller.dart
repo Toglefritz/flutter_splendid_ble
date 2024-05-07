@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_splendid_ble/peripheral/models/ble_server.dart';
 import 'package:flutter_splendid_ble/peripheral/models/ble_server_configuration.dart';
+import 'package:flutter_splendid_ble_example/screens/peripheral/server_interaction/server_interaction_route.dart';
 import 'package:uuid/uuid.dart';
 
 import 'package:flutter_splendid_ble/peripheral/splendid_ble_peripheral.dart';
@@ -86,7 +87,14 @@ class ServerConfigurationController extends State<ServerConfigurationRoute> {
       _creatingServer = false;
     });
 
-    // TODO(Toglefritz): navigate to the server details view and pass along the server object
+    Navigator.pushReplacement<void, void>(
+      context,
+      MaterialPageRoute<void>(
+        builder: (BuildContext context) => ServerInteractionRoute(
+          server: server,
+        ),
+      ),
+    );
   }
 
   @override

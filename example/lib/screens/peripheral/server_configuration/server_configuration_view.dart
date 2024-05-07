@@ -59,7 +59,7 @@ class ServerConfigurationView extends StatelessWidget {
                   ),
                   clipBehavior: Clip.antiAlias,
                   child: Padding(
-                    padding: const EdgeInsets.all(16.0),
+                    padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 0),
                     child: ServerConfigurationTable(
                       state: state,
                     ),
@@ -69,7 +69,6 @@ class ServerConfigurationView extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 16.0,
-                  vertical: 8.0,
                 ),
                 child: TableButton(
                   onTap: state.onCreateTap,

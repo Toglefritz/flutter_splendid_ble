@@ -9,7 +9,7 @@ import 'ble_server_configuration.dart';
 /// This class encapsulates the functionality needed for a Flutter app to act as a BLE peripheral device. It allows
 /// the app to advertise BLE services, handle connections, and manage data exchanges with connected devices.
 ///
-/// Usage:
+/// **Usage**:
 /// - Construct a `BleServer` with the desired configuration.
 /// - Use `startAdvertising()` to begin advertising the BLE services.
 /// - Listen for incoming connections and disconnections via `onDeviceConnected` and `onDeviceDisconnected` streams.

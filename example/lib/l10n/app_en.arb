@@ -139,6 +139,10 @@
   "@serverConfiguration": {
     "description": "A label for the BLE peripheral server configuration page"
   },
+  "serverInteraction": "Server Interaction",
+    "@serverInteraction": {
+        "description": "Title for the screen for controlling a BLE server"
+    },
   "services": "Services",
   "@services": {
     "description": "A label for the list of services presented for a Bluetooth device"

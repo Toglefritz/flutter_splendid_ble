@@ -5,10 +5,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_splendid_ble/central/models/ble_characteristic_value.dart';
 
+import '../../models/message_source.dart';
 import 'characteristic_interaction_route.dart';
 import 'characteristic_interaction_view.dart';
-import 'models/message.dart';
-import 'models/message_source.dart';
+import '../../models/message.dart';
 
 /// A controller for the [CharacteristicInteractionRoute] that manages the state and owns all business logic.
 class CharacteristicInteractionController
