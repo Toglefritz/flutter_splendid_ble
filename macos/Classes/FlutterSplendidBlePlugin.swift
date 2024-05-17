@@ -268,6 +268,9 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
                                     message: "Invalid or missing configuration for peripheral server",
                                     details: nil))
             }
+        case PeripheralMethod.stopAdvertising.rawValue:
+            stopAdvertising()
+            result(nil) // Indicate success
         default:
             result(FlutterMethodNotImplemented)
         }
@@ -781,6 +784,26 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
 
         // Start advertising
         peripheralManager?.startAdvertising(advertisementData)
+    }
+    
+    /// Stops advertising this device as a BLE peripheral.
+    ///
+    /// This method stops any ongoing BLE advertisements that were previously started using the `CBPeripheralManager` instance.
+    /// It ensures that the advertisement process is halted, which is useful for conserving power and managing BLE advertisement states.
+    ///
+    /// Usage example:
+    /// ```swift
+    /// stopAdvertising()
+    /// ```
+    func stopAdvertising() {
+        // Check if the peripheral manager exists
+        guard let peripheralManager = peripheralManager else {
+            // Peripheral Manager is not initialized.
+            return
+        }
+        
+        // Stop advertising
+        peripheralManager.stopAdvertising()
     }
     
     // MARK: Utility Methods

@@ -24,5 +24,6 @@ enum CentralMethod: String, CaseIterable {
 enum PeripheralMethod: String, CaseIterable {
     case createPeripheralServer = "createPeripheralServer"
     case startAdvertising = "startAdvertising"
+    case stopAdvertising = "stopAdvertising"
     // TODO add other peripheral methods
 }

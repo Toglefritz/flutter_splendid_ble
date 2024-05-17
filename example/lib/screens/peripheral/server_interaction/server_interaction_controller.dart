@@ -23,6 +23,7 @@ class ServerInteractionController extends State<ServerInteractionRoute> {
   ///
   /// When the switch is toggled, this method will either start or stop advertising the BLE server.
   Future<void> onAdvertisingSwitchChanged(bool value) async {
+    // The switch was turned on.
     if (value) {
       // Start advertising. The server will advertise itself as a BLE peripheral with name "Splendid BLE Example" and
       // will advertise the service UUID of the primary service.
@@ -31,10 +32,23 @@ class ServerInteractionController extends State<ServerInteractionRoute> {
         serviceUuids: [widget.server.configuration.primaryServiceUuid],
       );
 
-      await widget.server.startAdvertising(config);
-    } else {
-      // Stop advertising.
-      await widget.server.stopAdvertising();
+      try {
+        await widget.server.startAdvertising(config);
+      } catch (e) {
+        debugPrint('Failed to start advertising with exception, $e');
+      }
+
+      debugPrint('Started advertising');
+    }
+    // The switch was turned off.
+    else {
+      try {
+        await widget.server.stopAdvertising();
+      } catch (e) {
+        debugPrint('Failed to stop advertising with exception, $e');
+      }
+
+      debugPrint('Stopped advertising');
     }
 
     if (!mounted) return;

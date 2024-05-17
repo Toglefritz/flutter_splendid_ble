@@ -20,6 +20,9 @@ import 'ble_server_configuration.dart';
 /// abstracts the complexities involved in managing BLE operations, providing a streamlined way for Flutter apps to
 /// interact with BLE technology.
 class BleServer {
+  /// The method channel used for communicating with the platform side.
+  MethodChannel _channel = PeripheralMethodChannel.channel;
+
   /// The server's configuration details which contains information such as the name of the BLE peripheral device,
   /// information about services offered by the peripheral, and BLE characteristic information.
   final BleServerConfiguration configuration;
@@ -41,21 +44,26 @@ class BleServer {
     // to start advertising with the specified configuration.
     final Map<String, dynamic> configMap = configuration.toMap();
 
-    // The method channel used for communicating with the platform side.
-    MethodChannel channel = PeripheralMethodChannel.channel;
-
     // Invoke a method channel to start advertising with the given configuration.
     try {
-      await channel.invokeMethod('startAdvertising', configMap);
-    } on PlatformException catch (e) {
-      // Handle any errors that occur during the method channel invocation.
-      print("Failed to start advertising with exception, ${e.message}");
+      await _channel.invokeMethod('startAdvertising', configMap);
+    } catch (e) {
+      rethrow;
     }
   }
 
-  // Method to stop advertising
+  /// Stops advertising this device as a BLE peripheral.
+  ///
+  /// If the device is currently advertising as a BLE peripheral, this function will stop the advertising process. If
+  /// the device is not currently advertising, or if the BLE server has not finished initializing, this function will
+  /// do nothing.
   Future<void> stopAdvertising() async {
-    // Invoke a method channel to stop advertising
+    // Invoke a method channel to start advertising with the given configuration.
+    try {
+      await _channel.invokeMethod('stopAdvertising');
+    } catch (e) {
+      rethrow;
+    }
   }
 
   // Stream to listen for incoming connections
