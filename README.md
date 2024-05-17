@@ -3,8 +3,8 @@
 <p align="center">
 <image src="https://github.com/Toglefritz/flutter_splendid_ble/blob/main/assets/flutter_splendid_ble_logo.png?raw=true" alt="flutter_splendid_ble plugin logo" width="200"></image></p>
 
-The Flutter Splendid BLE plugin offers a robust suite of functionalities for Bluetooth Low Energy (
-BLE) interactions in Flutter applications. It equips apps with the ability to function both as a
+The Flutter Splendid BLE plugin offers a robust suite of functionalities for Bluetooth Low Energy
+(BLE) interactions in Flutter applications. It equips apps with the ability to function both as a
 central and a peripheral device. This includes scanning for and connecting to BLE peripherals,
 managing bonding processes, broadcasting services, accepting connections, and handling data
 communication with other BLE devices, providing a comprehensive tool for versatile BLE operations.
@@ -34,6 +34,10 @@ include:
 
 ### Peripheral Module
 
+> **Note:** Currently, the Bluetooth peripheral mode is only supported on macOS. Work on extending
+> this support to other platforms is ongoing. The next minor release version will include support
+> for iOS, followed by Android.
+
 Conversely, this module allows a Flutter app to behave as a BLE peripheral. This is ideal for
 use-cases where the app advertises BLE services, accepts connections, and handles data transactions.
 Features include:
@@ -45,7 +49,7 @@ Features include:
 
 **Example Use-Cases:**
 
-- A mobile game that uses the phone as a BLE-enabled game controller.
+- Using a phone as a BLE-enabled game controller.
 - A conference app turning a tablet into an information kiosk, broadcasting BLE signals for attendee
   engagement and navigation.
 - An app that turns the device into a BLE beacon for location tracking.
@@ -121,14 +125,14 @@ import 'package:flutter_splendid_ble/splendid_ble.dart';
 All Bluetooth functionality provided by this plugin goes through either the `SplendidBleCentral`
 or `SplendidBlePeripheral` classes, depending upon whether your Flutter app is using functionality
 as a BLE central device or BLE peripheral device. So, wherever you need to conduct Bluetooth
-operations, you will need an instance of one of these two classes, depending on what operations
-you are using. Check the list of features above for help determining which class to use.
+operations, you will need an instance of one of these two classes, depending on what operations you
+are using. Check the list of features above for help determining which class to use.
 
 Note that some functionality is shared by both the `SplendidBleCentral` and `SplendidBlePeripheral`
 classes. Namely operations related to Bluetooth permissions and checking on the status of the
-Bluetooth adapter of the host device are shared between both classes as these functions are the
-same regardless of the role your app is playing in the BLE communication architecture. This
-shared functionality can be called from either the `SplendidBleCentral` or `SplendidBlePeripheral`
+Bluetooth adapter of the host device are shared between both classes as these functions are the same
+regardless of the role your app is playing in the BLE communication architecture. This shared
+functionality can be called from either the `SplendidBleCentral`or the `SplendidBlePeripheral`
 class.
 
 ```dart
@@ -141,16 +145,16 @@ final SplendidBlePeripheral blePeripheral = SplendidBlePeripheral();
 You could simply instantiate the `SplendidBleCentral` or `SplendidBlePeripheral` classes in each
 Dart class where Bluetooth functionality is needed or, depending upon your needs and the
 architecture of your application, you could create a centralized service where these instances are
-created once and referenced from everywhere else in your codebase. Some of the examples below show
-a service class being used to wrap functionality provided by this plugin.
+created once and referenced from everywhere else in your codebase. Some of the examples below show a
+service class being used to wrap functionality provided by this plugin.
 
 ### Checking the Bluetooth adapter status:
 
 Before you can perform any Bluetooth functionality, you should ensure that the device's Bluetooth
 adapter is ready. This step is crucial because attempting to use Bluetooth features when the adapter
 is not available or turned off will lead to failures and a poor user experience. This is also an
-example of functionality that is shared between the `SplendidBleCentral` and `SplendidBlePeripheral`
-classes so either can be used to check on the adapter status.
+example of functionality that is shared between the `SplendidBleCentral` and
+`SplendidBlePeripheral` classes so either can be used to check on the adapter status.
 
 In the example below, the method, `_checkAdapterStatus`, is responsible for setting up a listener
 for the state of the host device's Bluetooth adapter. It uses a stream (`_bluetoothStatusStream`)
@@ -161,12 +165,13 @@ includes three possible states:
 
 - `enabled`: The adapter is on and available for use.
 - `disabled`: The adapter is off and needs to be enabled before proceeding.
-- `notAvailable`: The device does not have a Bluetooth adapter.
+- `notAvailable`: The device does not have a Bluetooth adapter or the Bluetooth adapter is not
+  accessible to the app (for example if security software ius blocking its use).
 
 Here's how you might perform this check:
 
-1. Subscribe to a stream provided by the Flutter BLE plugin that monitors the Bluetooth adapter's
-   status.
+1. Subscribe to a stream provided by the Flutter Splendid BLE plugin that monitors the Bluetooth
+   adapter's status.
 2. When the status is emitted, update your app's state with the new Bluetooth status.
 3. Based on the received status, you can control the flow of your app — e.g., prompt the user to
    turn on Bluetooth if it's off, show a message if the device doesn't support Bluetooth, or proceed
@@ -208,7 +213,7 @@ class BluetoothManager {
     );
   }
 
-  /// Dispose stream subscription when it's no longer needed to prevent memory leaks.
+  /// Dispose the stream subscription when it's no longer needed to prevent memory leaks.
   void dispose() {
     _bluetoothStatusStream?.cancel();
   }
@@ -217,10 +222,10 @@ class BluetoothManager {
 
 **Notes and Best Practices**
 
-- Remember to dispose of any stream subscriptions when the scanning is no longer needed to avoid
-  memory leaks and unnecessary processing.
+- Remember to dispose of any stream subscriptions when they are no longer needed to avoid memory
+  leaks and unnecessary processing.
 
-### Starting a Bluetooth scan for detecting nearby BLE devices:
+### Starting a scan for detecting nearby BLE devices:
 
 Scanning for nearby Bluetooth Low Energy (BLE) devices is a fundamental feature for BLE-enabled
 applications. It's important to conduct these scans responsibly to balance the need for device
@@ -231,12 +236,13 @@ Below is a guide and example code snippet for starting a Bluetooth device scan:
 **Prerequisites**
 Ensure that you have already checked the Bluetooth adapter status as shown above to ensure that
 Bluetooth is turned on and available for scanning. You should also handle the necessary permissions
-for Bluetooth usage as required by the platform (e.g., location permissions for Android).
+for Bluetooth usage as required by the platform (e.g., location permissions for Android depending
+upon Android OS version, and Bluetooth permissions for all platforms).
 
 **Starting the Scan**
 In the example below, the `_startBluetoothScan` method is responsible for initiating a scan for BLE
-devices. It uses the Flutter BLE plugin's scanning method, which typically takes filters and
-settings as parameters to customize the scan behavior.
+devices. It uses the Flutter Splendid BLE plugin's scanning method, which typically takes filters
+and settings as parameters to customize the scan behavior.
 
 - *filters*: This parameter allows you to specify the criteria for devices to be discovered. For
   example, you can filter by service UUIDs, device name, etc.
@@ -254,7 +260,7 @@ method is then called with this device information, allowing you to handle new d
 import 'dart:async';
 
 class BLEScanner {
-  /// SplendidBleCentral instance as discussed above.
+  /// [SplendidBleCentral] instance as discussed above.
   final SplendidBleCentral _ble = SplendidBleCentral();
 
   /// A [StreamSubscription] used to listen for newly discovered BLE devices.
@@ -297,12 +303,12 @@ class BLEScanner {
 
 **Notes and Best Practices**
 
-- Always remember to stop the scan once you have found the necessary devices or after a certain
-  timeout to save battery life.
+- Always remember to stop the scan once you have found the necessary device(s) or after a certain
+  timeout to save battery life (by convention this timeout is usually four seconds).
 - Remember to dispose of any stream subscriptions when the scanning is no longer needed to avoid
   memory leaks and unnecessary processing.
 
-### Connecting to a Bluetooth Device:
+### Connecting to a Bluetooth device:
 
 Establishing a connection with a Bluetooth Low Energy (BLE) device is a key step to enable
 communication for data transfer and device interaction. The process of connecting to a BLE device
@@ -316,29 +322,32 @@ Additionally, ensure the user has granted any permissions necessary for connecti
 device.
 
 **Initiating a Connection**
-To connect to a BLE device, you will use the `connect` method provided by the Flutter BLE plugin.
-This method requires the address of the device, which is usually obtained from the discovery
+To connect to a BLE device, you will use the `connect` method provided by the Flutter Splendid BLE
+plugin. This method requires the address of the device, which is usually obtained from the discovery
 process.
 
 - *deviceAddress*: The address of the BLE device you wish to connect to. This is a unique identifier
   for the BLE device. Note that this address is handled differently by Android/Windows/Linux devices
-  compared with iOS and MacOS devices. On the former set of operating systems, BLE devices are
+  compared with iOS and macOS devices. On the former set of operating systems, BLE devices are
   identified by their Bluetooth MAC addresses. However, on Apple devices, a BLE peripheral is
   instead identified by a unique UUID value. This value is not only unique per BLE device, but also
   unique per Apple device. In other words, the same Bluetooth peripheral discovered by two different
-  Apple devices will have two different UUID identifiers.
+  Apple devices will have two different UUID identifiers. This is an important point to keep in mind
+  if your Flutter app stores the BLE device address in a backend service. If this is the case, care
+  should be taken while designing the system to keep in mind the fact that, for iOS and macOS
+  devices, that identifier is not the same for different devices.
 
 **Connection State Updates**
 Once the connection attempt has been initiated, the connect method will return a stream that emits
 the connection state updates. You should listen to this stream to receive updates and handle them
 accordingly.
 
-- *onConnectionStateUpdate*: A callback function that will be called with the new connection state
+- *onConnectionStateUpdate*: A callback function that will be invoked with the new connection state
   whenever it changes.
 
 **Error Handling**
 It is important to handle any exceptions that may occur during the connection attempt. This could be
-due to the device being out of range, the device not being connectable, or other reasons.
+due to the device being out of range, the device not being connectable, or many other reasons.
 
 **Example**
 
@@ -346,7 +355,7 @@ due to the device being out of range, the device not being connectable, or other
 import 'dart:async';
 
 class BLEConnector {
-  /// SplendidBleCentral instance as discussed above.
+  /// [SplendidBleCentral] instance as discussed above.
   final SplendidBleCentral _ble = SplendidBleCentral();
 
   /// Attempts to connect to a BLE device.
@@ -387,6 +396,8 @@ class BLEConnector {
   responding.
 - Remember to handle the various states of the connection such as connecting, connected,
   disconnecting, and disconnected.
+- As always, dispose of any stream subscriptions when they are no longer needed to avoid memory
+  leaks and unnecessary processing.
 
 ### Performing Service/Characteristic Discovery on a BLE Peripheral:
 
@@ -413,7 +424,7 @@ Flutter BLE plugin.
 import 'dart:async';
 
 class BLEServiceDiscovery {
-  /// SplendidBleCentral instance as discussed above.
+  /// [SplendidBleCentral] Instance as discussed above.
   final SplendidBleCentral _ble = SplendidBleCentral();
 
   /// A [StreamSubscription] used to listen for discovered services.
@@ -457,12 +468,12 @@ words, subscribing to notifications or indications from a BLE characteristic is 
 real-time communication in BLE applications.
 
 When subscribing to BLE characteristic notifications or indications using the Splendid BLE plugin,
-the
-values you receive are instances of BleCharacteristicValue, which contain the raw data as List<int>.
-This raw data format represents the bytes sent from the BLE device. For most applications, you will
-need to convert these bytes into a more usable format such as a String, Map<String, dynamic> (if the
-data is in JSON format), a list, an object, or even a Protocol Buffer (protobuf) if the application
-uses them for structured data. See the "Data Conversion" section below for more details.
+the values you receive are instances of `BleCharacteristicValue`, which contain the raw data as
+`List<int>`. This raw data format represents the bytes sent from the BLE device. For most
+applications, you will need to convert these bytes into a more usable format such as a String,
+`Map<String, dynamic>` (if the data is in JSON format), a list, an object, or even a Protocol Buffer
+(protobuf) if the application uses them for structured data. See the "Data Conversion" section below
+for more details.
 
 **Notifications vs. Indications**
 
@@ -532,17 +543,18 @@ class BLECharacteristicListener {
 ```
 
 **Data Conversion**
-The List<int> data received from the BLE characteristic often needs to be decoded or parsed. Here’s
-how you can handle different scenarios:
+The raw `List<int>` data received from the BLE characteristic often needs to be decoded or parsed.
+Here’s how you can handle different scenarios:
 
-- String: If the data represents a string, you might convert it using utf8.decode from Dart's dart:
-  convert package.
-- JSON: If the characteristic sends JSON formatted data, you would first convert the List<int> to a
+- **String**: If the data represents a string, you might convert it using `utf8.decode` from Dart's
+  dart:convert package.
+- **JSON**: If the characteristic sends JSON formatted data, you would first convert the List<int>
+  to a
   String, then use a JSON decoder to get a Map<String, dynamic>.
-- Lists or Objects: If the data represents serialized structured data, you'll need to deserialize it
-  into the corresponding Dart objects.
-- Protocol Buffers: When using protobufs, you'll need to use the generated Dart code from your
-  .proto files to decode the List<int> into a protobuf object.
+- **Lists or Objects**: If the data represents serialized structured data, you'll need to
+  deserialize it into the corresponding Dart objects.
+- **Protocol Buffers**: When using protobufs, you'll need to use the generated Dart code from your
+  .proto files to decode the `List<int>` into a protobuf object.
 
 **Example**
 
@@ -595,9 +607,8 @@ void onCharacteristicChanged(BleCharacteristicValue event) {
 ### Writing Values to a BLE Characteristic:
 
 Interacting with BLE devices often requires writing data to a characteristic to trigger certain
-actions or configure settings on the peripheral. The 'SplendidBle' provides a 'writeValue'
-method
-on the 'BleCharacteristic' class to facilitate this.
+actions or configure settings on the peripheral. The `SplendidBleCentral` provides a `writeValue`
+method on the `BleCharacteristic` class to facilitate this.
 
 When writing to a BLE characteristic, the data typically needs to be in a byte format (`List<int>`).
 Depending on the characteristic's specification, this could be a simple string conversion,
@@ -661,8 +672,8 @@ Future<void> writeStringToCharacteristic(String value, BleCharacteristic charact
 ### Reading Values from a BLE Characteristic:
 
 Communicating with BLE devices often entails reading data from a characteristic to obtain
-information or status updates from the peripheral. The Flutter BLE plugin offers a convenient
-`readValue` method on the `BleCharacteristic` class for this purpose.
+information or status updates from the peripheral. The Flutter Splendid BLE plugin offers a 
+convenient `readValue` method on the `BleCharacteristic` class for this purpose.
 
 When reading from a BLE characteristic, you receive the data as `BleCharacteristicValue`, which
 consists of a byte stream (`List<int>`). Depending on the characteristic's specification,
@@ -856,7 +867,7 @@ MIT License
 
 In the creation of this Flutter Bluetooth Low Energy plugin, artificial intelligence (AI) tools have
 been utilized. These tools have assisted in various stages of the plugin's development, from initial
-code generation to the optimization of algorithms.
+code generation, to documentation, to the optimization of algorithms.
 
 It is emphasized that the AI's contributions have been thoroughly overseen. Each segment of
 AI-assisted code has undergone meticulous scrutiny to ensure adherence to high standards of quality,
