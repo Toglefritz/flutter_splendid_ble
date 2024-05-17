@@ -37,7 +37,8 @@ class BleServer {
   ///
   /// [configuration] The BLE advertisement configuration specifying how this device should advertise itself.
   Future<void> startAdvertising(BlePeripheralAdvertisementConfiguration configuration) async {
-    // Convert the configuration object to a map using the toMap method.
+    // Convert the configuration object to a map using the toMap method. This map will be passed to the platform side
+    // to start advertising with the specified configuration.
     final Map<String, dynamic> configMap = configuration.toMap();
 
     // The method channel used for communicating with the platform side.

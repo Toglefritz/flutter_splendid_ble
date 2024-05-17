@@ -51,6 +51,10 @@ class SplendidBleExampleApp extends StatelessWidget {
             ),
           ),
         ),
+        switchTheme: SwitchThemeData(
+          thumbColor: WidgetStateProperty.all(Colors.white),
+          trackColor: WidgetStateProperty.all(Colors.white.withOpacity(0.1)),
+        ),
       ),
       debugShowCheckedModeBanner: false,
       localizationsDelegates: const [
