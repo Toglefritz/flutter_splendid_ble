@@ -755,8 +755,7 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
     func startAdvertising(with configurationMap: [String: Any]) throws {
         // Extract advertisement configuration from the arguments
         guard let localName = configurationMap["localName"] as? String?,
-              let serviceUuidsStr = configurationMap["serviceUuids"] as? [String],
-              let manufacturerDataMap = configurationMap["manufacturerData"] as? [String: [UInt8]] else {
+              let serviceUuidsStr = configurationMap["serviceUuids"] as? [String] else {
             throw PeripheralServerError.invalidConfiguration
         }
 
@@ -770,16 +769,6 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
         let serviceUUIDs = serviceUuidsStr.compactMap { UUID(uuidString: $0) }.map { CBUUID(nsuuid: $0) }
         if !serviceUUIDs.isEmpty {
             advertisementData[CBAdvertisementDataServiceUUIDsKey] = serviceUUIDs
-        }
-
-        // Convert manufacturer data
-        if let manufacturerIdStr = manufacturerDataMap.keys.first,
-           var manufacturerId = UInt16(manufacturerIdStr, radix: 16),
-           let dataBytes = manufacturerDataMap[manufacturerIdStr] {
-            let manufacturerData = NSMutableData()
-            manufacturerData.append(&manufacturerId, length: 2)
-            manufacturerData.append(dataBytes, length: dataBytes.count)
-            advertisementData[CBAdvertisementDataManufacturerDataKey] = manufacturerData as Data
         }
 
         // Start advertising

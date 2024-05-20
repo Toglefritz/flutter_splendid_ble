@@ -1,7 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/services.dart';
 import 'package:flutter_splendid_ble/peripheral/peripheral_method_channel.dart';
 
-import 'ble_peripheral_advertisement_configuration.dart';
+import '../../shared/models/ble_device.dart';
 import 'ble_server_configuration.dart';
 
 /// Represents a Bluetooth Low Energy (BLE) server for a Flutter application.
@@ -31,18 +33,25 @@ class BleServer {
     required this.configuration,
   });
 
-  /// Starts advertising this device as a BLE peripheral with the specified advertisement configuration.
+  /// Starts advertising this device as a BLE peripheral.
   ///
-  /// This function takes a [BlePeripheralAdvertisementConfiguration] object that defines the local name, service
-  /// UUIDs, and manufacturer-specific data to be included in the BLE advertisement. It then uses a method channel to
-  /// send this configuration to the platform side (iOS, Android, macOS), where the actual BLE advertising process is
-  /// initiated.
+  /// This method configures the device to advertise itself as a BLE peripheral with the specified configuration.
+  /// The configuration includes the local name of the device, the UUIDs of the services it offers, and whether to
+  /// enforce the maximum advertisement data size.
   ///
-  /// [configuration] The BLE advertisement configuration specifying how this device should advertise itself.
-  Future<void> startAdvertising(BlePeripheralAdvertisementConfiguration configuration) async {
-    // Convert the configuration object to a map using the toMap method. This map will be passed to the platform side
-    // to start advertising with the specified configuration.
-    final Map<String, dynamic> configMap = configuration.toMap();
+  /// If [enforceMaxAdvertisementDataSize] is provided, it will be used to determine whether to enforce the maximum
+  /// advertisement data size. If it is not provided, the default value of 'false' will be used.
+  ///
+  /// Throws an exception if the advertising process cannot be started.
+  ///
+  /// [enforceMaxAdvertisementDataSize]: A boolean value indicating whether to enforce the maximum advertisement data
+  /// size.
+  Future<void> startAdvertising() async {
+    // Construct a map providing advertisement configuration details to the platform side
+    final Map<String, dynamic> configMap = {
+      'localName': this.configuration.localName,
+      'serviceUuids': this.configuration.serviceUuids ?? [],
+    };
 
     // Invoke a method channel to start advertising with the given configuration.
     try {
@@ -66,8 +75,32 @@ class BleServer {
     }
   }
 
-  // Stream to listen for incoming connections
-  //Stream<BleDevice> get onDeviceConnected => /* Stream from method channel for connections */;
+  /// Creates a stream that emits information about client devices connecting to the BLE server.
+  ///
+  /// This method sets up a [StreamController] to listen for client connection events from the platform side
+  /// and emit [BleDevice] objects on the stream when a new client device connects.
+  /// It uses a method channel to receive notifications from the platform side about new connections.
+  /// When a connection is detected, it converts the received information into a [BleDevice] object and adds it to the
+  /// stream.
+  ///
+  /// The stream is broadcast, allowing multiple listeners to receive connection events.
+  Stream<BleDevice> emitClientConnections() {
+    final StreamController<BleDevice> streamController = StreamController<BleDevice>.broadcast();
+
+    // Listen to the platform side for client connection updates.
+    _channel.setMethodCallHandler((MethodCall call) async {
+      if (call.method == 'clientConnected') {
+        // Extract the connected device information from the method call arguments.
+        final Map<String, dynamic> deviceMap = Map<String, dynamic>.from(call.arguments as Map);
+        final BleDevice device = BleDevice.fromMap(deviceMap);
+
+        // Add the connected device to the stream.
+        streamController.add(device);
+      }
+    });
+
+    return streamController.stream;
+  }
 
   // Stream to listen for disconnections
   //Stream<BleDevice> get onDeviceDisconnected => /* Stream from method channel for disconnections */;

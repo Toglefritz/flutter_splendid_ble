@@ -19,7 +19,7 @@ class ServerConfigurationController extends State<ServerConfigurationRoute> {
   ///
   /// The controller is initialized with a default value so that, if the user does not wish to customize the value,
   /// they are able to proceed with the server's creation more quickly.
-  TextEditingController serverNameController = TextEditingController(text: 'Splendid BLE Server');
+  TextEditingController serverNameController = TextEditingController(text: 'Splendid_BLE');
 
   /// A controller for the [TextField] used to supply the primary service UUID for the BLE peripheral server.
   ///
@@ -68,6 +68,7 @@ class ServerConfigurationController extends State<ServerConfigurationRoute> {
 
     // Create a BleServerConfiguration object from the information provided in the fields in the table for this view.
     BleServerConfiguration configuration = BleServerConfiguration(
+      localName: serverNameController.text,
       primaryServiceUuid: primaryServiceController.text,
     );
 

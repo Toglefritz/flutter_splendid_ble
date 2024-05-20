@@ -53,12 +53,10 @@ class ScanView extends StatelessWidget {
                 ),
                 ...List.generate(
                   state.discoveredDevices.length,
-                  (index) => state.discoveredDevices[index].name != null
-                      ? ScanResultTile(
-                          device: state.discoveredDevices[index],
-                          onTap: () => state.onResultTap(state.discoveredDevices[index]),
-                        )
-                      : const SizedBox.shrink(),
+                  (index) => ScanResultTile(
+                    device: state.discoveredDevices[index],
+                    onTap: () => state.onResultTap(state.discoveredDevices[index]),
+                  ),
                 )
               ],
             ),

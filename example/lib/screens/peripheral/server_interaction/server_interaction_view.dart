@@ -181,7 +181,7 @@ class ServerInteractionView extends StatelessWidget {
                             ),
                             onPressed: state.onEntrySubmitted,
                             child: Icon(
-                              Icons.send,
+                              state.hasClient ? Icons.send : Icons.cancel_schedule_send_rounded,
                               color: Theme.of(context).primaryColor,
                             ),
                           ),
