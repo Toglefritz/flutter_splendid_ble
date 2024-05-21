@@ -66,7 +66,7 @@ class ServerInteractionController extends State<ServerInteractionRoute> {
 
   /// Handles the event of a client connecting to the BLE server.
   void _onClientConnected(BleDevice client) {
-    debugPrint('Client connected');
+    debugPrint('Client, ${client.name}, connected');
 
     // Stop advertising when a client connects.
     onAdvertisingSwitchChanged(false);

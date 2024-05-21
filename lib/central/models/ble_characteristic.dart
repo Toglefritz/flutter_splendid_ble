@@ -12,8 +12,11 @@ import 'ble_characteristic_value.dart';
 /// This class encapsulates these details and provides utility methods to decode properties and permissions for
 /// easier understanding and interaction.
 class BleCharacteristic {
-  /// The Bluetooth address of the Bluetooth peripheral containing a service with this characteristic.
-  final String address;
+  /// The Bluetooth address of the Bluetooth peripheral containing a service with this characteristic. When used
+  /// in central mode, this is the address of the peripheral device that is advertising the service or that is
+  /// connected to the central device. When used in peripheral mode, this value is null since the peripheral device
+  /// address is used instead.
+  final String? address;
 
   /// The universally unique identifier (UUID) for the characteristic.
   final String uuid;
@@ -42,12 +45,10 @@ class BleCharacteristic {
   /// appropriate values.
   factory BleCharacteristic.fromMap(Map<String, dynamic> map) {
     return BleCharacteristic(
-      address: map['address'] as String,
+      address: map['address'] as String?,
       uuid: map['uuid'] as String,
       properties: BleCharacteristicProperty.fromInt(map['properties'] as int),
-      permissions: map['permissions'] != null
-          ? BleCharacteristicPermission.fromInt(map['permissions'] as int)
-          : null,
+      permissions: map['permissions'] != null ? BleCharacteristicPermission.fromInt(map['permissions'] as int) : null,
     );
   }
 
@@ -88,8 +89,7 @@ class BleCharacteristic {
   Future<T> readValue<T>({
     Duration timeout = const Duration(seconds: 5),
   }) async {
-    BleCharacteristicValue characteristicValue =
-        await CentralPlatformInterface.instance.readCharacteristic(
+    BleCharacteristicValue characteristicValue = await CentralPlatformInterface.instance.readCharacteristic(
       characteristic: this,
       timeout: timeout,
     );
@@ -101,8 +101,7 @@ class BleCharacteristic {
     } else if (T == List<int>) {
       return characteristicValue.value as T;
     } else {
-      throw ArgumentError(
-          'Unsupported return type $T. Supported types are String and List<int>');
+      throw ArgumentError('Unsupported return type $T. Supported types are String and List<int>');
     }
   }
 
@@ -119,27 +118,21 @@ class BleCharacteristic {
   ///
   /// This method stops listening for updates for a given characteristic on a specified device.
   void unsubscribe() {
-    return CentralPlatformInterface.instance
-        .unsubscribeFromCharacteristic(this);
+    return CentralPlatformInterface.instance.unsubscribeFromCharacteristic(this);
   }
 
   /// Converts a list of [BluetoothGattCharacteristicProperties] to a string representation.
   ///
   /// Each characteristic property in the list is represented by its string name and separated by commas.
   String _propertiesListToString(List<BleCharacteristicProperty> properties) {
-    return properties
-        .map((property) => property.toString().split('.').last)
-        .join(', ');
+    return properties.map((property) => property.toString().split('.').last).join(', ');
   }
 
   /// Converts a list of [BleCharacteristicPermission] to a string representation.
   ///
   /// Each characteristic permission in the list is represented by its string name and separated by commas.
-  String _permissionsListToString(
-      List<BleCharacteristicPermission> permissions) {
-    return permissions
-        .map((permission) => permission.toString().split('.').last)
-        .join(', ');
+  String _permissionsListToString(List<BleCharacteristicPermission> permissions) {
+    return permissions.map((permission) => permission.toString().split('.').last).join(', ');
   }
 
   /// Returns a string representation of the [BleCharacteristic] instance.
@@ -148,5 +141,15 @@ class BleCharacteristic {
   @override
   String toString() {
     return 'BleCharacteristic(uuid: $uuid, properties: ${_propertiesListToString(properties)}, permissions: ${permissions == null ? 'null' : _permissionsListToString(permissions!)})';
+  }
+
+  /// Returns a JSON representation of the [BleCharacteristic] instance.
+  Map<String, dynamic> toMap() {
+    return {
+      'address': address,
+      'uuid': uuid,
+      'properties': properties.map((property) => property.toString()).toList(),
+      'permissions': permissions?.map((permission) => permission.toString()).toList(),
+    };
   }
 }

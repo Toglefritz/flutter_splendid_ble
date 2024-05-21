@@ -41,35 +41,36 @@ class ServerInteractionView extends StatelessWidget {
                 textAlign: TextAlign.center,
               ),
             ),
-            Card(
-              margin: EdgeInsets.all(16.0),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(6.0),
-                side: BorderSide(
-                  color: Theme.of(context).primaryColor,
-                  width: 0.5,
+            if (!state.hasClient)
+              Card(
+                margin: EdgeInsets.all(16.0),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(6.0),
+                  side: BorderSide(
+                    color: Theme.of(context).primaryColor,
+                    width: 0.5,
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(left: 48.0),
+                      child: Text(
+                        AppLocalizations.of(context)!.enableAdvertising,
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 48.0),
+                      child: Switch(
+                        value: state.isAdvertising,
+                        onChanged: state.onAdvertisingSwitchChanged,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.only(left: 48.0),
-                    child: Text(
-                      AppLocalizations.of(context)!.enableAdvertising,
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 48.0),
-                    child: Switch(
-                      value: state.isAdvertising,
-                      onChanged: state.onAdvertisingSwitchChanged,
-                    ),
-                  ),
-                ],
-              ),
-            ),
             ListView.builder(
               itemCount: state.messages.length,
               shrinkWrap: true,

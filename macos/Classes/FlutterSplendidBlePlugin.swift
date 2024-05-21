@@ -271,6 +271,7 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
         case PeripheralMethod.stopAdvertising.rawValue:
             stopAdvertising()
             result(nil) // Indicate success
+            
         default:
             result(FlutterMethodNotImplemented)
         }
@@ -709,20 +710,42 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
     enum PeripheralServerError: Error {
         case invalidConfiguration
         case invalidServiceUuid
+        case invalidCharacteristicUuid
     }
     
     /// Creates a BLE peripheral server with specified configuration.
     /// - Parameter configurationMap: A map containing the server configuration details.
     /// - Throws: An error if the configuration is invalid or the server setup fails.
     func createPeripheralServer(with configurationMap: [String: Any]) throws {
+        // Get arguments sent from the Flutter side.
         guard let primaryServiceUuidStr = configurationMap["primaryServiceUuid"] as? String,
               let primaryServiceUuid = UUID(uuidString: primaryServiceUuidStr),
-              let serviceUuidsStr = configurationMap["serviceUuids"] as? [String] else {
+              let serviceUuidsStr = configurationMap["serviceUuids"] as? [String],
+              let characteristicsArray = configurationMap["characteristics"] as? [[String: Any]] else {
             throw PeripheralServerError.invalidConfiguration
         }
         
         // Create a primary service with the provided UUID.
         let primaryService = CBMutableService(type: CBUUID(nsuuid: primaryServiceUuid), primary: true)
+        
+        // Create and add characteristics to the primary service.
+        var primaryServiceCharacteristics = [CBMutableCharacteristic]()
+        for characteristicInfo in characteristicsArray {
+            guard let uuidStr = characteristicInfo["uuid"] as? String,
+                  let propertiesArray = characteristicInfo["properties"] as? [String],
+                  let permissionsArray = characteristicInfo["permissions"] as? [String] else {
+                throw PeripheralServerError.invalidCharacteristicUuid
+            }
+            
+            let uuid = CBUUID(string: uuidStr)
+            
+            let properties = CBCharacteristicProperties(propertiesArray: propertiesArray)
+            let permissions = CBAttributePermissions(permissionsArray: permissionsArray)
+            
+            let characteristic = CBMutableCharacteristic(type: uuid, properties: properties, value: nil, permissions: permissions)
+            primaryServiceCharacteristics.append(characteristic)
+        }
+        primaryService.characteristics = primaryServiceCharacteristics
         
         // Create additional services as needed.
         var additionalServices = [CBMutableService]()
@@ -758,19 +781,19 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
               let serviceUuidsStr = configurationMap["serviceUuids"] as? [String] else {
             throw PeripheralServerError.invalidConfiguration
         }
-
+        
         // Prepare the advertisement data
         var advertisementData = [String: Any]()
         if let localName = localName {
             advertisementData[CBAdvertisementDataLocalNameKey] = localName
         }
-
+        
         // Convert service UUID strings to CBUUIDs
         let serviceUUIDs = serviceUuidsStr.compactMap { UUID(uuidString: $0) }.map { CBUUID(nsuuid: $0) }
         if !serviceUUIDs.isEmpty {
             advertisementData[CBAdvertisementDataServiceUUIDsKey] = serviceUUIDs
         }
-
+        
         // Start advertising
         peripheralManager?.startAdvertising(advertisementData)
     }
@@ -793,6 +816,25 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
         
         // Stop advertising
         peripheralManager.stopAdvertising()
+    }
+    
+    /// Handles the event when a central device subscribes to a characteristic of the peripheral.
+    ///
+    /// This method is called when a central device (client) subscribes to a characteristic of the peripheral device. Subscribing to a characteristic is an indication that the central device has established a connection and is interested in receiving notifications or indications from this characteristic.
+    ///
+    /// When this event occurs, the method gathers information about the connected central device, such as its identifier and name, and sends this information to the Flutter side via a method channel. This allows the Flutter application to be informed about new client connections and take appropriate actions.
+    ///
+    /// - Parameters:
+    ///   - peripheral: The `CBPeripheralManager` instance that is managing the peripheral role.
+    ///   - central: The `CBCentral` instance representing the central device that has subscribed to the characteristic.
+    ///   - characteristic: The `CBCharacteristic` instance to which the central device has subscribed.
+    public func peripheralManager(_ peripheral: CBPeripheralManager, central: CBCentral, didSubscribeTo characteristic: CBCharacteristic) {
+        let deviceInfo: [String: Any] = [
+            "id": central.identifier.uuidString,
+            "name": "Unknown" // TODO get the connected device name
+        ]
+        
+        peripheralChannel?.invokeMethod("clientConnected", arguments: deviceInfo)
     }
     
     // MARK: Utility Methods
@@ -838,5 +880,59 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
 extension Data {
     var hexString: String {
         return map { String(format: "%02hhx", $0) }.joined()
+    }
+}
+
+// Extensions to convert properties from arrays of strings to CBCharacteristicProperties
+extension CBCharacteristicProperties {
+    init(propertiesArray: [String]) {
+        self.init()
+        for property in propertiesArray {
+            switch property {
+            case "broadcast":
+                self.insert(.broadcast)
+            case "read":
+                self.insert(.read)
+            case "writeWithoutResponse":
+                self.insert(.writeWithoutResponse)
+            case "write":
+                self.insert(.write)
+            case "notify":
+                self.insert(.notify)
+            case "indicate":
+                self.insert(.indicate)
+            case "authenticatedSignedWrites":
+                self.insert(.authenticatedSignedWrites)
+            case "extendedProperties":
+                self.insert(.extendedProperties)
+            case "notifyEncryptionRequired":
+                self.insert(.notifyEncryptionRequired)
+            case "indicateEncryptionRequired":
+                self.insert(.indicateEncryptionRequired)
+            default:
+                break
+            }
+        }
+    }
+}
+
+// Extensions to convert permissions from arrays of strings to CBAttributePermissions
+extension CBAttributePermissions {
+    init(permissionsArray: [String]) {
+        self.init()
+        for permission in permissionsArray {
+            switch permission {
+            case "readable":
+                self.insert(.readable)
+            case "writeable":
+                self.insert(.writeable)
+            case "readEncryptionRequired":
+                self.insert(.readEncryptionRequired)
+            case "writeEncryptionRequired":
+                self.insert(.writeEncryptionRequired)
+            default:
+                break
+            }
+        }
     }
 }

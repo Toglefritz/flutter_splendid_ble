@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_splendid_ble/central/models/ble_characteristic.dart';
+import 'package:flutter_splendid_ble/central/models/ble_characteristic_permission.dart';
+import 'package:flutter_splendid_ble/central/models/ble_characteristic_property.dart';
 import 'package:flutter_splendid_ble/peripheral/models/ble_server.dart';
 import 'package:flutter_splendid_ble/peripheral/models/ble_server_configuration.dart';
 import 'package:flutter_splendid_ble_example/screens/peripheral/server_interaction/server_interaction_route.dart';
@@ -19,7 +22,7 @@ class ServerConfigurationController extends State<ServerConfigurationRoute> {
   ///
   /// The controller is initialized with a default value so that, if the user does not wish to customize the value,
   /// they are able to proceed with the server's creation more quickly.
-  TextEditingController serverNameController = TextEditingController(text: 'Splendid_BLE');
+  TextEditingController serverNameController = TextEditingController(text: 'Splendid-BLE');
 
   /// A controller for the [TextField] used to supply the primary service UUID for the BLE peripheral server.
   ///
@@ -61,15 +64,42 @@ class ServerConfigurationController extends State<ServerConfigurationRoute> {
 
   /// Handles taps on the "create" button, which starts the process of creating a BLE peripheral server based on the
   /// configuration parameters provided in the table for this route.
+  ///
+  /// In a more typical use case, the server configuration would likely not be based on user input, but rather on
+  /// predefined values or values retrieved from a server or other source. But, for the purposes of this example, the
+  /// user is allowed to customize the server configuration.
   Future<void> onCreateTap() async {
     setState(() {
       _creatingServer = true;
     });
 
+    // Build a list of BleCharacteristic objects from the list of characteristic UUIDs provided in the text field.
+    // These characteristics will all use the same set of properties and permissions, but these can be customized
+    // depending on the use case.
+    List<BleCharacteristic> characteristics = characteristicsController.text
+        .split(',')
+        .map(
+          (uuid) => BleCharacteristic(
+            uuid: uuid,
+            address: '',
+            properties: [
+              BleCharacteristicProperty.read,
+              BleCharacteristicProperty.write,
+              BleCharacteristicProperty.notify
+            ],
+            permissions: [
+              BleCharacteristicPermission.read,
+              BleCharacteristicPermission.write,
+            ],
+          ),
+        )
+        .toList();
+
     // Create a BleServerConfiguration object from the information provided in the fields in the table for this view.
     BleServerConfiguration configuration = BleServerConfiguration(
       localName: serverNameController.text,
       primaryServiceUuid: primaryServiceController.text,
+      characteristics: characteristics,
     );
 
     // Create the BLE peripheral server

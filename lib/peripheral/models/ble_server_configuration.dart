@@ -1,3 +1,5 @@
+import '../../central/models/ble_characteristic.dart';
+
 /// Represents the configuration for a Bluetooth Low Energy (BLE) server.
 ///
 /// This class encapsulates all the necessary parameters required to set up a BLE server on a device and to advertise
@@ -41,6 +43,24 @@ class BleServerConfiguration {
   /// peripheral server.
   final List<String>? serviceUuids;
 
+  /// The list of characteristics that the BLE server will offer.
+  ///
+  /// In the context of Bluetooth Low Energy (BLE) communication, characteristics are defined attributes that represent
+  /// various pieces of information and functionalities that a service can provide. Each characteristic contains a value,
+  /// and may also include a set of descriptors describing the characteristic's value.
+  ///
+  /// Characteristics are the smallest discrete elements of a GATT (Generic Attribute Profile) service, which is used in
+  /// BLE to structure the data offered by a peripheral device. They can be used to transfer data between a BLE peripheral
+  /// and a central device.
+  ///
+  /// For example, if the BLE server is designed to measure temperature, a characteristic could represent the temperature
+  /// measurement value, and another could represent the unit of measurement.
+  ///
+  /// This list of [BleCharacteristic] objects represents the characteristics that the BLE server will offer as part of
+  /// its services. Each [BleCharacteristic] object encapsulates the UUID, properties, permissions, and value of a
+  /// characteristic.
+  final List<BleCharacteristic> characteristics;
+
   // TODO add other fields
 
   /// Constructs a new instance of [BleServerConfiguration].
@@ -55,6 +75,7 @@ class BleServerConfiguration {
     required this.localName,
     required this.primaryServiceUuid,
     List<String>? serviceUuids,
+    required this.characteristics,
   }) : this.serviceUuids = serviceUuids ?? [primaryServiceUuid] {
     // If serviceUuids is not null and does not contain primaryServiceUuid, insert it at the first position
     if (this.serviceUuids != null && !this.serviceUuids!.contains(primaryServiceUuid)) {
@@ -69,6 +90,7 @@ class BleServerConfiguration {
       'localName': localName,
       'primaryServiceUuid': primaryServiceUuid,
       'serviceUuids': serviceUuids ?? [],
+      'characteristics': characteristics.map((c) => c.toMap()).toList(),
       // Map other fields as well
     };
   }
