@@ -3,7 +3,7 @@ import FlutterMacOS
 import CoreBluetooth
 
 /// `FlutterSplendidBlePlugin` serves as the central bridge between Flutter code in a Dart environment and the native Bluetooth capabilities on MacOS devices.
-/// It adheres to the `FlutterPlugin` protocol to interface with Flutter, and `CBCentralManagerDelegate` to interact with the MacOS Bluetooth stack.
+/// It adheres to the `FlutterPlugin` protocol to interface with Flutter, and `CBCentralManagerDelegate` to interact with the macOS Bluetooth stack.
 ///
 /// The design ensures that there is a single instance of `CBCentralManager` to maintain the state of the Bluetooth adapter across the entire application.
 /// It's crucial to have only one `CBCentralManager` instance in order to manage and centralize the state and delegate callbacks for BLE operations consistently.
@@ -14,20 +14,11 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
     /// A `FlutterMethodChannel` used for communication with the Dart side of the app for functionality in which the app acts as a BLE central device.
     private var centralChannel: FlutterMethodChannel!
     
-    /// A `FlutterMethodChannel` used for communication with the Dart side of the app for functionality in which the app acts as a BLE peripheral device.
-    private var peripheralChannel: FlutterMethodChannel!
-    
     /// The central manager for managing BLE operations involving the app acting as a BLE central device.
     ///
     /// `centralManager` is the core of BLE central functionality, acting as the central point for managing BLE operations. It must remain a single instance to manage
     /// the state and delegate callbacks for all BLE operations consistently.
     private var centralManager: CBCentralManager!
-    
-    /// The peripheral manager for managing BLE operations involving the app acting as a BLE perpipheral device.
-    ///
-    /// `peripheralManager` is the core of BLE peripheral functionality, acting as the central point for managing BLE operations. It must remain a single instance to manage
-    /// the state and delegate callbacks for all BLE operations consistently.
-    private var peripheralManager: CBPeripheralManager?
     
     /// A dictionary to store peripheral devices.
     ///
@@ -46,22 +37,15 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
         super.init()
         // Initialize the central manager.
         centralManager = CBCentralManager(delegate: self, queue: nil)
-        
-        // Initialize the peripheral manager.
-        peripheralManager = CBPeripheralManager(delegate: self, queue: nil)
-        
     }
     
     /// Registers the plugin with the given registrar by creating a method channel and setting the current instance as its delegate.
     /// - Parameter registrar: The `FlutterPluginRegistrar` that handles plugin registration.
     public static func register(with registrar: FlutterPluginRegistrar) {
         let centralChannel = FlutterMethodChannel(name: "flutter_splendid_ble_central", binaryMessenger: registrar.messenger)
-        let peripheralChannel = FlutterMethodChannel(name: "flutter_splendid_ble_peripheral", binaryMessenger: registrar.messenger)
         let instance = FlutterSplendidBlePlugin()
         instance.centralChannel = centralChannel
-        instance.peripheralChannel = peripheralChannel
         registrar.addMethodCallDelegate(instance, channel: centralChannel)
-        registrar.addMethodCallDelegate(instance, channel: peripheralChannel)
     }
     
     /// This function is the entry point for handling Method Channel calls in the Flutter plugin. It routes incoming calls to the appropriate
@@ -72,8 +56,6 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
             handleSharedMethod(call, result)
         } else if isCentralMethod(call.method) {
             handleCentralMethod(call, result)
-        } else if isPeripheralMethod(call.method) {
-            handlePeripheralMethod(call, result)
         } else {
             // The provided method did not match any of those defined in MethodChannelMethods.swift
             result(FlutterMethodNotImplemented)
@@ -90,12 +72,6 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
     /// device methods and false otherwise. This helps in routing the call to the correct handler.
     private func isCentralMethod(_ methodName: String) -> Bool {
         return CentralMethod.allCases.map { $0.rawValue }.contains(methodName)
-    }
-    
-    /// A utility function to check if an incoming Method Channel call is related to peripheral device functionality. It returns true for peripheral
-    /// device methods and false otherwise. This helps in routing the call to the correct handler.
-    private func isPeripheralMethod(_ methodName: String) -> Bool {
-        return PeripheralMethod.allCases.map { $0.rawValue }.contains(methodName)
     }
     
     /// Handles all Method Channel calls related to functionalityh that is shared beteen the BLE central and BLE peripheral device roles. This includes
@@ -124,7 +100,6 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
             result(FlutterMethodNotImplemented)
         }
     }
-    
     
     /// Handles all Method Channel calls related to the BLE central device functionality. This includes operations like scanning for BLE
     /// devices, connecting to them, and managing BLE interactions as a central device.
@@ -227,31 +202,6 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
         case CentralMethod.unsubscribeFromCharacteristic.rawValue:
             unsubscribeFromCharacteristic(call: call, result: result)
             
-        default:
-            result(FlutterMethodNotImplemented)
-        }
-    }
-    
-    /// Manages Method Channel calls specific to BLE peripheral device operations. It handles tasks where the host device acts as a
-    /// BLE peripheral, such as advertising BLE services and managing connections from central devices.
-    private func handlePeripheralMethod(_ call: FlutterMethodCall, _ result: @escaping FlutterResult) {
-        switch call.method {
-        case PeripheralMethod.createPeripheralServer.rawValue:
-            if let configurationMap = call.arguments as? [String: Any] {
-                do {
-                    try createPeripheralServer(with: configurationMap)
-                    result(nil) // Indicate success
-                } catch let error as NSError {
-                    // Handle the thrown error and return a FlutterError
-                    result(FlutterError(code: "SERVER_CREATION_FAILED",
-                                        message: "Failed to create peripheral server: \(error.localizedDescription)",
-                                        details: error))
-                }
-            } else {
-                result(FlutterError(code: "INVALID_ARGUMENTS",
-                                    message: "Invalid or missing configuration for peripheral server",
-                                    details: nil))
-            }
         default:
             result(FlutterMethodNotImplemented)
         }
@@ -498,7 +448,6 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
         let status: String = requestBluetoothPermissions().rawValue
         // Invoke method on Flutter side
         centralChannel.invokeMethod("permissionStatusUpdated", arguments: status)
-        peripheralChannel.invokeMethod("permissionStatusUpdated", arguments: status)
     }
     
     // MARK: Adapter Status Helper Methods
@@ -555,10 +504,10 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
         let status = self.checkBluetoothAdapterStatus().rawValue
         // Invoke method on Flutter side
         centralChannel.invokeMethod("adapterStateUpdated", arguments: status)
-        peripheralChannel.invokeMethod("adapterStateUpdated", arguments: status)
     }
     
     // MARK: Device Interface Helper Methods
+    
     /// The methods in this section collectively serve as an interface for managing connections and interactions with BLE devices and communicating
     /// with Bluetooth devices.
     ///
@@ -682,46 +631,6 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
                                 message: "Failed to unsubscribe from characteristic: Characteristic not found.",
                                 details: nil))
         }
-    }
-    
-    // MARK: - CBPeripheralManager Methods
-    
-    /// An enumeration of errors that can result from attempts to create a BLE peripheral service via the `createPeripheralServer` function.
-    enum PeripheralServerError: Error {
-        case invalidConfiguration
-        case invalidServiceUuid
-    }
-    
-    /// Creates a BLE peripheral server with specified configuration.
-    /// - Parameter configurationMap: A map containing the server configuration details.
-    /// - Throws: An error if the configuration is invalid or the server setup fails.
-    func createPeripheralServer(with configurationMap: [String: Any]) throws {
-        guard let serverName = configurationMap["serverName"] as? String,
-              let primaryServiceUuidStr = configurationMap["primaryServiceUuid"] as? String,
-              let primaryServiceUuid = UUID(uuidString: primaryServiceUuidStr),
-              let serviceUuidsStr = configurationMap["serviceUuids"] as? [String] else {
-            throw PeripheralServerError.invalidConfiguration
-        }
-        
-        // Create a primary service with the provided UUID.
-        let primaryService = CBMutableService(type: CBUUID(nsuuid: primaryServiceUuid), primary: true)
-        
-        // Create additional services as needed.
-        var additionalServices = [CBMutableService]()
-        for uuidStr in serviceUuidsStr {
-            guard let uuid = UUID(uuidString: uuidStr) else {
-                throw PeripheralServerError.invalidServiceUuid
-            }
-            let service = CBMutableService(type: CBUUID(nsuuid: uuid), primary: false)
-            additionalServices.append(service)
-        }
-        
-        // Add services to the peripheral manager.
-        peripheralManager!.add(primaryService)
-        additionalServices.forEach { peripheralManager!.add($0) }
-        
-        // Configure additional server properties like local name, if needed.
-        // Note: `serverName` can be used for advertising data configuration.
     }
     
     // MARK: Utility Methods

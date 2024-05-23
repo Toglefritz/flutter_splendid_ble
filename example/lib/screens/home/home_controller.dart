@@ -10,7 +10,6 @@ import 'package:flutter_splendid_ble/shared/models/bluetooth_status.dart';
 
 import '../central/scan/scan_route.dart';
 import '../central/scan_configuration/scan_configuration_route.dart';
-import '../peripheral/server_configuration/server_configuration_route.dart';
 import 'home_route.dart';
 import 'home_view.dart';
 
@@ -160,25 +159,6 @@ class HomeController extends State<HomeRoute> {
         context,
         MaterialPageRoute<void>(
           builder: (BuildContext context) => const ScanRoute(),
-        ),
-      );
-    } else if (_permissionsGranted == false) {
-      _showPermissionsErrorSnackBar();
-    }
-  }
-
-  /// Handles taps on the "create server" button.
-  ///
-  /// If Bluetooth scanning permissions have been granted or if the app is running on an iOS device (in which case
-  /// the boolean indicating if permissions have been granted is true by default), navigate to the
-  /// [ServerConfigurationRoute]. Otherwise, show a [SnackBar] to indicate that permissions have not been granted yet.
-  void onCreateServerTap() {
-    if (_permissionsGranted == true &&
-        _bluetoothStatus == BluetoothStatus.enabled) {
-      Navigator.pushReplacement<void, void>(
-        context,
-        MaterialPageRoute<void>(
-          builder: (BuildContext context) => const ServerConfigurationRoute(),
         ),
       );
     } else if (_permissionsGranted == false) {
