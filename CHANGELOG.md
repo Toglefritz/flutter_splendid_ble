@@ -75,8 +75,13 @@ All notable changes to the `flutter_splendid_ble` plugin will be documented in t
 - Updated dependencies
 - Updated documentation
 - Updated formatting to meet Dart standards
-- 
+
 ## [0.8.0] 2023/01/15
 
 - Clear scan results when restarting BLE scan
 - Updated documentation for example app
+
+## [0.9.0] 2024/05/23
+
+- Updated Bluetooth permissions handling process
+- Updated documentation

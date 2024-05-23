@@ -21,11 +21,9 @@ dependencies:
   # Provides localized string values
   flutter_localizations:
     sdk: flutter
-  intl: ^0.18.1
+  intl: ^0.19.0
   # Provides a cross-platform (iOS, Android) API to request and check permissions
   permission_handler: ^11.2.0
-  # Used to generate random UUIDs
-  uuid: ^4.3.3
 
 dev_dependencies:
   integration_test:

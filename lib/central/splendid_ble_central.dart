@@ -18,6 +18,12 @@ import 'models/scan_settings.dart';
 /// The class primarily uses asynchronous patterns like [Future] and [Stream] to provide real-time updates and
 /// responses to Bluetooth operations. The methods in this class delegate the actual operations to
 /// `FlutterSplendidBlePlatform.instance`, ensuring platform-agnostic behavior.
+
+/// This type is an alias for [SplendidBleCentral] and is used to maintain compatibility with the previous
+/// version of the plugin. It is recommended to use [SplendidBleCentral] instead because, when peripheral mode is
+/// eventually introduced, the use of [SplendidBleCentral] will be more clear.
+typedef SplendidBle = SplendidBleCentral;
+
 class SplendidBleCentral {
   /// Asks the platform to check the current status of the Bluetooth adapter.
   ///
