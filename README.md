@@ -4,19 +4,14 @@
 <image src="https://github.com/Toglefritz/flutter_splendid_ble/blob/main/assets/flutter_splendid_ble_logo.png?raw=true" alt="flutter_splendid_ble plugin logo" width="200"></image></p>
 
 The Flutter Splendid BLE plugin offers a robust suite of functionalities for Bluetooth Low Energy (
-BLE) interactions in Flutter applications. It equips apps with the ability to function both as a
-central and a peripheral device. This includes scanning for and connecting to BLE peripherals,
-managing bonding processes, broadcasting services, accepting connections, and handling data
-communication with other BLE devices, providing a comprehensive tool for versatile BLE operations.
+BLE) interactions in Flutter applications. It allows Flutter apps to use Bluetooth for interacting
+with peripheral devices. This includes scanning for and connecting to BLE peripherals, managing
+bonding processes, writing and reading values, subscribing to BLE characteristics, and more. This
+plugin provides a comprehensive tool for versatile BLE operations.
 
-## Dual Role Functionality
+### Features
 
-The Flutter Splendid BLE plugin is organized into two distinct modules, catering to different roles
-in Bluetooth Low Energy (BLE) communication:
-
-### Central Module
-
-This module allows a Flutter app to act as a BLE central device. It is designed for scenarios where
+This plugin allows a Flutter app to act as a BLE central device. It is designed for scenarios where
 the app scans for, connects to, and interacts with BLE peripheral devices. Key functionalities
 include:
 
@@ -31,28 +26,6 @@ include:
 - A fitness app connecting to BLE heart rate monitors.
 - A navigation app that connects to BLE cycling computers or wearables for real-time data tracking
   and guidance.
-
-### Peripheral Module
-
-Conversely, this module allows a Flutter app to behave as a BLE peripheral. This is ideal for
-use-cases where the app advertises BLE services, accepts connections, and handles data transactions.
-Features include:
-
-- Advertising BLE services to nearby central devices.
-- Accepting and managing incoming BLE connections.
-- Handling read and write requests from connected central devices.
-- Sending notifications to connected devices.
-
-**Example Use-Cases:**
-
-- A mobile game that uses the phone as a BLE-enabled game controller.
-- A conference app turning a tablet into an information kiosk, broadcasting BLE signals for attendee
-  engagement and navigation.
-- An app that turns the device into a BLE beacon for location tracking.
-
-Both modules are seamlessly integrated into the Flutter Splendid BLE plugin, ensuring a
-comprehensive and versatile BLE solution for Flutter developers. This plugin is designed to allow
-your app to control other BLE devices or act as one itself, or both.
 
 ## Main Goals
 
@@ -70,8 +43,6 @@ your app to control other BLE devices or act as one itself, or both.
 
 ## Features
 
-### Central Mode
-
 - Scan for available BLE devices.
 - Connect to a BLE device.
 - Manage the bonding process.
@@ -82,24 +53,13 @@ your app to control other BLE devices or act as one itself, or both.
 - Monitor connection status and other state changes.
 - Have a really good time.
 
-### Peripheral Mode
-
-- Advertise as a BLE peripheral.
-- Manage connection requests from central devices.
-- Offer BLE services and characteristics.
-- Send notifications or indications to connected central devices.
-- Handle read and write requests on BLE characteristics.
-- Control the visibility and broadcast power.
-- Manage bonding with central devices.
-- Monitor and handle peripheral connection states and errors.
-
 ## Installation
 
 First, add the following line to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  flutter_splendid_ble: ^0.8.0
+  flutter_splendid_ble: ^0.9.0
 ```
 
 Then run:
@@ -119,38 +79,26 @@ import 'package:flutter_splendid_ble/splendid_ble.dart';
 ### Initializing the plugin:
 
 All Bluetooth functionality provided by this plugin goes through either the `SplendidBleCentral`
-or `SplendidBlePeripheral` classes, depending upon whether your Flutter app is using functionality
-as a BLE central device or BLE peripheral device. So, wherever you need to conduct Bluetooth
-operations, you will need an instance of one of these two classes, depending on what operations
-you are using. Check the list of features above for help determining which class to use.
-
-Note that some functionality is shared by both the `SplendidBleCentral` and `SplendidBlePeripheral`
-classes. Namely operations related to Bluetooth permissions and checking on the status of the
-Bluetooth adapter of the host device are shared between both classes as these functions are the
-same regardless of the role your app is playing in the BLE communication architecture. This
-shared functionality can be called from either the `SplendidBleCentral` or `SplendidBlePeripheral`
-class.
+class (which is also aliased as `SplendidBle` for backwards compatibility). So, wherever you need
+to conduct Bluetooth operations, you will need an instance of this class.
 
 ```dart
 import 'package:flutter_splendid_ble/splendid_ble_plugin.dart';
 
 final SplendidBleCentral bleCentral = SplendidBleCentral();
-final SplendidBlePeripheral blePeripheral = SplendidBlePeripheral();
 ```
 
-You could simply instantiate the `SplendidBleCentral` or `SplendidBlePeripheral` classes in each
-Dart class where Bluetooth functionality is needed or, depending upon your needs and the
-architecture of your application, you could create a centralized service where these instances are
-created once and referenced from everywhere else in your codebase. Some of the examples below show
-a service class being used to wrap functionality provided by this plugin.
+You could simply instantiate the `SplendidBleCentral` classe in each Dart class where Bluetooth
+functionality is needed or, depending upon your needs and the architecture of your application, you
+could create a centralized service where these instances are created once and referenced from
+everywhere else in your codebase. Some of the examples below show a service class being used to wrap
+functionality provided by this plugin.
 
 ### Checking the Bluetooth adapter status:
 
-Before you can perform any Bluetooth functionality, you should ensure that the device's Bluetooth
+Before you can use any Bluetooth functionality, you should ensure that the device's Bluetooth
 adapter is ready. This step is crucial because attempting to use Bluetooth features when the adapter
-is not available or turned off will lead to failures and a poor user experience. This is also an
-example of functionality that is shared between the `SplendidBleCentral` and `SplendidBlePeripheral`
-classes so either can be used to check on the adapter status.
+is not available or turned off will lead to failures and a poor user experience.
 
 In the example below, the method, `_checkAdapterStatus`, is responsible for setting up a listener
 for the state of the host device's Bluetooth adapter. It uses a stream (`_bluetoothStatusStream`)
@@ -165,7 +113,7 @@ includes three possible states:
 
 Here's how you might perform this check:
 
-1. Subscribe to a stream provided by the Flutter BLE plugin that monitors the Bluetooth adapter's
+1. Subscribe to a stream provided by the Splendid BLE plugin that monitors the Bluetooth adapter's
    status.
 2. When the status is emitted, update your app's state with the new Bluetooth status.
 3. Based on the received status, you can control the flow of your app — e.g., prompt the user to
@@ -185,8 +133,7 @@ face of changing conditions.
 import 'dart:async';
 
 class BluetoothManager {
-  /// [SplendidBleCentral] instance providing BLE functionality. This could also be a 
-  /// [SplendidBlePeripheral] instance as discussed above.
+  /// [SplendidBleCentral] instance providing BLE functionality. 
   final SplendidBleCentral _ble = SplendidBleCentral();
 
   /// A [StreamSubscription] used to listen for changes in the state of the Bluetooth adapter.
@@ -217,10 +164,10 @@ class BluetoothManager {
 
 **Notes and Best Practices**
 
-- Remember to dispose of any stream subscriptions when the scanning is no longer needed to avoid
-  memory leaks and unnecessary processing.
+- Remember to dispose of any stream subscriptions when they are no longer needed to avoid memory
+  leaks and unnecessary processing.
 
-### Starting a Bluetooth scan for detecting nearby BLE devices:
+### Starting a Bluetooth Scan for Detecting Nearby BLE Devices:
 
 Scanning for nearby Bluetooth Low Energy (BLE) devices is a fundamental feature for BLE-enabled
 applications. It's important to conduct these scans responsibly to balance the need for device
@@ -235,7 +182,7 @@ for Bluetooth usage as required by the platform (e.g., location permissions for 
 
 **Starting the Scan**
 In the example below, the `_startBluetoothScan` method is responsible for initiating a scan for BLE
-devices. It uses the Flutter BLE plugin's scanning method, which typically takes filters and
+devices. It uses the Splendid BLE plugin's scanning method, which typically takes filters and
 settings as parameters to customize the scan behavior.
 
 - *filters*: This parameter allows you to specify the criteria for devices to be discovered. For
@@ -254,7 +201,7 @@ method is then called with this device information, allowing you to handle new d
 import 'dart:async';
 
 class BLEScanner {
-  /// SplendidBleCentral instance as discussed above.
+  /// [SplendidBleCentral] instance as discussed above.
   final SplendidBleCentral _ble = SplendidBleCentral();
 
   /// A [StreamSubscription] used to listen for newly discovered BLE devices.
@@ -316,7 +263,7 @@ Additionally, ensure the user has granted any permissions necessary for connecti
 device.
 
 **Initiating a Connection**
-To connect to a BLE device, you will use the `connect` method provided by the Flutter BLE plugin.
+To connect to a BLE device, you will use the `connect` method provided by the Splendid BLE plugin.
 This method requires the address of the device, which is usually obtained from the discovery
 process.
 
@@ -405,7 +352,7 @@ functionalities available.
 **Initiating Service Discovery**
 Service discovery is initiated once a connection with a BLE device has been successfully
 established. Service discovery is performed by calling the `discoverServices` method from the
-Flutter BLE plugin.
+Splendid BLE plugin.
 
 **Example**
 
@@ -661,7 +608,7 @@ Future<void> writeStringToCharacteristic(String value, BleCharacteristic charact
 ### Reading Values from a BLE Characteristic:
 
 Communicating with BLE devices often entails reading data from a characteristic to obtain
-information or status updates from the peripheral. The Flutter BLE plugin offers a convenient
+information or status updates from the peripheral. The Splendid BLE plugin offers a convenient
 `readValue` method on the `BleCharacteristic` class for this purpose.
 
 When reading from a BLE characteristic, you receive the data as `BleCharacteristicValue`, which
@@ -728,7 +675,7 @@ Future<void> readCharacteristicValue(BleCharacteristic characteristic) async {
 ### Disconnecting from a BLE Peripheral:
 
 Properly disconnecting from a BLE device is crucial for managing resources and ensuring that the
-application behaves predictably. The Flutter BLE plugin simplifies this process by providing a
+application behaves predictably. The Splendid BLE plugin simplifies this process by providing a
 disconnect method which can be called with the device's address.
 
 **Disconnect Process**
@@ -799,7 +746,7 @@ Before you begin, make sure you have the following installed:
   running `dart pub global activate dhttpd`.
 
 **Generating Documentation**
-To generate the documentation for the Flutter BLE plugin, run the following command from the root of
+To generate the documentation for the Splendid BLE plugin, run the following command from the root of
 the plugin's directory:
 
 ```zsh
@@ -835,7 +782,7 @@ the `--port` argument if needed.
 Once `dhttpd` is running, open your web browser and navigate to http://localhost:8080. This will
 open the locally hosted version of the documentation.
 
-You'll be able to browse all the classes, methods, and properties of the Flutter BLE plugin, along
+You'll be able to browse all the classes, methods, and properties of the Splendid BLE plugin, along
 with detailed comments and explanations as provided in the source code.
 
 **Stopping the Server**
