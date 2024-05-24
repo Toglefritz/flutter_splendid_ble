@@ -85,3 +85,7 @@ All notable changes to the `flutter_splendid_ble` plugin will be documented in t
 
 - Updated Bluetooth permissions handling process
 - Updated documentation
+
+## [0.10.0] 2024/05/24
+
+- Re-formatted project according to Dart standards
