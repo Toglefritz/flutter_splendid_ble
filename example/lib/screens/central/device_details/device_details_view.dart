@@ -50,7 +50,8 @@ class DeviceDetailsView extends StatelessWidget {
                       bottomRight:
                           Radius.circular(state.isConnected ? 12.0 : 0.0),
                     ),
-                    color: Theme.of(context).primaryColorLight.withOpacity(0.15),
+                    color:
+                        Theme.of(context).primaryColorLight.withOpacity(0.15),
                     border: Border.all(
                       color: Theme.of(context).primaryColorLight,
                       width: 2.0,
@@ -86,7 +87,9 @@ class DeviceDetailsView extends StatelessWidget {
                   child: TableButton(
                     onTap: state.onDiscoverServicesTap,
                     side: ButtonSide.top,
-                    text: AppLocalizations.of(context)!.discoverServices.toUpperCase(),
+                    text: AppLocalizations.of(context)!
+                        .discoverServices
+                        .toUpperCase(),
                     loading: state.discoveringServices,
                   ),
                 ),

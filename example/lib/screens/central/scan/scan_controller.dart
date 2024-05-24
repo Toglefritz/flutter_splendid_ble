@@ -46,7 +46,9 @@ class ScanController extends State<ScanRoute> {
   /// allows manufacturers of Bluetooth devices to ensure that only their devices are returned by the Bluetooth scan,
   /// which is obviously useful for building a companion mobile app for these devices.
   void _startBluetoothScan() {
-    _scanStream = _ble.startScan(filters: widget.filters, settings: widget.settings).listen(
+    _scanStream = _ble
+        .startScan(filters: widget.filters, settings: widget.settings)
+        .listen(
       (device) => _onDeviceDetected(device),
       onError: (error) {
         // Handle the error here
@@ -82,7 +84,9 @@ class ScanController extends State<ScanRoute> {
     debugPrint('Discovered BLE device: ${device.name}');
 
     // Add the newly discovered device to the list only if it not already in the list
-    if (discoveredDevices.where((discoveredDevice) => discoveredDevice.address == device.address).isEmpty) {
+    if (discoveredDevices
+        .where((discoveredDevice) => discoveredDevice.address == device.address)
+        .isEmpty) {
       setState(() {
         discoveredDevices.add(device);
       });

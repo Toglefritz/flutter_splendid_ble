@@ -6,8 +6,7 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   const MethodChannel channel = MethodChannel('flutter_splendid_ble_central');
-  final CentralMethodChannel methodChannelFlutterBle =
-      CentralMethodChannel();
+  final CentralMethodChannel methodChannelFlutterBle = CentralMethodChannel();
 
   setUp(() {
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger

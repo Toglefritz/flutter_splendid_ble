@@ -21,7 +21,9 @@ class ScanView extends StatelessWidget {
         actions: [
           IconButton(
             onPressed: state.onActionButtonPressed,
-            icon: Icon(state.scanInProgress ? Icons.stop_outlined : Icons.play_arrow_outlined),
+            icon: Icon(state.scanInProgress
+                ? Icons.stop_outlined
+                : Icons.play_arrow_outlined),
           ),
           IconButton(
             onPressed: state.onFiltersPressed,
@@ -56,7 +58,8 @@ class ScanView extends StatelessWidget {
                   (index) => state.discoveredDevices[index].name != null
                       ? ScanResultTile(
                           device: state.discoveredDevices[index],
-                          onTap: () => state.onResultTap(state.discoveredDevices[index]),
+                          onTap: () =>
+                              state.onResultTap(state.discoveredDevices[index]),
                         )
                       : const SizedBox.shrink(),
                 )

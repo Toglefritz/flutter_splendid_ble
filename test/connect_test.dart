@@ -9,8 +9,7 @@ void main() {
   const MethodChannel channel = MethodChannel('flutter_splendid_ble_central');
 
   // Initialize the class containing the `connect` method
-  final CentralMethodChannel methodChannelFlutterBle =
-      CentralMethodChannel();
+  final CentralMethodChannel methodChannelFlutterBle = CentralMethodChannel();
 
   setUp(() {
     // Set up a default method channel mock

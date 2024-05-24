@@ -21,8 +21,7 @@ void main() {
   });
 
   test('emitCurrentBluetoothStatus emits correct BluetoothStatus', () async {
-    final CentralMethodChannel methodChannelFlutterBle =
-        CentralMethodChannel();
+    final CentralMethodChannel methodChannelFlutterBle = CentralMethodChannel();
 
     // Create a list to hold emitted statuses
     final List<BluetoothStatus> emittedStatuses = <BluetoothStatus>[];

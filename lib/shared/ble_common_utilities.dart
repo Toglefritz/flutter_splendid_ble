@@ -21,10 +21,13 @@ class BleCommonUtilities {
   /// a way of improving the user experience. Checking on the state of the Bluetooth adapter allows the user to be
   /// notified and prompted for action if they attempt to use an applications for which Bluetooth plays a critical
   /// role while the Bluetooth capabilities of the host device are disabled.
-  static Future<BluetoothStatus> checkBluetoothAdapterStatus(MethodChannel channel) async {
-    final String statusString = await channel.invokeMethod('checkBluetoothAdapterStatus');
+  static Future<BluetoothStatus> checkBluetoothAdapterStatus(
+      MethodChannel channel) async {
+    final String statusString =
+        await channel.invokeMethod('checkBluetoothAdapterStatus');
 
-    return BluetoothStatus.values.firstWhere((e) => e.identifier == statusString);
+    return BluetoothStatus.values
+        .firstWhere((e) => e.identifier == statusString);
   }
 
   /// Emits the current Bluetooth adapter status to the Dart side.
@@ -40,8 +43,10 @@ class BleCommonUtilities {
   ///
   /// Returns a [Future] containing a [Stream] of [BluetoothStatus] values representing the current status
   /// of the Bluetooth adapter on the device.
-  static Stream<BluetoothStatus> emitCurrentBluetoothStatus(MethodChannel channel) {
-    final StreamController<BluetoothStatus> streamController = StreamController<BluetoothStatus>.broadcast();
+  static Stream<BluetoothStatus> emitCurrentBluetoothStatus(
+      MethodChannel channel) {
+    final StreamController<BluetoothStatus> streamController =
+        StreamController<BluetoothStatus>.broadcast();
 
     // Listen to the platform side for Bluetooth adapter status updates.
     channel.setMethodCallHandler((MethodCall call) async {
@@ -50,7 +55,7 @@ class BleCommonUtilities {
 
         // Convert the string status to its corresponding enum value
         final BluetoothStatus status = BluetoothStatus.values.firstWhere(
-              (e) => e.identifier == statusString,
+          (e) => e.identifier == statusString,
           orElse: () => BluetoothStatus.notAvailable,
         ); // Default to notAvailable if the string does not match any enum value
 
@@ -73,9 +78,12 @@ class BleCommonUtilities {
   /// * `BluetoothPermissionStatus.DENIED`: Permission is denied.
   ///
   /// Returns a [Future] containing the [BluetoothPermissionStatus] representing whether permission was granted or not.
-  static Future<BluetoothPermissionStatus> requestBluetoothPermissions(MethodChannel channel) async {
-    final String permissionStatusString = await channel.invokeMethod('requestBluetoothPermissions');
-    return BluetoothPermissionStatus.values.firstWhere((status) => status.identifier == permissionStatusString);
+  static Future<BluetoothPermissionStatus> requestBluetoothPermissions(
+      MethodChannel channel) async {
+    final String permissionStatusString =
+        await channel.invokeMethod('requestBluetoothPermissions');
+    return BluetoothPermissionStatus.values
+        .firstWhere((status) => status.identifier == permissionStatusString);
   }
 
   /// Emits the current Bluetooth permission status to the Dart side.
@@ -88,17 +96,19 @@ class BleCommonUtilities {
   /// * `BluetoothPermissionStatus.DENIED`: Indicates that Bluetooth permission is denied.
   ///
   /// Returns a [Stream] of [BluetoothPermissionStatus] values representing the current Bluetooth permission status on the device.
-  static Stream<BluetoothPermissionStatus> emitCurrentPermissionStatus(MethodChannel channel) {
+  static Stream<BluetoothPermissionStatus> emitCurrentPermissionStatus(
+      MethodChannel channel) {
     final StreamController<BluetoothPermissionStatus> streamController =
-    StreamController<BluetoothPermissionStatus>.broadcast();
+        StreamController<BluetoothPermissionStatus>.broadcast();
 
     channel.setMethodCallHandler((MethodCall call) async {
       if (call.method == 'permissionStatusUpdated') {
         final String permissionStatusString = call.arguments as String;
 
         // Convert the string status to its corresponding enum value
-        final BluetoothPermissionStatus status = BluetoothPermissionStatus.values.firstWhere(
-              (status) => status.identifier == permissionStatusString,
+        final BluetoothPermissionStatus status =
+            BluetoothPermissionStatus.values.firstWhere(
+          (status) => status.identifier == permissionStatusString,
         );
 
         streamController.add(status);

@@ -39,7 +39,6 @@ class SplendidBleCentral {
     return CentralPlatformInterface.instance.emitCurrentBluetoothStatus();
   }
 
-
   /// Asks the platform to request Bluetooth permissions from the user.
   ///
   /// Returns a [Future] containing the current [BluetoothPermissionStatus].
