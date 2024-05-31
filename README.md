@@ -59,7 +59,7 @@ First, add the following line to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  flutter_splendid_ble: ^0.9.0
+  flutter_splendid_ble: ^0.11.0
 ```
 
 Then run:
@@ -74,9 +74,142 @@ In the files in which you wish to use the plugin, import it by adding:
 import 'package:flutter_splendid_ble/splendid_ble.dart';
 ```
 
+## Prerequisites
+
+Before using the *flutter_splendid_ble* plugin in your Flutter project, you need to ensure that the
+necessary configurations are in place for the iOS/macOS and Android platforms, depending upon which
+platforms your Flutter app will be targeting. This section details the required prerequisites for
+each platform.
+
+### **iOS/macOS Prerequisites**:
+
+#### Info.plist Configuration
+
+To use Bluetooth functionality in your Flutter app on iOS and macOS, you need to add specific
+key/value pairs to your Info.plist files. These keys inform the system about your app’s usage of
+Bluetooth and the reasons for accessing it. Below are the required keys and their descriptions:
+
+1. NSBluetoothAlwaysUsageDescription (iOS only)
+
+- Description: A message that tells the user why your app needs access to Bluetooth.
+- Key: NSBluetoothAlwaysUsageDescription
+- Example:
+
+```xml
+
+<key>NSBluetoothAlwaysUsageDescription</key>
+<string>This app uses Bluetooth to connect to external
+devices.</string>
+```
+
+2. NSBluetoothPeripheralUsageDescription (iOS only)
+
+- Description: A message that tells the user why your app needs to act as a Bluetooth peripheral.
+- Key: NSBluetoothPeripheralUsageDescription
+- Example:
+
+```xml
+
+<key>NSBluetoothPeripheralUsageDescription</key>
+<string>This app uses Bluetooth to communicate with
+external peripherals.</string>
+```
+
+3. NSBluetoothAlwaysAndWhenInUseUsageDescription (macOS only)
+
+- Description: A message that informs the user why your app needs Bluetooth access both when the app
+  is in use and in the background.
+- Key: NSBluetoothAlwaysAndWhenInUseUsageDescription
+- Example:
+
+```xml
+
+<key>NSBluetoothAlwaysAndWhenInUseUsageDescription</key>
+<string>This app uses Bluetooth to connect
+to external devices at all times.</string>
+```
+
+#### Adding Capabilities
+
+Ensure that your project has the necessary capabilities enabled to use Bluetooth features:
+
+1. Background Modes (iOS only)
+    - Enable the Uses Bluetooth LE accessories and Acts as a Bluetooth LE accessory options in the
+      Background Modes section of your project's target capabilities.
+2. App Sandbox (macOS only)
+    - Enable the Bluetooth entitlement in the App Sandbox section of your project's target
+      capabilities.
+
+### **Android Prerequisites**:
+
+To use Bluetooth functionality in your Flutter app on Android, you need to declare specific
+permissions and features in your AndroidManifest.xml file. Additionally, you may need to request
+runtime permissions if targeting Android 6.0 (API level 23) or higher.
+
+#### AndroidManifest.xml Configuration
+
+To use Bluetooth functionality in your Flutter app on Android, you need to declare specific
+permissions and features in your AndroidManifest.xml file. Additionally, you may need to request
+runtime permissions if targeting Android 6.0 (API level 23) or higher.
+
+#### AndroidManifest.xml Configuration
+
+1. Permissions
+
+- BLUETOOTH
+
+```xml
+
+<uses-permission android:name="android.permission.BLUETOOTH" />
+```
+
+- BLUETOOTH_ADMIN
+
+```xml
+
+<uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
+```
+
+- ACCESS_FINE_LOCATION (Required for scanning Bluetooth devices)
+
+```xml
+
+<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+```
+
+- BLUETOOTH_SCAN (For Android 12 and above)
+
+```xml
+
+<uses-permission android:name="android.permission.BLUETOOTH_SCAN" />
+```
+
+- BLUETOOTH_CONNECT (For Android 12 and above)
+
+```xml
+
+<uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+```
+
+2. Features
+
+- Bluetooth
+
+```xml
+
+<uses-feature android:name="android.hardware.bluetooth" />
+```
+
+- Bluetooth LE
+
+```xml
+
+<uses-feature android:name="android.hardware.bluetooth_le" android:required="true" />
+```
+
 ## Usage
 
-### Initializing the plugin:
+### **Initializing the plugin**:
 
 All Bluetooth functionality provided by this plugin goes through either the `SplendidBleCentral`
 class (which is also aliased as `SplendidBle` for backwards compatibility). So, wherever you need
@@ -88,13 +221,76 @@ import 'package:flutter_splendid_ble/splendid_ble_plugin.dart';
 final SplendidBleCentral bleCentral = SplendidBleCentral();
 ```
 
-You could simply instantiate the `SplendidBleCentral` classe in each Dart class where Bluetooth
+You could simply instantiate the `SplendidBleCentral` class in each Dart class where Bluetooth
 functionality is needed or, depending upon your needs and the architecture of your application, you
 could create a centralized service where these instances are created once and referenced from
 everywhere else in your codebase. Some of the examples below show a service class being used to wrap
 functionality provided by this plugin.
 
-### Checking the Bluetooth adapter status:
+### **Requesting Bluetooth Permissions**:
+
+If targeting Android 6.0 (API level 23) or higher, you need to request the necessary Bluetooth
+permissions at runtime. If targeting iOS, Bluetooth permissions must always be requested. This is
+required before performing any Bluetooth related actions, including checking the state of the
+Bluetooth adapter (described below). Here is an example of how to request permissions in your
+Flutter app:
+
+**Example**
+
+```dart
+/// A [SplendidBleCentral] instance used to access BLE functionality.
+final SplendidBleCentral _ble = SplendidBleCentral();
+
+/// A [StreamSubscription] used to listen for changes in the state of the Bluetooth permissions 
+/// on the host platform.
+StreamSubscription<BluetoothPermissionStatus>? _bluetoothPermissionStream;
+
+/// The current status of the Bluetooth permissions on the host platform, represented by the
+/// [BluetoothPermissionStatus] enum.
+BluetoothPermissionStatus? _bluetoothPermissionStatus;
+
+/// Initializes Bluetooth permission status monitoring.
+///
+/// This method sets up a listener to monitor the current status of the Bluetooth permissions on the host platform.
+void _initBluetoothPermissionStatusMonitor() {
+  _bluetoothPermissionStream = _ble.emitCurrentPermissionStatus().listen(
+        (status) {
+      _bluetoothPermissionStatus = status;
+
+      // Perform actions based on the Bluetooth permission status.
+    },
+    onError: (error) {
+      // Handle any errors encountered while listening to permission status updates.
+    },
+  );
+
+// Request Bluetooth permissions. If they have already been granted, this method will do nothing.
+  _ble.requestBluetoothPermissions();
+}
+
+void dispose() {
+  // Cancel the Bluetooth permission stream.
+  _bluetoothPermissionStream?.cancel();
+
+  super.dispose();
+}
+```
+
+**Notes and Best Practices**
+
+- Always request Bluetooth permissions before attempting to use any Bluetooth functionality.
+- Depending upon the platform and operating system version, your app will only be allowed to request
+  permissions a limited number of times. Typically, the app can request permissions only two times
+  at maximum. If permissions are denied repeatedly, you may need to instruct the user to manually
+  navigate to their device settings to grant the necessary permissions.
+- Handle the different permission statuses (granted, denied, or unknown) to provide a good user
+  experience.
+- Ensure that the necessary permissions are declared in the AndroidManifest.xml file as described in
+  the prerequisites section.
+- Always dispose of any stream subscriptions when they are no longer needed to avoid memory leaks
+  and unnecessary processing.
+
+### **Checking the Bluetooth adapter status**:
 
 Before you can use any Bluetooth functionality, you should ensure that the device's Bluetooth
 adapter is ready. This step is crucial because attempting to use Bluetooth features when the adapter
@@ -132,33 +328,35 @@ face of changing conditions.
 ```dart
 import 'dart:async';
 
-class BluetoothManager {
-  /// [SplendidBleCentral] instance providing BLE functionality. 
-  final SplendidBleCentral _ble = SplendidBleCentral();
+/// [SplendidBleCentral] instance providing BLE functionality. 
+final SplendidBleCentral _ble = SplendidBleCentral();
 
-  /// A [StreamSubscription] used to listen for changes in the state of the Bluetooth adapter.
-  StreamSubscription<BluetoothStatus>? _bluetoothStatusStream;
+/// A [StreamSubscription] used to listen for changes in the state of the Bluetooth adapter.
+StreamSubscription<BluetoothStatus>? _bluetoothStatusStream;
 
-  /// Initializes Bluetooth status monitoring.
-  void initBluetoothStatusMonitor() {
-    _checkAdapterStatus();
-  }
+/// Initializes Bluetooth status monitoring.
+void initBluetoothStatusMonitor() {
+  _checkAdapterStatus();
+}
 
-  void _checkAdapterStatus() async {
-    _bluetoothStatusStream = _ble.emitCurrentBluetoothStatus().listen(
-            (status) {
-          // Update your UI or logic based on the Bluetooth status.
-        },
-        onError: (error) {
-          // Handle any errors encountered while listening to status updates.
-        }
-    );
-  }
+/// Initializes Bluetooth status monitoring.
+///
+/// This method sets up a listener to monitor the current status of the Bluetooth adapter. It is typically called
+/// during the initialization phase of the app or when Bluetooth monitoring is required.
+void _checkAdapterStatus() async {
+  _bluetoothStatusStream = _ble.emitCurrentBluetoothStatus().listen(
+          (status) {
+        // Update your UI or logic based on the Bluetooth status.
+      },
+      onError: (error) {
+        // Handle any errors encountered while listening to status updates.
+      }
+  );
+}
 
-  /// Dispose stream subscription when it's no longer needed to prevent memory leaks.
-  void dispose() {
-    _bluetoothStatusStream?.cancel();
-  }
+/// Dispose stream subscription when it's no longer needed to prevent memory leaks.
+void dispose() {
+  _bluetoothStatusStream?.cancel();
 }
 ```
 
@@ -167,7 +365,7 @@ class BluetoothManager {
 - Remember to dispose of any stream subscriptions when they are no longer needed to avoid memory
   leaks and unnecessary processing.
 
-### Starting a Bluetooth Scan for Detecting Nearby BLE Devices:
+### **Starting a Bluetooth Scan for Detecting Nearby BLE Devices**:
 
 Scanning for nearby Bluetooth Low Energy (BLE) devices is a fundamental feature for BLE-enabled
 applications. It's important to conduct these scans responsibly to balance the need for device
@@ -200,45 +398,43 @@ method is then called with this device information, allowing you to handle new d
 ```dart
 import 'dart:async';
 
-class BLEScanner {
-  /// [SplendidBleCentral] instance as discussed above.
-  final SplendidBleCentral _ble = SplendidBleCentral();
+/// [SplendidBleCentral] instance as discussed above.
+final SplendidBleCentral _ble = SplendidBleCentral();
 
-  /// A [StreamSubscription] used to listen for newly discovered BLE devices.
-  StreamSubscription<BluetoothDevice>? _scanStream;
+/// A [StreamSubscription] used to listen for newly discovered BLE devices.
+StreamSubscription<BluetoothDevice>? _scanStream;
 
-  /// Begins a scan for nearby BLE devices.
-  void _startBluetoothScan() {
-    // Assuming `widget.filters` and `widget.settings` are already defined and passed to the widget.
-    _scanStream = _ble
-        .startScan(filters: widget.filters, settings: widget.settings)
-        .listen((device) => _onDeviceDetected(device), onError: _handleScanError);
+/// Begins a scan for nearby BLE devices.
+void _startBluetoothScan() {
+// Assuming `filters` and `settings` are already defined and passed to the widget.
+  _scanStream = _ble
+      .startScan(filters: filters, settings: settings)
+      .listen((device) => _onDeviceDetected(device), onError: _handleScanError);
+}
+
+/// Called when a new device is detected by the Bluetooth scan.
+void _onDeviceDetected(BluetoothDevice device) {
+  // Handle the discovered device, e.g., by updating a list or attempting a connection.
+}
+
+/// Handles any errors that occur during the scan.
+void _handleScanError(Object error) {
+  // Handle scan error, possibly by stopping the scan, reporting the error, and updating the UI.
+}
+
+/// Stops the Bluetooth scan.
+Future<void> stopScan() async {
+  try {
+    await SplendidBleMethodChannel.stopScan();
+    // Handle successful scan stop if necessary.
+  } on BluetoothScanException catch (e) {
+    // Handle the exception, possibly by showing an error message to the user.
   }
+}
 
-  /// Called when a new device is detected by the Bluetooth scan.
-  void _onDeviceDetected(BluetoothDevice device) {
-    // Handle the discovered device, e.g., by updating a list or attempting a connection.
-  }
-
-  /// Handles any errors that occur during the scan.
-  void _handleScanError(Object error) {
-    // Handle scan error, possibly by stopping the scan, reporting the error, and updating the UI.
-  }
-
-  /// Stops the Bluetooth scan.
-  Future<void> stopScan() async {
-    try {
-      await SplendidBleMethodChannel.stopScan();
-      // Handle successful scan stop if necessary.
-    } on BluetoothScanException catch (e) {
-      // Handle the exception, possibly by showing an error message to the user.
-    }
-  }
-
-  /// Disposes of the stream subscription when it's no longer needed to prevent memory leaks.
-  void dispose() {
-    _scanStream?.cancel();
-  }
+/// Disposes of the stream subscription when it's no longer needed to prevent memory leaks.
+void dispose() {
+  _scanStream?.cancel();
 }
 ```
 
@@ -249,7 +445,7 @@ class BLEScanner {
 - Remember to dispose of any stream subscriptions when the scanning is no longer needed to avoid
   memory leaks and unnecessary processing.
 
-### Connecting to a Bluetooth Device:
+### **Connecting to a Bluetooth Device**:
 
 Establishing a connection with a Bluetooth Low Energy (BLE) device is a key step to enable
 communication for data transfer and device interaction. The process of connecting to a BLE device
@@ -292,36 +488,33 @@ due to the device being out of range, the device not being connectable, or other
 ```dart
 import 'dart:async';
 
-class BLEConnector {
-  /// SplendidBleCentral instance as discussed above.
-  final SplendidBleCentral _ble = SplendidBleCentral();
+/// SplendidBleCentral instance as discussed above.
+final SplendidBleCentral _ble = SplendidBleCentral();
 
-  /// Attempts to connect to a BLE device.
-  void connectToDevice() {
-    try {
-      // `widget.device.address` should be replaced with the actual device address to which you wish to connect.
-      _ble.connect(deviceAddress: widget.device.address).listen((state) =>
-          onConnectionStateUpdate(state),
-          onError: (error) {
-            // Handle the error here
-            _handleConnectionError(error);
-          });
-    } catch (e) {
-      debugPrint('Failed to connect to device, ${widget.device.address}, with exception, $e');
-    }
-  }
-
-  /// Handles errors resulting from an attempt to connect to a peripheral.
-  void _handleConnectionError(error) {
-    // Handle errors in connecting to a peripheral.
-  }
-
-  /// Called when the connection state is updated.
-  void _onConnectionStateUpdate(ConnectionState state) {
-    // Handle the updated connection state, e.g., by updating the UI or starting service discovery.
+/// Attempts to connect to a BLE device.
+void connectToDevice() {
+  try {
+    // `widget.device.address` should be replaced with the actual device address to which you wish to connect.
+    _ble.connect(deviceAddress: widget.device.address).listen((state) =>
+        onConnectionStateUpdate(state),
+        onError: (error) {
+          // Handle the error here
+          _handleConnectionError(error);
+        });
+  } catch (e) {
+    debugPrint('Failed to connect to device, ${widget.device.address}, with exception, $e');
   }
 }
 
+/// Handles errors resulting from an attempt to connect to a peripheral.
+void _handleConnectionError(error) {
+  // Handle errors in connecting to a peripheral.
+}
+
+/// Called when the connection state is updated.
+void _onConnectionStateUpdate(ConnectionState state) {
+  // Handle the updated connection state, e.g., by updating the UI or starting service discovery.
+}
 ```
 
 **Notes and Best Practices**
@@ -335,7 +528,7 @@ class BLEConnector {
 - Remember to handle the various states of the connection such as connecting, connected,
   disconnecting, and disconnected.
 
-### Performing Service/Characteristic Discovery on a BLE Peripheral:
+### **Performing Service/Characteristic Discovery on a BLE Peripheral**:
 
 After establishing a connection with a Bluetooth Low Energy (BLE) device, the next step is to
 discover the services and characteristics offered by the peripheral. This process is crucial for
@@ -359,31 +552,28 @@ Splendid BLE plugin.
 ```dart
 import 'dart:async';
 
-class BLEServiceDiscovery {
-  /// SplendidBleCentral instance as discussed above.
-  final SplendidBleCentral _ble = SplendidBleCentral();
+/// SplendidBleCentral instance as discussed above.
+final SplendidBleCentral _ble = SplendidBleCentral();
 
-  /// A [StreamSubscription] used to listen for discovered services.
-  StreamSubscription? _servicesDiscoveredStream;
+/// A [StreamSubscription] used to listen for discovered services.
+StreamSubscription? _servicesDiscoveredStream;
 
-  /// Starts the service discovery process for the connected BLE device.
-  void startServiceDiscovery() {
-    _servicesDiscoveredStream = _ble.discoverServices(widget.device.address).listen(
-          (service) => _onServiceDiscovered(service),
-    );
-  }
-
-  /// Called when a service is discovered.
-  void _onServiceDiscovered(BLEService service) {
-    // Process the discovered service.
-  }
-
-  /// Dispose method to cancel the subscription when it's no longer needed.
-  void dispose() {
-    _servicesDiscoveredStream?.cancel();
-  }
+/// Starts the service discovery process for the connected BLE device.
+void startServiceDiscovery() {
+  _servicesDiscoveredStream = _ble.discoverServices(widget.device.address).listen(
+        (service) => _onServiceDiscovered(service),
+  );
 }
 
+/// Called when a service is discovered.
+void _onServiceDiscovered(BLEService service) {
+  // Process the discovered service.
+}
+
+/// Dispose method to cancel the subscription when it's no longer needed.
+void dispose() {
+  _servicesDiscoveredStream?.cancel();
+}
 ```
 
 **Notes and Best Practices**
@@ -395,7 +585,7 @@ class BLEServiceDiscovery {
 - Handle exceptions and errors gracefully to inform the user if service discovery cannot be
   completed.
 
-### Subscribing to BLE Characteristic Notifications/Indications:
+### **Subscribing to BLE Characteristic Notifications/Indications**:
 
 Bluetooth Low Energy (BLE) characteristics can be configured to notify or indicate a connected
 device when their value changes. This is a powerful feature that allows a BLE peripheral to send
@@ -433,48 +623,46 @@ changes.
 import 'dart:async';
 import 'package:flutter_splendid_ble/splendid_ble.dart';
 
-class BLECharacteristicListener {
-  SplendidBleCentral _blePlugin;
+SplendidBleCentral _blePlugin;
 
-  /// A [BLECharacteristic] instance for a characteristic that supports indications or
-  /// notifications.
-  BLECharacteristic _characteristic;
+/// A [BLECharacteristic] instance for a characteristic that supports indications or
+/// notifications.
+BLECharacteristic _characteristic;
 
-  /// A [StreamSubscription] used to listen for updates in the value of a characteristic.
-  StreamSubscription? _characteristicValueListener;
+/// A [StreamSubscription] used to listen for updates in the value of a characteristic.
+StreamSubscription? _characteristicValueListener;
 
-  /// Constructor accepts a SplendidBle instance and a BLECharacteristic instance.
-  BLECharacteristicListener(this._blePlugin, this._characteristic);
+/// Constructor accepts a SplendidBle instance and a BLECharacteristic instance.
+BLECharacteristicListener(this._blePlugin, this._characteristic);
 
-  /// Subscribes to the characteristic updates.
-  void subscribeToCharacteristic() {
-    if (_characteristic.properties.notify || _characteristic.properties.indicate) {
-      _characteristicValueListener = _blePlugin.subscribeToCharacteristic(_characteristic).listen(
-            (event) {
-          onCharacteristicChanged(event);
-        },
-        onError: (error) {
-          // Handle any errors that occur during subscription or notification
-          debugPrint("Error subscribing to characteristic: $error");
-        },
-      );
-    } else {
-      print("The characteristic does not support notifications or indications.");
-    }
+/// Subscribes to the characteristic updates.
+void subscribeToCharacteristic() {
+  if (_characteristic.properties.notify || _characteristic.properties.indicate) {
+    _characteristicValueListener = _blePlugin.subscribeToCharacteristic(_characteristic).listen(
+          (event) {
+        onCharacteristicChanged(event);
+      },
+      onError: (error) {
+        // Handle any errors that occur during subscription or notification
+        debugPrint("Error subscribing to characteristic: $error");
+      },
+    );
+  } else {
+    print("The characteristic does not support notifications or indications.");
   }
+}
 
-  /// Callback when the characteristic value changes.
-  void onCharacteristicChanged(BleCharacteristicValue event) {
-    // This is where you handle the incoming data.
-    // The 'event' parameter contains the new characteristic value.
+/// Callback when the characteristic value changes.
+void onCharacteristicChanged(BleCharacteristicValue event) {
+  // This is where you handle the incoming data.
+  // The 'event' parameter contains the new characteristic value.
 
-    // Add your handling code here.
-  }
+  // Add your handling code here.
+}
 
-  /// Dispose method to cancel the subscription when it's no longer needed.
-  void dispose() {
-    _characteristicValueListener?.cancel();
-  }
+/// Dispose method to cancel the subscription when it's no longer needed.
+void dispose() {
+  _characteristicValueListener?.cancel();
 }
 ```
 
@@ -522,7 +710,6 @@ void onCharacteristicChanged(BleCharacteristicValue event) {
 
   // Implement other conversions based on your application needs
 }
-
 ```
 
 **Notes and Best Practices**
@@ -539,7 +726,7 @@ void onCharacteristicChanged(BleCharacteristicValue event) {
 - Always consult the documentation or specification for the BLE device you're communicating with to
   understand the data format.
 
-### Writing Values to a BLE Characteristic:
+### **Writing Values to a BLE Characteristic**:
 
 Interacting with BLE devices often requires writing data to a characteristic to trigger certain
 actions or configure settings on the peripheral. The 'SplendidBle' provides a 'writeValue'
@@ -590,7 +777,6 @@ Future<void> writeStringToCharacteristic(String value, BleCharacteristic charact
 }
 
 // ... other code for your Flutter application ...
-
 ```
 
 **Notes and Best Practices**
@@ -605,7 +791,7 @@ Future<void> writeStringToCharacteristic(String value, BleCharacteristic charact
   expected after writing. You may need to listen for a notification or read the characteristic again
   to confirm the write operation's success.
 
-### Reading Values from a BLE Characteristic:
+### **Reading Values from a BLE Characteristic**:
 
 Communicating with BLE devices often entails reading data from a characteristic to obtain
 information or status updates from the peripheral. The Splendid BLE plugin offers a convenient
@@ -672,7 +858,7 @@ Future<void> readCharacteristicValue(BleCharacteristic characteristic) async {
 - Consult the BLE peripheral documentation to understand the structure and expected format of the
   data provided by the characteristic.
 
-### Disconnecting from a BLE Peripheral:
+### **Disconnecting from a BLE Peripheral**:
 
 Properly disconnecting from a BLE device is crucial for managing resources and ensuring that the
 application behaves predictably. The Splendid BLE plugin simplifies this process by providing a
@@ -746,7 +932,8 @@ Before you begin, make sure you have the following installed:
   running `dart pub global activate dhttpd`.
 
 **Generating Documentation**
-To generate the documentation for the Splendid BLE plugin, run the following command from the root of
+To generate the documentation for the Splendid BLE plugin, run the following command from the root
+of
 the plugin's directory:
 
 ```zsh
