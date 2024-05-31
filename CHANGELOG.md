@@ -89,3 +89,8 @@ All notable changes to the `flutter_splendid_ble` plugin will be documented in t
 ## [0.10.0] 2024/05/24
 
 - Re-formatted project according to Dart standards
+
+## [0.11.0] 2024/05/31
+
+- Added ability to filter scans by service UUIDs on macOS
+- Added content to the README about configuring and requesting permissions
