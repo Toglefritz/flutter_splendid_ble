@@ -38,9 +38,9 @@ class CentralMethodChannel extends CentralPlatformInterface {
   /// This method communicates with the native Android code to obtain the current status of the Bluetooth adapter,
   /// and returns one of the values from the [BluetoothStatus] enumeration.
   ///
-  /// * [BluetoothStatus.ENABLED]: Bluetooth is enabled and ready for connections.
-  /// * [BluetoothStatus.DISABLED]: Bluetooth is disabled and not available for use.
-  /// * [BluetoothStatus.NOT_AVAILABLE]: Bluetooth is not available on the device.
+  /// * `BluetoothStatus.ENABLED`: Bluetooth is enabled and ready for connections.
+  /// * `BluetoothStatus.DISABLED`: Bluetooth is disabled and not available for use.
+  /// * `BluetoothStatus.NOT_AVAILABLE`: Bluetooth is not available on the device.
   ///
   /// Returns a Future containing the [BluetoothStatus] representing the current status of the Bluetooth adapter on
   /// the device.
