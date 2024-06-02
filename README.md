@@ -9,7 +9,32 @@ with peripheral devices. This includes scanning for and connecting to BLE periph
 bonding processes, writing and reading values, subscribing to BLE characteristics, and more. This
 plugin provides a comprehensive tool for versatile BLE operations.
 
-### Features
+## Table of Contents
+- [Features](#features)
+- [Main Goals](#main-goals)
+- [Installation](#installation)
+- [Prerequisites](#prerequisites)
+  - [iOS/macOS Prerequisites](#iosmacos-prerequisites)
+  - [Android Prerequisites](#android-prerequisites)
+- [Usage](#usage)
+  - [Initializing the Plugin](#initializing-the-plugin)
+  - [Requesting Bluetooth Permissions](#requesting-bluetooth-permissions)
+  - [Checking the Bluetooth Adapter Status](#checking-the-bluetooth-adapter-status)
+  - [Starting a Bluetooth Scan for Detecting Nearby BLE Devices](#starting-a-bluetooth-scan-for-detecting-nearby-ble-devices)
+  - [Connecting to a Bluetooth Device](#connecting-to-a-bluetooth-device)
+  - [Performing Service/Characteristic Discovery on a BLE Peripheral](#performing-servicecharacteristic-discovery-on-a-ble-peripheral)
+  - [Subscribing to BLE Characteristic Notifications/Indications](#subscribing-to-ble-characteristic-notificationsindications)
+  - [Writing Values to a BLE Characteristic](#writing-values-to-a-ble-characteristic)
+  - [Reading Values from a BLE Characteristic](#reading-values-from-a-ble-characteristic)
+  - [Disconnecting from a BLE Peripheral](#disconnecting-from-a-ble-peripheral)
+- [Tutorial Article](#tutorial-article)
+- [Error Handling](#error-handling)
+- [Viewing Documentation Locally](#viewing-documentation-locally)
+- [Feedback and Contributions](#feedback-and-contributions)
+- [License](#license)
+- [Disclaimer](#disclaimer)
+
+## Features
 
 This plugin allows a Flutter app to act as a BLE central device. It is designed for scenarios where
 the app scans for, connects to, and interacts with BLE peripheral devices. Key functionalities
@@ -209,7 +234,7 @@ runtime permissions if targeting Android 6.0 (API level 23) or higher.
 
 ## Usage
 
-### **Initializing the plugin**:
+### **Initializing the Plugin**:
 
 All Bluetooth functionality provided by this plugin goes through either the `SplendidBleCentral`
 class (which is also aliased as `SplendidBle` for backwards compatibility). So, wherever you need
@@ -290,7 +315,7 @@ void dispose() {
 - Always dispose of any stream subscriptions when they are no longer needed to avoid memory leaks
   and unnecessary processing.
 
-### **Checking the Bluetooth adapter status**:
+### **Checking the Bluetooth Adapter Status**:
 
 Before you can use any Bluetooth functionality, you should ensure that the device's Bluetooth
 adapter is ready. This step is crucial because attempting to use Bluetooth features when the adapter
@@ -488,32 +513,38 @@ due to the device being out of range, the device not being connectable, or other
 ```dart
 import 'dart:async';
 
-/// SplendidBleCentral instance as discussed above.
+/// [SplendidBleCentral] instance as discussed above.
 final SplendidBleCentral _ble = SplendidBleCentral();
 
-/// Attempts to connect to a BLE device.
-void connectToDevice() {
+/// A [StreamSubscription] used to listen for changes in the connection status between the app and the [BleDevice].
+StreamSubscription<BleConnectionState>? _connectionStream;
+
+/// Attempt to connect to the [BleDevice].
+void _connectToDevice(BleDevice device) {
   try {
-    // `widget.device.address` should be replaced with the actual device address to which you wish to connect.
-    _ble.connect(deviceAddress: widget.device.address).listen((state) =>
-        onConnectionStateUpdate(state),
-        onError: (error) {
-          // Handle the error here
-          _handleConnectionError(error);
-        });
+    _connectionStream = _ble.connect(deviceAddress: device.address).listen(
+      _onConnectionStateUpdate,
+    );
   } catch (e) {
-    debugPrint('Failed to connect to device, ${widget.device.address}, with exception, $e');
+    debugPrint('Failed to connect to device, ${device.address}, with exception, $e');
+
+    _handleConnectionError(e);
   }
 }
 
 /// Handles errors resulting from an attempt to connect to a peripheral.
-void _handleConnectionError(error) {
+void _handleConnectionError(Object error) {
   // Handle errors in connecting to a peripheral.
 }
 
 /// Called when the connection state is updated.
 void _onConnectionStateUpdate(ConnectionState state) {
   // Handle the updated connection state, e.g., by updating the UI or starting service discovery.
+}
+
+void dispose() {
+  // Cancel the connection state stream.
+  _connectionStream?.cancel();
 }
 ```
 
