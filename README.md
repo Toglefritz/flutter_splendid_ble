@@ -590,14 +590,15 @@ final SplendidBleCentral _ble = SplendidBleCentral();
 StreamSubscription? _servicesDiscoveredStream;
 
 /// Starts the service discovery process for the connected BLE device.
+// Replace `widget.device.address` with the Bluetooth address of your device
 void startServiceDiscovery() {
   _servicesDiscoveredStream = _ble.discoverServices(widget.device.address).listen(
-        (service) => _onServiceDiscovered(service),
+    _onServiceDiscovered,
   );
 }
 
-/// Called when a service is discovered.
-void _onServiceDiscovered(BLEService service) {
+/// Called when services are discovered.
+void _onServiceDiscovered(List<BleService> services) {
   // Process the discovered service.
 }
 

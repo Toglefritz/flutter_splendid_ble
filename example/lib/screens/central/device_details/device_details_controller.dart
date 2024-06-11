@@ -126,14 +126,14 @@ class DeviceDetailsController extends State<DeviceDetailsRoute> {
 
     _servicesDiscoveredStream =
         _ble.discoverServices(widget.device.address).listen(
-              (service) => _onServiceDiscovered(service),
+              (services) => _onServiceDiscovered(services),
             );
   }
 
   /// A callback used each time a new service is discovered and emitted to the [Stream].
-  void _onServiceDiscovered(List<BleService> service) {
+  void _onServiceDiscovered(List<BleService> services) {
     setState(() {
-      _discoveredServices.addAll(service);
+      _discoveredServices.addAll(services);
     });
   }
 
