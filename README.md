@@ -587,7 +587,7 @@ import 'dart:async';
 final SplendidBleCentral _ble = SplendidBleCentral();
 
 /// A [StreamSubscription] used to listen for discovered services.
-StreamSubscription? _servicesDiscoveredStream;
+StreamSubscription<List<BleService>>? _servicesDiscoveredStream;
 
 /// Starts the service discovery process for the connected BLE device.
 // Replace `widget.device.address` with the Bluetooth address of your device
@@ -662,7 +662,7 @@ SplendidBleCentral _blePlugin;
 BLECharacteristic _characteristic;
 
 /// A [StreamSubscription] used to listen for updates in the value of a characteristic.
-StreamSubscription? _characteristicValueListener;
+StreamSubscription<BleCharacteristicValue>? _characteristicValueListener;
 
 /// Constructor accepts a SplendidBle instance and a BLECharacteristic instance.
 BLECharacteristicListener(this._blePlugin, this._characteristic);
@@ -671,9 +671,7 @@ BLECharacteristicListener(this._blePlugin, this._characteristic);
 void subscribeToCharacteristic() {
   if (_characteristic.properties.notify || _characteristic.properties.indicate) {
     _characteristicValueListener = _blePlugin.subscribeToCharacteristic(_characteristic).listen(
-          (event) {
-        onCharacteristicChanged(event);
-      },
+          (event) => onCharacteristicChanged(event),
       onError: (error) {
         // Handle any errors that occur during subscription or notification
         debugPrint("Error subscribing to characteristic: $error");
