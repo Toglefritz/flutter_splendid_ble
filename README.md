@@ -671,11 +671,7 @@ BLECharacteristicListener(this._blePlugin, this._characteristic);
 void subscribeToCharacteristic() {
   if (_characteristic.properties.notify || _characteristic.properties.indicate) {
     _characteristicValueListener = _blePlugin.subscribeToCharacteristic(_characteristic).listen(
-          (event) => onCharacteristicChanged(event),
-      onError: (error) {
-        // Handle any errors that occur during subscription or notification
-        debugPrint("Error subscribing to characteristic: $error");
-      },
+      _onCharacteristicChanged,
     );
   } else {
     print("The characteristic does not support notifications or indications.");
@@ -683,7 +679,7 @@ void subscribeToCharacteristic() {
 }
 
 /// Callback when the characteristic value changes.
-void onCharacteristicChanged(BleCharacteristicValue event) {
+void _onCharacteristicChanged(BleCharacteristicValue event) {
   // This is where you handle the incoming data.
   // The 'event' parameter contains the new characteristic value.
 
