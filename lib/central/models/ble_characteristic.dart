@@ -53,7 +53,6 @@ class BleCharacteristic {
 
   /// Writes data to a specified characteristic.
   ///
-  /// `characteristic` - The Bluetooth characteristic to which the method will write.
   /// `value` - The string value to be written.
   /// `writeType` - Optional write type, defaulting to `BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT`.
   Future<void> writeValue({
