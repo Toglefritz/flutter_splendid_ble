@@ -102,3 +102,7 @@ All notable changes to the `flutter_splendid_ble` plugin will be documented in t
 ## [0.11.2] 2024/06/11
 
 - Updated documentation
+
+## [0.11.3] 2024/06/14
+
+- Updated documentation
