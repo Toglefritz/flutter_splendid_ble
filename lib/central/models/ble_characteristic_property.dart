@@ -39,9 +39,9 @@ enum BleCharacteristicProperty {
   /// [BleCharacteristicProperty] values. The [value] parameter is an integer bitmask representing the set properties.
   /// Returns a list of [BleCharacteristicProperty] representing the properties in the bitmask.
   static List<BleCharacteristicProperty> fromInt(int value) {
-    List<BleCharacteristicProperty> propertiesList = [];
+    final List<BleCharacteristicProperty> propertiesList = [];
 
-    for (BleCharacteristicProperty property
+    for (final BleCharacteristicProperty property
         in BleCharacteristicProperty.values) {
       if ((value & property.value) != 0) {
         propertiesList.add(property);
@@ -51,6 +51,7 @@ enum BleCharacteristicProperty {
   }
 }
 
+/// An extension on [BleCharacteristicProperty] to provide additional utility methods.
 extension BluetoothGattCharacteristicPropertiesExtension
     on BleCharacteristicProperty {
   /// Retrieves the bitmask value corresponding to the characteristic property.
@@ -79,8 +80,6 @@ extension BluetoothGattCharacteristicPropertiesExtension
         return 0x100;
       case BleCharacteristicProperty.writableAuxiliaries:
         return 0x200;
-      default:
-        return 0;
     }
   }
 }

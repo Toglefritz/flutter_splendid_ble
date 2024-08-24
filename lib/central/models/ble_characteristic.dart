@@ -87,7 +87,7 @@ class BleCharacteristic {
   Future<T> readValue<T>({
     Duration timeout = const Duration(seconds: 5),
   }) async {
-    BleCharacteristicValue characteristicValue =
+    final BleCharacteristicValue characteristicValue =
         await CentralPlatformInterface.instance.readCharacteristic(
       characteristic: this,
       timeout: timeout,
@@ -101,7 +101,7 @@ class BleCharacteristic {
       return characteristicValue.value as T;
     } else {
       throw ArgumentError(
-          'Unsupported return type $T. Supported types are String and List<int>');
+          'Unsupported return type $T. Supported types are String and List<int>',);
     }
   }
 
@@ -122,7 +122,7 @@ class BleCharacteristic {
         .unsubscribeFromCharacteristic(this);
   }
 
-  /// Converts a list of [BluetoothGattCharacteristicProperties] to a string representation.
+  /// Converts a list of [BleCharacteristicProperty] to a string representation.
   ///
   /// Each characteristic property in the list is represented by its string name and separated by commas.
   String _propertiesListToString(List<BleCharacteristicProperty> properties) {
@@ -135,7 +135,7 @@ class BleCharacteristic {
   ///
   /// Each characteristic permission in the list is represented by its string name and separated by commas.
   String _permissionsListToString(
-      List<BleCharacteristicPermission> permissions) {
+      List<BleCharacteristicPermission> permissions,) {
     return permissions
         .map((permission) => permission.toString().split('.').last)
         .join(', ');

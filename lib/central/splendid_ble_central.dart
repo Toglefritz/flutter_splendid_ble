@@ -24,6 +24,8 @@ import 'models/scan_settings.dart';
 /// eventually introduced, the use of [SplendidBleCentral] will be more clear.
 typedef SplendidBle = SplendidBleCentral;
 
+/// [SplendidBleCentral] provides an interface to interact with Bluetooth functionalities from a Flutter app acting
+/// as a BLE central device.
 class SplendidBleCentral {
   /// Asks the platform to check the current status of the Bluetooth adapter.
   ///
@@ -62,7 +64,7 @@ class SplendidBleCentral {
   ///
   /// Returns a [Stream] of [BleDevice] found during the scan.
   Stream<BleDevice> startScan(
-      {List<ScanFilter>? filters, ScanSettings? settings}) {
+      {List<ScanFilter>? filters, ScanSettings? settings,}) {
     return CentralPlatformInterface.instance.startScan(
       filters: filters,
       settings: settings,

@@ -46,9 +46,9 @@ enum BleCharacteristicPermission {
 
   /// Convert an integer with bitwise representations to a list of enum values.
   static List<BleCharacteristicPermission> fromInt(int value) {
-    List<BleCharacteristicPermission> permissionsList = [];
+    final List<BleCharacteristicPermission> permissionsList = [];
 
-    for (BleCharacteristicPermission permission
+    for (final BleCharacteristicPermission permission
         in BleCharacteristicPermission.values) {
       if ((value & permission.value) != 0) {
         permissionsList.add(permission);
@@ -88,8 +88,6 @@ extension BluetoothGattCharacteristicPermissionsExtension
         return 0x80;
       case BleCharacteristicPermission.writeSignedMitm:
         return 0x100;
-      default:
-        return 0;
     }
   }
 }

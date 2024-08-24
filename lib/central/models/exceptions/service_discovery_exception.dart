@@ -21,8 +21,10 @@
 /// }
 /// ```
 class ServiceDiscoveryException implements Exception {
+  /// A message describing the error that occurred during the service discovery process.
   final String message;
 
+  /// Creates a [ServiceDiscoveryException] with the specified error [message].
   ServiceDiscoveryException(this.message);
 
   @override

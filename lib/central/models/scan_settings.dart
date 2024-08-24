@@ -56,8 +56,13 @@ class ScanSettings {
 ///   * `balanced` (1): Low power scanning to conserve battery.
 ///   * `lowLatency` (2): Scan with highest duty cycle to discover devices faster.
 enum ScanMode {
+  /// Balanced scanning, balancing power and latency.
   lowPower(0),
+
+  /// Low power scanning to conserve battery.
   balanced(1),
+
+  /// Scan with highest duty cycle to discover devices faster.
   lowLatency(2);
 
   /// An identifier for the scan mode for use in interacting with the Android platform implementation of

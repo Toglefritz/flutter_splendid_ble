@@ -26,12 +26,10 @@ void main() {
     final List<List<BleService>> emittedServices = [];
 
     // Listen to the emitted services
-    serviceStream.listen((serviceList) {
-      emittedServices.add(serviceList);
-    });
+    serviceStream.listen(emittedServices.add);
 
     // Simulate services being discovered from the platform side
-    final Map<String, List<Map>> fakeServices = {
+    final Map<String, List<Map<dynamic, dynamic>>> fakeServices = {
       'service1_uuid': [
         {
           'address': '00:00:00:00:00:01',
@@ -66,7 +64,7 @@ void main() {
         .handlePlatformMessage(
       channel.name,
       channel.codec.encodeMethodCall(
-          MethodCall('bleServicesDiscovered_00:00:00:00:00:01', fakeServices)),
+          MethodCall('bleServicesDiscovered_00:00:00:00:00:01', fakeServices),),
       (ByteData? data) {},
     );
 

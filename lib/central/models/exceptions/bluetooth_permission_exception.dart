@@ -22,8 +22,10 @@
 /// }
 /// ```
 class BluetoothPermissionException implements Exception {
+  /// A message describing the error related to Bluetooth permissions.
   final String message;
 
+  /// Creates a [BluetoothPermissionException] with the specified error [message].
   BluetoothPermissionException(this.message);
 
   @override

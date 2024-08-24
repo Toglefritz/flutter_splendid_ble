@@ -4,6 +4,8 @@ import 'package:flutter/services.dart';
 import 'models/bluetooth_permission_status.dart';
 import 'models/bluetooth_status.dart';
 
+/// This class provides utility methods for checking the status of the Bluetooth adapter and requesting Bluetooth
+/// permissions.
 class BleCommonUtilities {
   /// Checks the status of the Bluetooth adapter on the device.
   ///
@@ -22,9 +24,9 @@ class BleCommonUtilities {
   /// notified and prompted for action if they attempt to use an applications for which Bluetooth plays a critical
   /// role while the Bluetooth capabilities of the host device are disabled.
   static Future<BluetoothStatus> checkBluetoothAdapterStatus(
-      MethodChannel channel) async {
+      MethodChannel channel,) async {
     final String statusString =
-        await channel.invokeMethod('checkBluetoothAdapterStatus');
+        await channel.invokeMethod('checkBluetoothAdapterStatus') as String;
 
     return BluetoothStatus.values
         .firstWhere((e) => e.identifier == statusString);
@@ -44,12 +46,12 @@ class BleCommonUtilities {
   /// Returns a [Future] containing a [Stream] of [BluetoothStatus] values representing the current status
   /// of the Bluetooth adapter on the device.
   static Stream<BluetoothStatus> emitCurrentBluetoothStatus(
-      MethodChannel channel) {
+      MethodChannel channel,) {
     final StreamController<BluetoothStatus> streamController =
         StreamController<BluetoothStatus>.broadcast();
 
     // Listen to the platform side for Bluetooth adapter status updates.
-    channel.setMethodCallHandler((MethodCall call) async {
+    channel..setMethodCallHandler((MethodCall call) async {
       if (call.method == 'adapterStateUpdated') {
         final String statusString = call.arguments as String;
 
@@ -61,10 +63,10 @@ class BleCommonUtilities {
 
         streamController.add(status);
       }
-    });
+    })
 
     // Begin emitting Bluetooth adapter status updates from the platform side.
-    channel.invokeMethod('emitCurrentBluetoothStatus');
+    ..invokeMethod('emitCurrentBluetoothStatus');
 
     return streamController.stream;
   }
@@ -79,9 +81,9 @@ class BleCommonUtilities {
   ///
   /// Returns a [Future] containing the [BluetoothPermissionStatus] representing whether permission was granted or not.
   static Future<BluetoothPermissionStatus> requestBluetoothPermissions(
-      MethodChannel channel) async {
+      MethodChannel channel,) async {
     final String permissionStatusString =
-        await channel.invokeMethod('requestBluetoothPermissions');
+        await channel.invokeMethod('requestBluetoothPermissions') as String;
     return BluetoothPermissionStatus.values
         .firstWhere((status) => status.identifier == permissionStatusString);
   }
@@ -97,11 +99,11 @@ class BleCommonUtilities {
   ///
   /// Returns a [Stream] of [BluetoothPermissionStatus] values representing the current Bluetooth permission status on the device.
   static Stream<BluetoothPermissionStatus> emitCurrentPermissionStatus(
-      MethodChannel channel) {
+      MethodChannel channel,) {
     final StreamController<BluetoothPermissionStatus> streamController =
         StreamController<BluetoothPermissionStatus>.broadcast();
 
-    channel.setMethodCallHandler((MethodCall call) async {
+    channel..setMethodCallHandler((MethodCall call) async {
       if (call.method == 'permissionStatusUpdated') {
         final String permissionStatusString = call.arguments as String;
 
@@ -113,10 +115,10 @@ class BleCommonUtilities {
 
         streamController.add(status);
       }
-    });
+    })
 
     // Begin emitting Bluetooth permission status updates from the platform side.
-    channel.invokeMethod('emitCurrentPermissionStatus');
+    ..invokeMethod('emitCurrentPermissionStatus');
 
     return streamController.stream;
   }

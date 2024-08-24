@@ -14,17 +14,17 @@ void main() {
 /// Tests that the `checkBluetoothAdapterStatus` method returns the expected value for mocked responses to the
 /// platform specific functions.
 void _testCheckBluetoothAdapterStatus(MethodChannel channel) {
-  for (BluetoothStatus status in BluetoothStatus.values) {
+  for (final BluetoothStatus status in BluetoothStatus.values) {
     setUp(() {
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(
         channel,
-        ((MethodCall methodCall) async {
+        (MethodCall methodCall) async {
           if (methodCall.method == 'checkBluetoothAdapterStatus') {
             return status.identifier; // Mock the behavior of the native code
           }
           return null;
-        }),
+        },
       );
     });
 

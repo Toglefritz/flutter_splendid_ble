@@ -20,8 +20,10 @@
 /// }
 /// ```
 class BluetoothWriteException implements Exception {
+  /// A message describing the error that occurred during the write operation.
   final String message;
 
+  /// Creates a [BluetoothWriteException] with the specified error [message].
   BluetoothWriteException(this.message);
 
   @override

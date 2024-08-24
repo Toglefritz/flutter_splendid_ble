@@ -31,12 +31,10 @@ void main() {
 
     // Listen to the stream and add emitted statuses to the list
     final StreamSubscription<BluetoothStatus> subscription =
-        statusStream.listen((status) {
-      emittedStatuses.add(status);
-    });
+        statusStream.listen(emittedStatuses.add);
 
     // Trigger the platform side to emit BluetoothStatus.enabled
-    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+    await TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .handlePlatformMessage(
       channel.name,
       const StandardMethodCodec()
@@ -50,7 +48,7 @@ void main() {
           .handlePlatformMessage(
         channel.name,
         const StandardMethodCodec().encodeMethodCall(
-            const MethodCall('adapterStateUpdated', 'disabled')),
+            const MethodCall('adapterStateUpdated', 'disabled'),),
         (ByteData? data) {},
       );
     });
@@ -58,7 +56,7 @@ void main() {
     // After a delay, verify the emitted statuses
     await Future.delayed(const Duration(milliseconds: 200), () {
       expect(
-          emittedStatuses, [BluetoothStatus.enabled, BluetoothStatus.disabled]);
+          emittedStatuses, [BluetoothStatus.enabled, BluetoothStatus.disabled],);
       subscription.cancel();
     });
   });

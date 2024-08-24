@@ -29,14 +29,14 @@ void main() {
     final List<BleConnectionState> emittedStates = [];
 
     // Listen to the emitted states and store them
-    connectionStream.listen((state) => emittedStates.add(state));
+    connectionStream.listen(emittedStates.add);
 
     // Simulate a connection state change emitted from the platform side
     await TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .handlePlatformMessage(
       channel.name,
       channel.codec.encodeMethodCall(const MethodCall(
-          'bleConnectionState_00:00:00:00:00:01', 'connected')),
+          'bleConnectionState_00:00:00:00:00:01', 'connected',),),
       (ByteData? data) {},
     );
 

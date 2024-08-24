@@ -20,8 +20,10 @@
 /// }
 /// ```
 class BluetoothConnectionException implements Exception {
+  /// A message describing the error that occurred during the connection process.
   final String message;
 
+  /// Creates a [BluetoothConnectionException] with the specified error [message].
   BluetoothConnectionException(this.message);
 
   @override

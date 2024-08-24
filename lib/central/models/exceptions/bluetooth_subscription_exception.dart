@@ -20,8 +20,10 @@
 /// }
 /// ```
 class BluetoothSubscriptionException implements Exception {
+  /// A message describing the error that occurred during the subscription process.
   final String message;
 
+  /// Creates a [BluetoothSubscriptionException] with the specified error [message].
   BluetoothSubscriptionException(this.message);
 
   @override

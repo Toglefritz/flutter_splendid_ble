@@ -18,8 +18,10 @@
 /// }
 /// ```
 class BluetoothReadException implements Exception {
+  /// A message describing the error that occurred during the read operation.
   final String message;
 
+  /// Creates a [BluetoothReadException] with the specified error [message].
   BluetoothReadException(this.message);
 
   @override

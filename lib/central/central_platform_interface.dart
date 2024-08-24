@@ -1,16 +1,17 @@
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 
-import '../shared/models/ble_device.dart';
-import '../shared/models/bluetooth_permission_status.dart';
-import '../shared/models/bluetooth_status.dart';
-import 'central_method_channel.dart';
 import '../central/models/ble_characteristic.dart';
 import '../central/models/ble_characteristic_value.dart';
 import '../central/models/ble_connection_state.dart';
 import '../central/models/ble_service.dart';
 import '../central/models/scan_filter.dart';
 import '../central/models/scan_settings.dart';
+import '../shared/models/ble_device.dart';
+import '../shared/models/bluetooth_permission_status.dart';
+import '../shared/models/bluetooth_status.dart';
+import 'central_method_channel.dart';
 
+/// The interface that implementations of splendid_ble must implement.
 abstract class CentralPlatformInterface extends PlatformInterface {
   /// Constructs a [CentralPlatformInterface].
   CentralPlatformInterface() : super(token: _token);
@@ -33,25 +34,25 @@ abstract class CentralPlatformInterface extends PlatformInterface {
   /// current status of the adapter.
   Future<BluetoothStatus> checkBluetoothAdapterStatus() async {
     throw UnimplementedError(
-        'checkBluetoothAdapterStatus() has not been implemented.');
+        'checkBluetoothAdapterStatus() has not been implemented.',);
   }
 
   /// Emits the current Bluetooth adapter status to the Dart side.
   Stream<BluetoothStatus> emitCurrentBluetoothStatus() {
     throw UnimplementedError(
-        'emitCurrentBluetoothStatus() has not been implemented.');
+        'emitCurrentBluetoothStatus() has not been implemented.',);
   }
 
   /// Requests Bluetooth permissions from the user.
   Future<BluetoothPermissionStatus> requestBluetoothPermissions() async {
     throw UnimplementedError(
-        'requestBluetoothPermissions() has not been implemented.');
+        'requestBluetoothPermissions() has not been implemented.',);
   }
 
   /// Emits the current Bluetooth permission status whenever it changes.
   Stream<BluetoothPermissionStatus> emitCurrentPermissionStatus() {
     throw UnimplementedError(
-        'emitCurrentPermissionStatus() has not been implemented.');
+        'emitCurrentPermissionStatus() has not been implemented.',);
   }
 
   /// Starts a scan for nearby BLE devices and returns a [Stream] of [BleDevice] instances representing the BLE
@@ -59,7 +60,7 @@ abstract class CentralPlatformInterface extends PlatformInterface {
   /// respond to Bluetooth devices being discovered, for example by presenting the list in the user interface
   /// or enabling controllers to find and connect to specific devices.
   Stream<BleDevice> startScan(
-      {List<ScanFilter>? filters, ScanSettings? settings}) {
+      {List<ScanFilter>? filters, ScanSettings? settings,}) {
     throw UnimplementedError('startScan() has not been implemented.');
   }
 
@@ -87,7 +88,7 @@ abstract class CentralPlatformInterface extends PlatformInterface {
   /// Returns the current connection state for the Bluetooth device with the specified address.
   Future<BleConnectionState> getCurrentConnectionState(String deviceAddress) {
     throw UnimplementedError(
-        'getCurrentConnectionState() has not been implemented.');
+        'getCurrentConnectionState() has not been implemented.',);
   }
 
   /// Writes data to a specified characteristic.
@@ -111,14 +112,14 @@ abstract class CentralPlatformInterface extends PlatformInterface {
 
   /// Subscribes to a Bluetooth characteristic to listen for updates.
   Stream<BleCharacteristicValue> subscribeToCharacteristic(
-      BleCharacteristic characteristic) {
+      BleCharacteristic characteristic,) {
     throw UnimplementedError(
-        'subscribeToCharacteristic() has not been implemented.');
+        'subscribeToCharacteristic() has not been implemented.',);
   }
 
   /// Unsubscribes from a Bluetooth characteristic.
   void unsubscribeFromCharacteristic(BleCharacteristic characteristic) {
     throw UnimplementedError(
-        'unsubscribeFromCharacteristic() has not been implemented.');
+        'unsubscribeFromCharacteristic() has not been implemented.',);
   }
 }

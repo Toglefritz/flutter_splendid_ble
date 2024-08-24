@@ -36,8 +36,10 @@
 /// Here, `_handleBluetoothScanError` could be a method that takes the exception and performs appropriate error
 /// handling.
 class BluetoothScanException implements Exception {
+  /// A message describing the error that occurred during the scan operation.
   final String message;
 
+  /// Creates a [BluetoothScanException] with the specified error [message].
   BluetoothScanException(this.message);
 
   @override

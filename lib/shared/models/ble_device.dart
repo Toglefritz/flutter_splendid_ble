@@ -16,6 +16,7 @@ class BleDevice {
   /// Bluetooth devices are not required to provide manufacturer data so this field is nullable.
   final String? manufacturerData;
 
+  /// Creates an instance of [BleDevice].
   BleDevice({
     required this.name,
     required this.address,
@@ -29,10 +30,10 @@ class BleDevice {
   /// channel. Therefore, the type annotation is <dynamic, dynamic>.
   factory BleDevice.fromMap(Map<dynamic, dynamic> map) {
     return BleDevice(
-      name: map['name'],
-      address: map['address'],
-      rssi: map['rssi'],
-      manufacturerData: map['manufacturerData'],
+      name: map['name'] as String?,
+      address: map['address'] as String,
+      rssi: map['rssi'] as int,
+      manufacturerData: map['manufacturerData'] as String?,
     );
   }
 }
