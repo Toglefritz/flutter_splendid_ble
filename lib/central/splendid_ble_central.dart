@@ -63,8 +63,10 @@ class SplendidBleCentral {
   /// Asks the platform to start scanning for Bluetooth devices.
   ///
   /// Returns a [Stream] of [BleDevice] found during the scan.
-  Stream<BleDevice> startScan(
-      {List<ScanFilter>? filters, ScanSettings? settings,}) {
+  Stream<BleDevice> startScan({
+    List<ScanFilter>? filters,
+    ScanSettings? settings,
+  }) {
     return CentralPlatformInterface.instance.startScan(
       filters: filters,
       settings: settings,

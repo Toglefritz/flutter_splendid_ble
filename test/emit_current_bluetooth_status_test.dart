@@ -48,7 +48,8 @@ void main() {
           .handlePlatformMessage(
         channel.name,
         const StandardMethodCodec().encodeMethodCall(
-            const MethodCall('adapterStateUpdated', 'disabled'),),
+          const MethodCall('adapterStateUpdated', 'disabled'),
+        ),
         (ByteData? data) {},
       );
     });
@@ -56,7 +57,9 @@ void main() {
     // After a delay, verify the emitted statuses
     await Future.delayed(const Duration(milliseconds: 200), () {
       expect(
-          emittedStatuses, [BluetoothStatus.enabled, BluetoothStatus.disabled],);
+        emittedStatuses,
+        [BluetoothStatus.enabled, BluetoothStatus.disabled],
+      );
       subscription.cancel();
     });
   });

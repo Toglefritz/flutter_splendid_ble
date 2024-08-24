@@ -64,7 +64,8 @@ void main() {
         .handlePlatformMessage(
       channel.name,
       channel.codec.encodeMethodCall(
-          MethodCall('bleServicesDiscovered_00:00:00:00:00:01', fakeServices),),
+        MethodCall('bleServicesDiscovered_00:00:00:00:00:01', fakeServices),
+      ),
       (ByteData? data) {},
     );
 

@@ -35,8 +35,12 @@ void main() {
     await TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .handlePlatformMessage(
       channel.name,
-      channel.codec.encodeMethodCall(const MethodCall(
-          'bleConnectionState_00:00:00:00:00:01', 'connected',),),
+      channel.codec.encodeMethodCall(
+        const MethodCall(
+          'bleConnectionState_00:00:00:00:00:01',
+          'connected',
+        ),
+      ),
       (ByteData? data) {},
     );
 

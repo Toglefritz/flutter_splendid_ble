@@ -24,7 +24,8 @@ class BleCommonUtilities {
   /// notified and prompted for action if they attempt to use an applications for which Bluetooth plays a critical
   /// role while the Bluetooth capabilities of the host device are disabled.
   static Future<BluetoothStatus> checkBluetoothAdapterStatus(
-      MethodChannel channel,) async {
+    MethodChannel channel,
+  ) async {
     final String statusString =
         await channel.invokeMethod('checkBluetoothAdapterStatus') as String;
 
@@ -46,27 +47,29 @@ class BleCommonUtilities {
   /// Returns a [Future] containing a [Stream] of [BluetoothStatus] values representing the current status
   /// of the Bluetooth adapter on the device.
   static Stream<BluetoothStatus> emitCurrentBluetoothStatus(
-      MethodChannel channel,) {
+    MethodChannel channel,
+  ) {
     final StreamController<BluetoothStatus> streamController =
         StreamController<BluetoothStatus>.broadcast();
 
     // Listen to the platform side for Bluetooth adapter status updates.
-    channel..setMethodCallHandler((MethodCall call) async {
-      if (call.method == 'adapterStateUpdated') {
-        final String statusString = call.arguments as String;
+    channel
+      ..setMethodCallHandler((MethodCall call) async {
+        if (call.method == 'adapterStateUpdated') {
+          final String statusString = call.arguments as String;
 
-        // Convert the string status to its corresponding enum value
-        final BluetoothStatus status = BluetoothStatus.values.firstWhere(
-          (e) => e.identifier == statusString,
-          orElse: () => BluetoothStatus.notAvailable,
-        ); // Default to notAvailable if the string does not match any enum value
+          // Convert the string status to its corresponding enum value
+          final BluetoothStatus status = BluetoothStatus.values.firstWhere(
+            (e) => e.identifier == statusString,
+            orElse: () => BluetoothStatus.notAvailable,
+          ); // Default to notAvailable if the string does not match any enum value
 
-        streamController.add(status);
-      }
-    })
+          streamController.add(status);
+        }
+      })
 
-    // Begin emitting Bluetooth adapter status updates from the platform side.
-    ..invokeMethod('emitCurrentBluetoothStatus');
+      // Begin emitting Bluetooth adapter status updates from the platform side.
+      ..invokeMethod('emitCurrentBluetoothStatus');
 
     return streamController.stream;
   }
@@ -81,7 +84,8 @@ class BleCommonUtilities {
   ///
   /// Returns a [Future] containing the [BluetoothPermissionStatus] representing whether permission was granted or not.
   static Future<BluetoothPermissionStatus> requestBluetoothPermissions(
-      MethodChannel channel,) async {
+    MethodChannel channel,
+  ) async {
     final String permissionStatusString =
         await channel.invokeMethod('requestBluetoothPermissions') as String;
     return BluetoothPermissionStatus.values
@@ -99,26 +103,28 @@ class BleCommonUtilities {
   ///
   /// Returns a [Stream] of [BluetoothPermissionStatus] values representing the current Bluetooth permission status on the device.
   static Stream<BluetoothPermissionStatus> emitCurrentPermissionStatus(
-      MethodChannel channel,) {
+    MethodChannel channel,
+  ) {
     final StreamController<BluetoothPermissionStatus> streamController =
         StreamController<BluetoothPermissionStatus>.broadcast();
 
-    channel..setMethodCallHandler((MethodCall call) async {
-      if (call.method == 'permissionStatusUpdated') {
-        final String permissionStatusString = call.arguments as String;
+    channel
+      ..setMethodCallHandler((MethodCall call) async {
+        if (call.method == 'permissionStatusUpdated') {
+          final String permissionStatusString = call.arguments as String;
 
-        // Convert the string status to its corresponding enum value
-        final BluetoothPermissionStatus status =
-            BluetoothPermissionStatus.values.firstWhere(
-          (status) => status.identifier == permissionStatusString,
-        );
+          // Convert the string status to its corresponding enum value
+          final BluetoothPermissionStatus status =
+              BluetoothPermissionStatus.values.firstWhere(
+            (status) => status.identifier == permissionStatusString,
+          );
 
-        streamController.add(status);
-      }
-    })
+          streamController.add(status);
+        }
+      })
 
-    // Begin emitting Bluetooth permission status updates from the platform side.
-    ..invokeMethod('emitCurrentPermissionStatus');
+      // Begin emitting Bluetooth permission status updates from the platform side.
+      ..invokeMethod('emitCurrentPermissionStatus');
 
     return streamController.stream;
   }

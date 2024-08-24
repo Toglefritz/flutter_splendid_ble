@@ -51,8 +51,13 @@ class CharacteristicInteractionView extends StatelessWidget {
                 // TODO(Toglefritz): update widget
                 return Card(
                   margin: EdgeInsets.only(
-                    left: state.messages[index].source == MessageSource.mobile ? 48.0 : 16.0,
-                    right: state.messages[index].source == MessageSource.peripheral ? 48.0 : 16.0,
+                    left: state.messages[index].source == MessageSource.mobile
+                        ? 48.0
+                        : 16.0,
+                    right:
+                        state.messages[index].source == MessageSource.peripheral
+                            ? 48.0
+                            : 16.0,
                     top: 8.0,
                     bottom: 8.0,
                   ),
@@ -73,7 +78,9 @@ class CharacteristicInteractionView extends StatelessWidget {
                           style: Theme.of(context).textTheme.bodyMedium,
                         ),
                         Icon(
-                          state.messages[index].source == MessageSource.mobile ? Icons.upload : Icons.download,
+                          state.messages[index].source == MessageSource.mobile
+                              ? Icons.upload
+                              : Icons.download,
                           color: Theme.of(context).disabledColor,
                         ),
                       ],
@@ -125,7 +132,10 @@ class CharacteristicInteractionView extends StatelessWidget {
                                 ),
                               ),
                             ),
-                            style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                            style: Theme.of(context)
+                                .textTheme
+                                .labelLarge
+                                ?.copyWith(
                                   color: Theme.of(context).primaryColor,
                                 ),
                             cursorColor: Theme.of(context).primaryColor,

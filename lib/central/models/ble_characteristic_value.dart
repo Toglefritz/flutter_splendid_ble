@@ -78,7 +78,8 @@ class BleCharacteristicValue {
       );
     } catch (e) {
       throw FormatException(
-          'Failed to construct BleCharacteristicValue from Map, $map, with exception, $e',);
+        'Failed to construct BleCharacteristicValue from Map, $map, with exception, $e',
+      );
     }
   }
 }

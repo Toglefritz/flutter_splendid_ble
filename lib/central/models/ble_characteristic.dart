@@ -101,7 +101,8 @@ class BleCharacteristic {
       return characteristicValue.value as T;
     } else {
       throw ArgumentError(
-          'Unsupported return type $T. Supported types are String and List<int>',);
+        'Unsupported return type $T. Supported types are String and List<int>',
+      );
     }
   }
 
@@ -135,7 +136,8 @@ class BleCharacteristic {
   ///
   /// Each characteristic permission in the list is represented by its string name and separated by commas.
   String _permissionsListToString(
-      List<BleCharacteristicPermission> permissions,) {
+    List<BleCharacteristicPermission> permissions,
+  ) {
     return permissions
         .map((permission) => permission.toString().split('.').last)
         .join(', ');
