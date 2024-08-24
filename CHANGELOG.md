@@ -106,3 +106,10 @@ All notable changes to the `flutter_splendid_ble` plugin will be documented in t
 ## [0.11.3] 2024/06/14
 
 - Updated documentation
+
+## [0.12.0] 2024/08/24
+
+- Updated lint rules for example
+- Updated lint rules for plugin
+- Updated documentation
+- Updated characteristic interaction UI

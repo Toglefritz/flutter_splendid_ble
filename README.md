@@ -9,6 +9,9 @@ with peripheral devices. This includes scanning for and connecting to BLE periph
 bonding processes, writing and reading values, subscribing to BLE characteristics, and more. This
 plugin provides a comprehensive tool for versatile BLE operations.
 
+[![pub package](https://img.shields.io/pub/v/flutter_splendid_ble.svg)](https://pub.dev/packages/flutter_splendid_ble)
+[![style: very good analysis](https://img.shields.io/badge/style-very_good_analysis-B22C89.svg)](https://pub.dev/packages/very_good_analysis)
+
 ## Table of Contents
 - [Features](#features)
 - [Main Goals](#main-goals)
@@ -84,7 +87,7 @@ First, add the following line to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  flutter_splendid_ble: ^0.11.0
+  flutter_splendid_ble: ^0.12.0
 ```
 
 Then run:
