@@ -51,13 +51,8 @@ class CharacteristicInteractionView extends StatelessWidget {
                 // TODO(Toglefritz): update widget
                 return Card(
                   margin: EdgeInsets.only(
-                    left: state.messages[index].source == MessageSource.mobile
-                        ? 48.0
-                        : 16.0,
-                    right:
-                        state.messages[index].source == MessageSource.peripheral
-                            ? 48.0
-                            : 16.0,
+                    left: state.messages[index].source == MessageSource.mobile ? 48.0 : 16.0,
+                    right: state.messages[index].source == MessageSource.peripheral ? 48.0 : 16.0,
                     top: 8.0,
                     bottom: 8.0,
                   ),
@@ -78,9 +73,7 @@ class CharacteristicInteractionView extends StatelessWidget {
                           style: Theme.of(context).textTheme.bodyMedium,
                         ),
                         Icon(
-                          state.messages[index].source == MessageSource.mobile
-                              ? Icons.upload
-                              : Icons.download,
+                          state.messages[index].source == MessageSource.mobile ? Icons.upload : Icons.download,
                           color: Theme.of(context).disabledColor,
                         ),
                       ],
@@ -100,66 +93,43 @@ class CharacteristicInteractionView extends StatelessWidget {
                       children: <Widget>[
                         // TextField with rounded top left and bottom left corners.
                         Container(
-                          width: 300,
+                          width: 600,
                           decoration: BoxDecoration(
                             border: Border.all(
                               color: Theme.of(context).primaryColor,
-                              width: 2.0,
                             ),
-                            borderRadius: const BorderRadius.only(
-                              topLeft: Radius.circular(12.0),
-                              bottomLeft: Radius.circular(12.0),
+                            borderRadius: const BorderRadius.all(
+                              Radius.circular(12.0),
                             ),
                           ),
                           child: TextField(
                             controller: state.controller,
-                            decoration: const InputDecoration(
-                              contentPadding: EdgeInsets.symmetric(
+                            minLines: 1,
+                            maxLines: null,
+                            decoration: InputDecoration(
+                              contentPadding: const EdgeInsets.symmetric(
                                 vertical: 10.0,
                                 horizontal: 10.0,
                               ),
-                              border: OutlineInputBorder(
+                              border: const OutlineInputBorder(
                                 borderSide: BorderSide.none,
                               ),
+                              focusedBorder: const OutlineInputBorder(
+                                borderSide: BorderSide.none,
+                              ),
+                              suffixIcon: GestureDetector(
+                                onTap: state.onEntrySubmitted,
+                                child: Icon(
+                                  Icons.send,
+                                  color: Theme.of(context).primaryColor,
+                                ),
+                              ),
                             ),
-                            style: Theme.of(context)
-                                .textTheme
-                                .labelLarge
-                                ?.copyWith(
+                            style: Theme.of(context).textTheme.labelLarge?.copyWith(
                                   color: Theme.of(context).primaryColor,
                                 ),
                             cursorColor: Theme.of(context).primaryColor,
                             onSubmitted: (value) => state.onEntrySubmitted,
-                          ),
-                        ),
-                        // OutlinedButton with rounded top right and bottom right corners.
-                        Container(
-                          decoration: BoxDecoration(
-                            border: Border.all(
-                              color: Theme.of(context).primaryColor,
-                              width: 2.0,
-                            ),
-                            borderRadius: const BorderRadius.only(
-                              topRight: Radius.circular(12.0),
-                              bottomRight: Radius.circular(12.0),
-                            ),
-                          ),
-                          child: OutlinedButton(
-                            style: OutlinedButton.styleFrom(
-                              side: BorderSide
-                                  .none, // No border as it's already set by Container.
-                              shape: const RoundedRectangleBorder(
-                                borderRadius: BorderRadius.only(
-                                  topRight: Radius.circular(12.0),
-                                  bottomRight: Radius.circular(12.0),
-                                ),
-                              ),
-                            ),
-                            onPressed: state.onEntrySubmitted,
-                            child: Icon(
-                              Icons.send,
-                              color: Theme.of(context).primaryColor,
-                            ),
                           ),
                         ),
                       ],
