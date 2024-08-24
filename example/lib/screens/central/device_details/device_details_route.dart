@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_splendid_ble/shared/models/ble_device.dart';
 
+import '../scan/scan_route.dart';
 import 'device_details_controller.dart';
 
 /// Displays information about a [BleDevice] selected from the Bluetooth scan and provides controls for doing stuff
@@ -15,10 +16,11 @@ import 'device_details_controller.dart';
 /// perform service an characteristic discovery automatically after a connection is established using a boolean
 /// in the `connect` method.
 class DeviceDetailsRoute extends StatefulWidget {
+  /// Creates an instance of [DeviceDetailsRoute].
   const DeviceDetailsRoute({
-    Key? key,
     required this.device,
-  }) : super(key: key);
+    super.key,
+  });
 
   /// A [BleDevice] instance selected from the Bluetooth scan. Details and controls for this device will be
   /// presented by this route.

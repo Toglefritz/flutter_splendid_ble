@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 
 /// An error message displayed to the user.
 class ErrorMessage extends StatelessWidget {
+  /// Creates an instance of [ErrorMessage].
   const ErrorMessage({
-    super.key,
     required this.error,
+    super.key,
   });
 
   /// The error message to display.

@@ -5,24 +5,25 @@ import 'package:flutter_splendid_ble/central/models/ble_characteristic_value.dar
 
 /// Displays information about an individual Bluetooth characteristic.
 class CharacteristicInfo extends StatefulWidget {
+  /// Creates an instance of [CharacteristicInfo].
   const CharacteristicInfo({
-    super.key,
     required this.characteristic,
     required this.characteristicOnTap,
+    super.key,
   });
 
   /// A Bluetooth characteristic detailed by this widget.
   final BleCharacteristic characteristic;
 
   /// A callback invoked when a characteristic is tapped.
-  final Function characteristicOnTap;
+  final void Function(BleCharacteristic) characteristicOnTap;
 
   @override
   State<CharacteristicInfo> createState() => _CharacteristicInfoState();
 }
 
 class _CharacteristicInfoState extends State<CharacteristicInfo> {
-  /// The value of the [widget.characteristic].
+  /// The value of the `widget.characteristic`.
   BleCharacteristicValue? _characteristicValue;
 
   /// Reads the value of the provided Bluetooth characteristic and returns the value as a String.
@@ -30,9 +31,10 @@ class _CharacteristicInfoState extends State<CharacteristicInfo> {
   /// If reading the characteristic value is successful, this function returns the characteristic value as a
   /// [BleCharacteristicValue].
   Future<void> _readCharacteristicValue(
-      BleCharacteristic characteristic) async {
+    BleCharacteristic characteristic,
+  ) async {
     try {
-      BleCharacteristicValue characteristicValue =
+      final BleCharacteristicValue characteristicValue =
           await characteristic.readValue<BleCharacteristicValue>();
 
       setState(() {
@@ -41,7 +43,7 @@ class _CharacteristicInfoState extends State<CharacteristicInfo> {
     } catch (e) {
       debugPrint('Failed to read characteristic value with exception, $e');
 
-      // TODO show SnackBar?
+      // TODO(Toglefritz): show SnackBar?
     }
   }
 

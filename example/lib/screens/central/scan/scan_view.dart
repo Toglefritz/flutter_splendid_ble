@@ -1,18 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
-import 'package:flutter_splendid_ble_example/screens/central/scan/scan_controller.dart';
-
 import '../../components/loading_indicator.dart';
 import '../../components/main_app_bar.dart';
 import 'components/scan_result_tile.dart';
+import 'scan_controller.dart';
+import 'scan_route.dart';
 
 /// View for the [ScanRoute]. The view is dumb, and purely declarative. References values
 /// on the controller and widget.
 class ScanView extends StatelessWidget {
+  /// A reference to the controller for the [ScanRoute].
   final ScanController state;
 
-  const ScanView(this.state, {Key? key}) : super(key: key);
+  /// Creates an instance of [ScanView].
+  const ScanView(this.state, {super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -21,9 +23,11 @@ class ScanView extends StatelessWidget {
         actions: [
           IconButton(
             onPressed: state.onActionButtonPressed,
-            icon: Icon(state.scanInProgress
-                ? Icons.stop_outlined
-                : Icons.play_arrow_outlined),
+            icon: Icon(
+              state.scanInProgress
+                  ? Icons.stop_outlined
+                  : Icons.play_arrow_outlined,
+            ),
           ),
           IconButton(
             onPressed: state.onFiltersPressed,
@@ -62,7 +66,7 @@ class ScanView extends StatelessWidget {
                               state.onResultTap(state.discoveredDevices[index]),
                         )
                       : const SizedBox.shrink(),
-                )
+                ),
               ],
             ),
         ],

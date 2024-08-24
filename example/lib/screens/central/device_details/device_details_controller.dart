@@ -1,10 +1,12 @@
 import 'dart:async';
-import 'package:flutter/material.dart';
 
-import 'package:flutter_splendid_ble/central/splendid_ble_central.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_splendid_ble/central/models/ble_characteristic.dart';
 import 'package:flutter_splendid_ble/central/models/ble_connection_state.dart';
 import 'package:flutter_splendid_ble/central/models/ble_service.dart';
+import 'package:flutter_splendid_ble/central/models/exceptions/bluetooth_connection_exception.dart';
+import 'package:flutter_splendid_ble/central/splendid_ble_central.dart';
+import 'package:flutter_splendid_ble/shared/models/ble_device.dart';
 
 import '../../home/home_route.dart';
 import '../characteristic_interaction/characteristic_interaction_route.dart';
@@ -13,7 +15,7 @@ import 'device_details_view.dart';
 
 /// A controller for the [DeviceDetailsRoute] that manages the state and owns all business logic.
 class DeviceDetailsController extends State<DeviceDetailsRoute> {
-  /// A [FlutterBle] instance used for Bluetooth operations conducted by this route.
+  /// A [SplendidBleCentral] instance used for Bluetooth operations conducted by this route.
   final SplendidBleCentral _ble = SplendidBleCentral();
 
   /// A [StreamSubscription] for the connection state between the Flutter app and the Bluetooth peripheral.
@@ -22,20 +24,23 @@ class DeviceDetailsController extends State<DeviceDetailsRoute> {
   /// The current connection state between the host mobile device and the [BleDevice] provided to this route.
   BleConnectionState _currentConnectionState = BleConnectionState.unknown;
 
+  /// The current connection state between the host mobile device and the [BleDevice] provided to this route.
   BleConnectionState get currentConnectionState => _currentConnectionState;
 
   /// A utility for checking if the device is connected.
   bool get isConnected =>
       currentConnectionState == BleConnectionState.connected;
 
-  /// Determine if a connection attempt is currently in progress.
+  /// Determines if a connection attempt is currently in progress.
   bool _connecting = false;
 
+  /// Determines if a connection attempt is currently in progress.
   bool get connecting => _connecting;
 
   /// Determines if the service and characteristic discovery process is currently in progress.
   bool _discoveringServices = false;
 
+  /// Determines if the service and characteristic discovery process is currently in progress.
   bool get discoveringServices => _discoveringServices;
 
   /// A [StreamController] used to listen for updates during the BLE service discovery process.
@@ -44,6 +49,7 @@ class DeviceDetailsController extends State<DeviceDetailsRoute> {
   /// A list of Bluetooth service information that includes a list of characteristics under each service.
   final List<BleService> _discoveredServices = [];
 
+  /// A list of Bluetooth service information that includes a list of characteristics under each service.
   List<BleService> get discoveredServices => _discoveredServices;
 
   @override
@@ -72,7 +78,7 @@ class DeviceDetailsController extends State<DeviceDetailsRoute> {
     await _ble.disconnect(widget.device.address);
 
     if (!mounted) return;
-    Navigator.pushReplacement<void, void>(
+    await Navigator.pushReplacement<void, void>(
       context,
       MaterialPageRoute<void>(
         builder: (BuildContext context) => const HomeRoute(),
@@ -90,18 +96,24 @@ class DeviceDetailsController extends State<DeviceDetailsRoute> {
     try {
       _connectionStateStream = _ble
           .connect(deviceAddress: widget.device.address)
-          .listen((state) => onConnectionStateUpdate(state), onError: (error) {
-        // Handle the error here
-        _handleConnectionError(error);
-      });
+          // ignore: inference_failure_on_untyped_parameter
+          .listen(
+        onConnectionStateUpdate,
+        // ignore: inference_failure_on_untyped_parameter
+        onError: (error) {
+          // Handle the error here
+          _handleConnectionError(error as BluetoothConnectionException);
+        },
+      );
     } catch (e) {
       debugPrint(
-          'Failed to connect to device, ${widget.device.address}, with exception, $e');
+        'Failed to connect to device, ${widget.device.address}, with exception, $e',
+      );
     }
   }
 
   /// Handles errors resulting from an attempt to connect to a peripheral.
-  void _handleConnectionError(error) {
+  void _handleConnectionError(BluetoothConnectionException error) {
     // Create the SnackBar with the error message
     final snackBar = SnackBar(
       content: Text('Error connecting to Bluetooth device: $error'),
@@ -126,7 +138,7 @@ class DeviceDetailsController extends State<DeviceDetailsRoute> {
 
     _servicesDiscoveredStream =
         _ble.discoverServices(widget.device.address).listen(
-              (services) => _onServiceDiscovered(services),
+              _onServiceDiscovered,
             );
   }
 
@@ -149,7 +161,7 @@ class DeviceDetailsController extends State<DeviceDetailsRoute> {
         _connecting = false;
       });
 
-      // TODO when connected do something else in the UI right about here
+      // TODO(Toglefritz): when connected do something else in the UI right about here
     });
   }
 

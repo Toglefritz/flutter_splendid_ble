@@ -8,10 +8,11 @@ import 'package:flutter_splendid_ble/shared/models/ble_device.dart';
 /// value for its name. The tile also includes the Bluetooth address for the Bluetooth device. Finally, the RSSI
 /// of the device is represented as a
 class ScanResultTile extends StatelessWidget {
+  /// Creates an instance of [ScanResultTile].
   const ScanResultTile({
-    super.key,
     required this.device,
     required this.onTap,
+    super.key,
   });
 
   /// A [BleDevice] detected by the Bluetooth scanning process.
@@ -28,7 +29,6 @@ class ScanResultTile extends StatelessWidget {
         elevation: 0,
         shape: RoundedRectangleBorder(
           side: BorderSide(
-            width: 1,
             color: Theme.of(context).primaryColorLight,
           ),
           borderRadius: BorderRadius.circular(12.0),

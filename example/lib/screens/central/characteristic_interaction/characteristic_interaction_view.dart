@@ -3,14 +3,17 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 import '../../components/main_app_bar.dart';
 import 'characteristic_interaction_controller.dart';
+import 'characteristic_interaction_route.dart';
 import 'models/message_source.dart';
 
 /// View for the [CharacteristicInteractionRoute]. The view is dumb, and purely declarative. References values
 /// on the controller and widget.
 class CharacteristicInteractionView extends StatelessWidget {
+  /// A reference to the controller for the [CharacteristicInteractionRoute].
   final CharacteristicInteractionController state;
 
-  const CharacteristicInteractionView(this.state, {Key? key}) : super(key: key);
+  /// Creates an instance of [CharacteristicInteractionView].
+  const CharacteristicInteractionView(this.state, {super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -24,7 +27,6 @@ class CharacteristicInteractionView extends StatelessWidget {
           maxHeight: MediaQuery.of(context).size.height,
         ),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Padding(
               padding: const EdgeInsets.only(top: 16.0),
@@ -46,7 +48,7 @@ class CharacteristicInteractionView extends StatelessWidget {
               itemCount: state.messages.length,
               shrinkWrap: true,
               itemBuilder: (BuildContext context, int index) {
-                // TODO update widget
+                // TODO(Toglefritz): update widget
                 return Card(
                   margin: EdgeInsets.only(
                     left: state.messages[index].source == MessageSource.mobile
@@ -92,7 +94,6 @@ class CharacteristicInteractionView extends StatelessWidget {
                 padding: const EdgeInsets.only(bottom: 16.0),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.end,
-                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Row(
                       mainAxisSize: MainAxisSize.min,

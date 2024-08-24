@@ -8,6 +8,7 @@ class Message {
   /// The originator of the message, either the mobile device or the Bluetooth peripheral.
   final MessageSource source;
 
+  /// Creates an instance of [Message].
   Message({
     required this.contents,
     required this.source,

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 /// An indicator used to indicate that something that needs to load is loading.
 class LoadingIndicator extends StatelessWidget {
+  /// Creates an instance of [LoadingIndicator].
   const LoadingIndicator({
     super.key,
     this.size,

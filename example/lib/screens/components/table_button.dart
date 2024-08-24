@@ -5,7 +5,10 @@ import 'loading_indicator.dart';
 /// An enumeration of values representing the sides of a neighboring widget, typically a [Table] on which the
 /// [TableButton] will appear.
 enum ButtonSide {
+  /// The [TableButton] will appear above the [Table] or other widget.
   top,
+
+  /// The [TableButton] will appear below the [Table] or other widget.
   bottom,
 }
 
@@ -15,11 +18,12 @@ enum ButtonSide {
 /// displayed above a [Table]. This allows to button to appear as an extension of the [Table], especially when the
 /// [Table] also adapts its border styling to mirror that of this button.
 class TableButton extends StatelessWidget {
+  /// Creates an instance of [TableButton].
   const TableButton({
-    super.key,
     required this.onTap,
     required this.side,
     required this.text,
+    super.key,
     this.loading = false,
   });
 
@@ -74,7 +78,7 @@ class TableButton extends StatelessWidget {
               text,
               style: Theme.of(context).textTheme.displaySmall,
             ),
-          if (loading == true)
+          if (loading ?? false)
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 6.0),
               child: LoadingIndicator(

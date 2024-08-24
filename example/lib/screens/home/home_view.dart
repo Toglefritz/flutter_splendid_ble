@@ -6,13 +6,16 @@ import '../components/main_app_bar.dart';
 
 import 'components/error_message.dart';
 import 'home_controller.dart';
+import 'home_route.dart';
 
 /// View for the [HomeRoute]. The view is dumb, and purely declarative. References values
 /// on the controller and widget.
 class HomeView extends StatelessWidget {
+  /// A reference to the controller for the [HomeRoute].
   final HomeController state;
 
-  const HomeView(this.state, {Key? key}) : super(key: key);
+  /// Creates an instance of [HomeView].
+  const HomeView(this.state, {super.key});
 
   @override
   Widget build(BuildContext context) {

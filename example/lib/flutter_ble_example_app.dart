@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import 'package:flutter_splendid_ble_example/screens/home/home_route.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'screens/home/home_route.dart';
 
 /// A [StatelessWidget] that builds the root [MaterialApp] for the Flutter BLE Example App.
 ///
@@ -13,6 +13,7 @@ import 'package:flutter_splendid_ble_example/screens/home/home_route.dart';
 /// the example application, setting the stage for any additional screens, widgets, or functionalities that might be
 /// added.
 class SplendidBleExampleApp extends StatelessWidget {
+  /// Creates an instance of [SplendidBleExampleApp].
   const SplendidBleExampleApp({super.key});
 
   @override
@@ -23,30 +24,29 @@ class SplendidBleExampleApp extends StatelessWidget {
       theme: ThemeData(
         brightness: Brightness.dark,
         primaryColor: Colors.white,
-        textTheme: TextTheme(
-          displayLarge: const TextStyle(
+        textTheme: const TextTheme(
+          displayLarge: TextStyle(
             fontSize: 64,
             fontWeight: FontWeight.bold,
             fontFamily: 'MajorMono',
           ),
-          displayMedium: const TextStyle(
+          displayMedium: TextStyle(
             fontSize: 36,
             fontWeight: FontWeight.bold,
             fontFamily: 'MajorMono',
           ),
-          displaySmall: const TextStyle(
+          displaySmall: TextStyle(
             fontSize: 32,
             fontWeight: FontWeight.bold,
           ),
         ),
-        textSelectionTheme: TextSelectionThemeData(
+        textSelectionTheme: const TextSelectionThemeData(
           cursorColor: Colors.white,
         ),
-        inputDecorationTheme: InputDecorationTheme(
+        inputDecorationTheme: const InputDecorationTheme(
           labelStyle: TextStyle(color: Colors.white),
           focusedBorder: UnderlineInputBorder(
             borderSide: BorderSide(
-              style: BorderStyle.solid,
               color: Colors.white,
             ),
           ),

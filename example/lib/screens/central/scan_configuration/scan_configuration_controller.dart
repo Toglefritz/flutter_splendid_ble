@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
-
 import 'package:flutter_splendid_ble/central/models/scan_filter.dart';
 import 'package:flutter_splendid_ble/central/models/scan_settings.dart';
-import 'package:flutter_splendid_ble_example/screens/central/scan_configuration/scan_configuration_route.dart';
-import 'package:flutter_splendid_ble_example/screens/central/scan_configuration/scan_configuration_view.dart';
 
 import '../scan/scan_route.dart';
+import 'scan_configuration_route.dart';
+import 'scan_configuration_view.dart';
 
 /// A controller for the [ScanConfigurationRoute] that manages the state and owns all business logic.
 class ScanConfigurationController extends State<ScanConfigurationRoute> {
@@ -23,8 +22,8 @@ class ScanConfigurationController extends State<ScanConfigurationRoute> {
   /// advertising data.
   String? deviceName;
 
-  /// A manufacturer ID, which is the initial part of the [bluetoothAddress] used to filter the Bluetooth scan to show
-  /// only devices from the same manufacturer (or the same manufacturer of the Bluetooth radio). This is useful for
+  /// A manufacturer ID, which is the initial part of the Bluetooth device address used to filter the Bluetooth scan to
+  /// show only devices from the same manufacturer (or the same manufacturer of the Bluetooth radio). This is useful for
   /// displaying only devices from a particular device vendor.
   int? manufacturerId;
 
@@ -52,13 +51,14 @@ class ScanConfigurationController extends State<ScanConfigurationRoute> {
   }
 
   /// Handles changes in the checkbox used to select an option for the allow duplicates scan setting.
-  void onAllowDuplicatesChanged(bool? value) {
+  void onAllowDuplicatesChanged({required bool? allowDuplicates}) {
     setState(() {
-      allowDuplicates = value ?? false;
+      allowDuplicates = allowDuplicates ?? false;
     });
   }
 
   /// Handles changes in the Bluetooth device name field used to filter the Bluetooth scan list.
+  // ignore: use_setters_to_change_properties
   void onDeviceNameChanged(String value) {
     deviceName = value;
   }
@@ -81,14 +81,14 @@ class ScanConfigurationController extends State<ScanConfigurationRoute> {
   /// [ScanRoute] and provides the information to be used for the next scan.
   void onDone() {
     // Create a ScanSettings instance based on the inputs into the form
-    ScanSettings settings = ScanSettings(
+    final ScanSettings settings = ScanSettings(
       scanMode: scanMode,
       reportDelayMillis: reportDelay,
       allowDuplicates: allowDuplicates,
     );
 
     // Create a ScanFilter instance based on the inputs into the form
-    ScanFilter filter = ScanFilter(
+    final ScanFilter filter = ScanFilter(
       deviceName: deviceName,
       serviceUuids: serviceUuids,
       manufacturerId: manufacturerId,

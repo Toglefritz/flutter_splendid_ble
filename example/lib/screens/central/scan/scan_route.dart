@@ -2,15 +2,17 @@ import 'package:flutter/material.dart';
 
 import 'package:flutter_splendid_ble/central/models/scan_filter.dart';
 import 'package:flutter_splendid_ble/central/models/scan_settings.dart';
-import 'package:flutter_splendid_ble_example/screens/central/scan/scan_controller.dart';
+import 'package:flutter_splendid_ble/shared/models/ble_device.dart';
+import 'scan_controller.dart';
 
 /// Automatically starts a scan for nearby Bluetooth devices and presents the detected devices in a list.
 class ScanRoute extends StatefulWidget {
+  /// Creates an instance of [ScanRoute].
   const ScanRoute({
     this.filters,
     this.settings,
-    Key? key,
-  }) : super(key: key);
+    super.key,
+  });
 
   /// A list of [ScanFilter]s to be used for the scanning process.
   ///
@@ -26,7 +28,7 @@ class ScanRoute extends StatefulWidget {
   /// [ScanSettings] used to control the behavior of the scan itself.
   ///
   /// The options that can be specified in the [ScanSettings] include how aggressive the scanning process is when it
-  /// comes to returning [BleDeice] instances for peripherals detected during the scanning process, a delay between
+  /// comes to returning [BleDevice] instances for peripherals detected during the scanning process, a delay between
   /// detecting a device and returning it in the scan list, and whether or not the same device will be returned
   /// multiple times during the scanning process.
   final ScanSettings? settings;

@@ -2,17 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 import '../../components/main_app_bar.dart';
+import '../../components/table_button.dart';
 import 'components/device_details_table.dart';
 import 'components/services_info.dart';
-import '../../components/table_button.dart';
 import 'device_details_controller.dart';
+import 'device_details_route.dart';
 
-/// View for the [StartScanRoute]. The view is dumb, and purely declarative. References values
+/// View for the [DeviceDetailsRoute]. The view is dumb, and purely declarative. References values
 /// on the controller and widget.
 class DeviceDetailsView extends StatelessWidget {
+  /// A reference to the controller for the [DeviceDetailsRoute].
   final DeviceDetailsController state;
 
-  const DeviceDetailsView(this.state, {Key? key}) : super(key: key);
+  /// Creates an instance of [DeviceDetailsView].
+  const DeviceDetailsView(this.state, {super.key});
 
   @override
   Widget build(BuildContext context) {

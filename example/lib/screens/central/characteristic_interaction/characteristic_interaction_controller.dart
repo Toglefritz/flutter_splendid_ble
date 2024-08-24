@@ -39,12 +39,12 @@ class CharacteristicInteractionController extends State<CharacteristicInteractio
       eventContent = utf8.decode(event.value);
     } catch (e) {
       debugPrint('Failed to decode event value with exception, $e');
-      // TODO show SnackBar or something
+      // TODO(Toglefritz): show SnackBar or something
       return;
     }
 
     // Create a Message instance for the new event
-    Message newMessage = Message(contents: eventContent, source: MessageSource.peripheral);
+    final Message newMessage = Message(contents: eventContent, source: MessageSource.peripheral);
 
     // Add the new message to the list
     setState(() {
@@ -71,7 +71,9 @@ class CharacteristicInteractionController extends State<CharacteristicInteractio
         controller.text = '';
       });
     } catch (e) {
-      debugPrint('Writing to characteristic, ${widget.characteristic.uuid}, failed with exception, $e');
+      debugPrint(
+        'Writing to characteristic, ${widget.characteristic.uuid}, failed with exception, $e',
+      );
 
       _showWriteError();
     }
@@ -80,7 +82,7 @@ class CharacteristicInteractionController extends State<CharacteristicInteractio
   /// Shows a [SnackBar] explaining that a Bluetooth write operation has failed.
   void _showWriteError() {
     if (!mounted) return;
-    SnackBar snackBar = SnackBar(
+    final SnackBar snackBar = SnackBar(
       content: Text(AppLocalizations.of(context)!.errorWriting),
       duration: const Duration(seconds: 8),
       behavior: SnackBarBehavior.floating,

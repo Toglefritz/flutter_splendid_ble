@@ -1,23 +1,26 @@
 import 'dart:async';
-import 'package:flutter/material.dart';
 
-import 'package:flutter_splendid_ble/central/splendid_ble_central.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_splendid_ble/central/models/exceptions/bluetooth_scan_exception.dart';
+import 'package:flutter_splendid_ble/central/models/scan_filter.dart';
+import 'package:flutter_splendid_ble/central/models/scan_settings.dart';
+import 'package:flutter_splendid_ble/central/splendid_ble_central.dart';
 import 'package:flutter_splendid_ble/shared/models/ble_device.dart';
-import 'package:flutter_splendid_ble_example/screens/central/scan/scan_route.dart';
-import 'package:flutter_splendid_ble_example/screens/central/scan/scan_view.dart';
 
 import '../device_details/device_details_route.dart';
 import '../scan_configuration/scan_configuration_route.dart';
+import 'scan_route.dart';
+import 'scan_view.dart';
 
 /// A controller for the [ScanRoute] that manages the state and owns all business logic.
 class ScanController extends State<ScanRoute> {
-  /// A [FlutterBle] instance used for Bluetooth operations conducted by this route.
+  /// A [SplendidBleCentral] instance used for Bluetooth operations conducted by this route.
   final SplendidBleCentral _ble = SplendidBleCentral();
 
   /// Determines if a scan is currently in progress.
   bool _scanInProgress = false;
 
+  /// Determines if a scan is currently in progress.
   bool get scanInProgress => _scanInProgress;
 
   /// A [StreamSubscription] for the Bluetooth scanning process.
@@ -37,7 +40,7 @@ class ScanController extends State<ScanRoute> {
   ///
   /// The scan is handled by the *flutter_ble* plugin. Regardless of operating system, the scan works by providing a
   /// callback function (in this case [_onDeviceDetected]) that is called whenever a device is detected by the scan.
-  /// The [startScan] stream delivers an instance of [BleDevice] to the callback which contains information about
+  /// The `startScan` stream delivers an instance of [BleDevice] to the callback which contains information about
   /// the Bluetooth device.
   ///
   /// Various filters can be applied to the scanning process to limit the selection of devices returned by the scan.
@@ -49,10 +52,11 @@ class ScanController extends State<ScanRoute> {
     _scanStream = _ble
         .startScan(filters: widget.filters, settings: widget.settings)
         .listen(
-      (device) => _onDeviceDetected(device),
+      _onDeviceDetected,
+      // ignore: inference_failure_on_untyped_parameter
       onError: (error) {
         // Handle the error here
-        _handleScanError(error);
+        _handleScanError(error as BluetoothScanException);
         return;
       },
     );
@@ -63,7 +67,7 @@ class ScanController extends State<ScanRoute> {
   }
 
   /// Handles errors returned on the [_scanStream].
-  void _handleScanError(error) {
+  void _handleScanError(BluetoothScanException error) {
     // Create the SnackBar with the error message
     final snackBar = SnackBar(
       content: Text('Error scanning for Bluetooth devices: $error'),
@@ -96,7 +100,7 @@ class ScanController extends State<ScanRoute> {
   /// Handles taps on the "filter" button in the [AppBar].
   ///
   /// When this button is pressed, the app navigates to the [ScanConfigurationRoute], which allows for the
-  /// [ScanFilter]s and [ScanSetting]s to be set up.
+  /// [ScanFilter]s and [ScanSettings]s to be set up.
   void onFiltersPressed() {
     Navigator.pushReplacement<void, void>(
       context,

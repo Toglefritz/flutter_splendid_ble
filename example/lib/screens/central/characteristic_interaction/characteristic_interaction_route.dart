@@ -15,11 +15,12 @@ import 'characteristic_interaction_controller.dart';
 /// used to input messages to be sent to the Bluetooth characteristic is hidden. This interface is displayed for
 /// characteristics that have write (again whether encrypted or unencrypted) properties.
 class CharacteristicInteractionRoute extends StatefulWidget {
+  /// Creates an instance of [CharacteristicInteractionRoute].
   const CharacteristicInteractionRoute({
-    Key? key,
     required this.device,
     required this.characteristic,
-  }) : super(key: key);
+    super.key,
+  });
 
   /// The [BleDevice] with which the app will communicate in this route.
   final BleDevice device;

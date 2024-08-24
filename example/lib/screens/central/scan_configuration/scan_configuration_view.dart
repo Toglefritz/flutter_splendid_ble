@@ -1,17 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-
 import 'package:flutter_splendid_ble/central/models/scan_settings.dart';
-import 'package:flutter_splendid_ble_example/screens/central/scan_configuration/scan_configuration_controller.dart';
 
 import '../../components/main_app_bar.dart';
+import 'scan_configuration_controller.dart';
+import 'scan_configuration_route.dart';
 
-/// View for the [StartScanRoute]. The view is dumb, and purely declarative. References values
+/// View for the [ScanConfigurationRoute]. The view is dumb, and purely declarative. References values
 /// on the controller and widget.
 class ScanConfigurationView extends StatelessWidget {
+  /// A reference to the controller for the [ScanConfigurationRoute].
   final ScanConfigurationController state;
 
-  const ScanConfigurationView(this.state, {Key? key}) : super(key: key);
+  /// Creates an instance of [ScanConfigurationView].
+  const ScanConfigurationView(this.state, {super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -43,7 +45,7 @@ class ScanConfigurationView extends StatelessWidget {
                       child: Text(AppLocalizations.of(context)!.lowLatency),
                     ),
                   ],
-                  onChanged: (value) => state.onScanModeChanged(value),
+                  onChanged: state.onScanModeChanged,
                   decoration: InputDecoration(
                     labelText: AppLocalizations.of(context)!.scanMode,
                   ),
@@ -53,13 +55,14 @@ class ScanConfigurationView extends StatelessWidget {
                   decoration: InputDecoration(
                     labelText: AppLocalizations.of(context)!.reportDelay,
                   ),
-                  validator: (value) => state.validateReportDelay(value),
+                  validator: state.validateReportDelay,
                 ),
                 CheckboxListTile(
                   contentPadding: EdgeInsets.zero,
                   title: Text(AppLocalizations.of(context)!.allowDuplicates),
                   value: state.allowDuplicates,
-                  onChanged: (value) => state.onAllowDuplicatesChanged(value),
+                  onChanged: (value) =>
+                      state.onAllowDuplicatesChanged(allowDuplicates: value),
                 ),
                 Padding(
                   padding: const EdgeInsets.only(top: 16.0),
@@ -72,20 +75,20 @@ class ScanConfigurationView extends StatelessWidget {
                   decoration: InputDecoration(
                     labelText: AppLocalizations.of(context)!.deviceName,
                   ),
-                  onChanged: (value) => state.onDeviceNameChanged(value),
+                  onChanged: state.onDeviceNameChanged,
                 ),
                 TextFormField(
                   keyboardType: TextInputType.number,
                   decoration: InputDecoration(
                     labelText: AppLocalizations.of(context)!.manufacturerId,
                   ),
-                  onChanged: (value) => state.onManufacturerIdChanged(value),
+                  onChanged: state.onManufacturerIdChanged,
                 ),
                 TextFormField(
                   decoration: InputDecoration(
                     labelText: AppLocalizations.of(context)!.serviceUuids,
                   ),
-                  onChanged: (value) => state.onServiceUuidsChanged(value),
+                  onChanged: state.onServiceUuidsChanged,
                 ),
                 Padding(
                   padding: const EdgeInsets.only(top: 64.0),
