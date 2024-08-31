@@ -4,6 +4,7 @@ import '../shared/models/bluetooth_status.dart';
 import 'central_platform_interface.dart';
 import 'models/ble_connection_state.dart';
 import 'models/ble_service.dart';
+import 'models/connected_ble_device.dart';
 import 'models/scan_filter.dart';
 import 'models/scan_settings.dart';
 
@@ -39,6 +40,10 @@ class SplendidBleCentral {
   /// Returns a [Stream] of [BluetoothStatus].
   Stream<BluetoothStatus> emitCurrentBluetoothStatus() {
     return CentralPlatformInterface.instance.emitCurrentBluetoothStatus();
+  }
+  /// Returns a list of BLE device identifiers that are currently connected to the host device.
+  Future<List<ConnectedBleDevice>> getConnectedDevices(List<String> serviceUUIDs) async {
+    return CentralPlatformInterface.instance.getConnectedDevices(serviceUUIDs);
   }
 
   /// Asks the platform to request Bluetooth permissions from the user.

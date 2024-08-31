@@ -1,5 +1,6 @@
 package com.splendidendeavors.flutter_splendid_ble
 
+import android.bluetooth.BluetoothDevice
 import androidx.annotation.NonNull
 
 import io.flutter.embedding.engine.plugins.FlutterPlugin
@@ -10,6 +11,7 @@ import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
 
 import android.bluetooth.BluetoothGattCharacteristic
+import android.bluetooth.BluetoothManager
 import com.splendidendeavors.flutter_splendid_ble.adapter.BluetoothAdapterHandler
 import com.splendidendeavors.flutter_splendid_ble.`interface`.BleDeviceInterface
 import com.splendidendeavors.flutter_splendid_ble.scanner.BleScannerHandler
@@ -77,6 +79,10 @@ class FlutterSplendidBlePlugin : FlutterPlugin, MethodCallHandler {
             "emitCurrentBluetoothStatus" -> {
                 bluetoothAdapterHandler.emitCurrentBluetoothStatus()
                 result.success(null)
+            }
+
+            "getConnectedDevices" -> {
+                result.notImplemented("Getting connected devices is not yet implemented on Android")
             }
 
             "startScan" -> {

@@ -113,3 +113,7 @@ All notable changes to the `flutter_splendid_ble` plugin will be documented in t
 - Updated lint rules for plugin
 - Updated documentation
 - Updated characteristic interaction UI
+
+## [0.13.0] 2024/08/31
+
+- Added method to get connected Bluetooth devices (currently only for iOS and macOS)

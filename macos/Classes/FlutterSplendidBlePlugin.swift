@@ -74,7 +74,7 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
         return CentralMethod.allCases.map { $0.rawValue }.contains(methodName)
     }
     
-    /// Handles all Method Channel calls related to functionalityh that is shared beteen the BLE central and BLE peripheral device roles. This includes
+    /// Handles all Method Channel calls related to functionality that is shared between the BLE central and BLE peripheral device roles. This includes
     /// operations like requesting permissions and checking on the status of the host device's Bluetooth adapter.
     private func handleSharedMethod(_ call: FlutterMethodCall, _ result: @escaping FlutterResult) {
         switch call.method {
@@ -135,6 +135,18 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
             // Start scanning with optional service UUIDs and options.
             centralManager.scanForPeripherals(withServices: serviceUUIDs, options: options)
             result(nil)
+        
+        case CentralMethod.getConnectedDevices.rawValue:
+            if let arguments = call.arguments as? [String: Any],
+                   let serviceUUIDs = arguments["serviceUUIDs"] as? [String] {
+                    let connectedDevices = getConnectedDevices(withServiceUUIDs: serviceUUIDs)
+                
+                    result(connectedDevices)
+                } else {
+                    result(FlutterError(code: "INVALID_ARGUMENTS",
+                                        message: "Expected a list of service UUIDs.",
+                                        details: nil))
+                }
             
         case CentralMethod.stopScan.rawValue:
             // Stop scanning for BLE devices
@@ -475,7 +487,26 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
         // Invoke method on Flutter side
         centralChannel.invokeMethod("permissionStatusUpdated", arguments: status)
     }
-    
+
+    /// Gets a list of Bluetooth devices that are currently connected to the device.
+    ///
+    /// This function accepts a list of service UUIDs used to filter the list of connected BLE devices to return. This list must contain at least one UUID because requesting
+    /// connected devices without providing a service UUID will always return an empty list (it is asking for a list of Bluetooth devices that do not have any services, which
+    /// is always an empty list).
+    ///
+    /// - Returns: A list of connected devices.
+    private func getConnectedDevices(withServiceUUIDs serviceUUIDs: [String]) -> [[String: String]] {
+        let uuids = serviceUUIDs.map { CBUUID(string: $0) }
+        let connectedPeripherals = centralManager.retrieveConnectedPeripherals(withServices: uuids)
+        
+        return connectedPeripherals.map { peripheral in
+            [
+                "name": peripheral.name ?? "Unknown",
+                "identifier": peripheral.identifier.uuidString
+            ]
+        }
+    }
+
     // MARK: Adapter Status Helper Methods
     
     ///  The methods in this section manage the Bluetooth adapter on a MacOS device and communicates its status to the Dart side of a Flutter app.

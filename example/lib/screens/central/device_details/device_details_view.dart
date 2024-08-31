@@ -21,6 +21,10 @@ class DeviceDetailsView extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: MainAppBar(
+        leading: IconButton(
+          onPressed: state.onBack,
+          icon: const Icon(Icons.arrow_back_ios),
+        ),
         actions: [
           IconButton(
             onPressed: state.onClose,
@@ -39,6 +43,7 @@ class DeviceDetailsView extends StatelessWidget {
                 child: Text(
                   state.widget.device.name ?? state.widget.device.address,
                   style: Theme.of(context).textTheme.displayMedium,
+                  textAlign: TextAlign.center,
                 ),
               ),
               Padding(

@@ -10,6 +10,7 @@ import '../shared/models/ble_device.dart';
 import '../shared/models/bluetooth_permission_status.dart';
 import '../shared/models/bluetooth_status.dart';
 import 'central_method_channel.dart';
+import 'models/connected_ble_device.dart';
 
 /// The interface that implementations of splendid_ble must implement.
 abstract class CentralPlatformInterface extends PlatformInterface {
@@ -42,6 +43,13 @@ abstract class CentralPlatformInterface extends PlatformInterface {
   Stream<BluetoothStatus> emitCurrentBluetoothStatus() {
     throw UnimplementedError(
       'emitCurrentBluetoothStatus() has not been implemented.',
+    );
+  }
+
+  /// Returns a list of BLE device identifiers that are currently connected to the host device.
+  Future<List<ConnectedBleDevice>> getConnectedDevices(List<String> serviceUUIDs) async {
+    throw UnimplementedError(
+      'getConnectedDevices() has not been implemented.',
     );
   }
 

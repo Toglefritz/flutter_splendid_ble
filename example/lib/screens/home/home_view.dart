@@ -7,6 +7,7 @@ import '../components/main_app_bar.dart';
 import 'components/error_message.dart';
 import 'home_controller.dart';
 import 'home_route.dart';
+import 'models/home_menu_items.dart';
 
 /// View for the [HomeRoute]. The view is dumb, and purely declarative. References values
 /// on the controller and widget.
@@ -20,7 +21,19 @@ class HomeView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: const MainAppBar(),
+      appBar: MainAppBar(
+        actions: [
+          PopupMenuButton<HomeMenuItem>(
+            onSelected: state.onMenuSelected,
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                value: HomeMenuItem.connectedDevices,
+                child: Text(AppLocalizations.of(context)!.showConnectedDevices),
+              ),
+            ],
+          ),
+        ],
+      ),
       extendBodyBehindAppBar: true,
       body: Center(
         child: GestureDetector(

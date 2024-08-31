@@ -62,6 +62,17 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
         case "emitCurrentBluetoothStatus":
             emitCurrentBluetoothStatus()
             result(nil)
+
+        case "getConnectedDevices":
+            if let arguments = call.arguments as? [String: Any],
+               let serviceUUIDs = arguments["serviceUUIDs"] as? [String] {
+                let connectedDevices = getConnectedDevices(withServiceUUIDs: serviceUUIDs)
+                result(connectedDevices)
+            } else {
+                result(FlutterError(code: "INVALID_ARGUMENTS",
+                                    message: "Expected a list of service UUIDs.",
+                                    details: nil))
+            }
             
         case "startScan":
             var serviceUUIDs: [CBUUID]? = nil
@@ -199,6 +210,25 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
     /// - Parameter central: The central manager whose state has been updated.
     public func centralManagerDidUpdateState(_ central: CBCentralManager) {
         emitCurrentPermissionStatus()
+    }
+
+    /// Gets a list of Bluetooth devices that are currently connected to the device.
+    ///
+    /// This function accepts a list of service UUIDs used to filter the list of connected BLE devices to return. This list must contain at least one UUID because requesting
+    /// connected devices without providing a service UUID will always return an empty list (it is asking for a list of Bluetooth devices that do not have any services, which
+    /// is always an empty list).
+    ///
+    /// - Returns: A list of connected devices.
+    private func getConnectedDevices(withServiceUUIDs serviceUUIDs: [String]) -> [[String: String]] {
+        let uuids = serviceUUIDs.map { CBUUID(string: $0) }
+        let connectedPeripherals = centralManager.retrieveConnectedPeripherals(withServices: uuids)
+        
+        return connectedPeripherals.map { peripheral in
+            [
+                "name": peripheral.name ?? "Unknown",
+                "identifier": peripheral.identifier.uuidString
+            ]
+        }
     }
     
     /// Called when a peripheral is discovered while scanning.

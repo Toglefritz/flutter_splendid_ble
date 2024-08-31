@@ -13,23 +13,25 @@ plugin provides a comprehensive tool for versatile BLE operations.
 [![style: very good analysis](https://img.shields.io/badge/style-very_good_analysis-B22C89.svg)](https://pub.dev/packages/very_good_analysis)
 
 ## Table of Contents
+
 - [Features](#features)
 - [Main Goals](#main-goals)
 - [Installation](#installation)
 - [Prerequisites](#prerequisites)
-  - [iOS/macOS Prerequisites](#iosmacos-prerequisites)
-  - [Android Prerequisites](#android-prerequisites)
+    - [iOS/macOS Prerequisites](#iosmacos-prerequisites)
+    - [Android Prerequisites](#android-prerequisites)
 - [Usage](#usage)
-  - [Initializing the Plugin](#initializing-the-plugin)
-  - [Requesting Bluetooth Permissions](#requesting-bluetooth-permissions)
-  - [Checking the Bluetooth Adapter Status](#checking-the-bluetooth-adapter-status)
-  - [Starting a Bluetooth Scan for Detecting Nearby BLE Devices](#starting-a-bluetooth-scan-for-detecting-nearby-ble-devices)
-  - [Connecting to a Bluetooth Device](#connecting-to-a-bluetooth-device)
-  - [Performing Service/Characteristic Discovery on a BLE Peripheral](#performing-servicecharacteristic-discovery-on-a-ble-peripheral)
-  - [Subscribing to BLE Characteristic Notifications/Indications](#subscribing-to-ble-characteristic-notificationsindications)
-  - [Writing Values to a BLE Characteristic](#writing-values-to-a-ble-characteristic)
-  - [Reading Values from a BLE Characteristic](#reading-values-from-a-ble-characteristic)
-  - [Disconnecting from a BLE Peripheral](#disconnecting-from-a-ble-peripheral)
+    - [Initializing the Plugin](#initializing-the-plugin)
+    - [Requesting Bluetooth Permissions](#requesting-bluetooth-permissions)
+    - [Checking the Bluetooth Adapter Status](#checking-the-bluetooth-adapter-status)
+    - [Getting Connected Bluetooth Devices](#getting-connected-bluetooth-devices)
+    - [Starting a Bluetooth Scan for Detecting Nearby BLE Devices](#starting-a-bluetooth-scan-for-detecting-nearby-ble-devices)
+    - [Connecting to a Bluetooth Device](#connecting-to-a-bluetooth-device)
+    - [Performing Service/Characteristic Discovery on a BLE Peripheral](#performing-servicecharacteristic-discovery-on-a-ble-peripheral)
+    - [Subscribing to BLE Characteristic Notifications/Indications](#subscribing-to-ble-characteristic-notificationsindications)
+    - [Writing Values to a BLE Characteristic](#writing-values-to-a-ble-characteristic)
+    - [Reading Values from a BLE Characteristic](#reading-values-from-a-ble-characteristic)
+    - [Disconnecting from a BLE Peripheral](#disconnecting-from-a-ble-peripheral)
 - [Tutorial Article](#tutorial-article)
 - [Error Handling](#error-handling)
 - [Viewing Documentation Locally](#viewing-documentation-locally)
@@ -125,9 +127,9 @@ Bluetooth and the reasons for accessing it. Below are the required keys and thei
 
 ```xml
 
-<key>NSBluetoothAlwaysUsageDescription</key>
-<string>This app uses Bluetooth to connect to external
-devices.</string>
+<key>NSBluetoothAlwaysUsageDescription</key><string>This app uses Bluetooth to connect to external
+devices.
+</string>
 ```
 
 2. NSBluetoothPeripheralUsageDescription (iOS only)
@@ -138,9 +140,9 @@ devices.</string>
 
 ```xml
 
-<key>NSBluetoothPeripheralUsageDescription</key>
-<string>This app uses Bluetooth to communicate with
-external peripherals.</string>
+<key>NSBluetoothPeripheralUsageDescription</key><string>This app uses Bluetooth to communicate with
+external peripherals.
+</string>
 ```
 
 3. NSBluetoothAlwaysAndWhenInUseUsageDescription (macOS only)
@@ -152,9 +154,9 @@ external peripherals.</string>
 
 ```xml
 
-<key>NSBluetoothAlwaysAndWhenInUseUsageDescription</key>
-<string>This app uses Bluetooth to connect
-to external devices at all times.</string>
+<key>NSBluetoothAlwaysAndWhenInUseUsageDescription</key><string>This app uses Bluetooth to connect
+to external devices at all times.
+</string>
 ```
 
 #### Adding Capabilities
@@ -392,6 +394,48 @@ void dispose() {
 
 - Remember to dispose of any stream subscriptions when they are no longer needed to avoid memory
   leaks and unnecessary processing.
+
+### **Getting Connected Bluetooth Devices**:
+
+In some cases, a Bluetooth device with which you want to interact may already be connected to the
+host device. In such scenarios, you may want to retrieve a list of connected devices to check if the
+desired device is already connected or to display a list of connected devices to the user. You might
+also append (or prepend) the connected devices to the list of discovered devices during a
+Bluetooth scan to ensure that the user can see all available devices, including those that are
+already connected.
+
+The example below demonstrates how to retrieve a list of connected Bluetooth devices. For each
+device, the name and address are returned. This information is represented by objects of the
+`ConnectedBluetoothDevice` class.
+
+**Example**
+
+```dart
+/// Get a list of Bluetooth devices that are currently connected to the host device.
+// TODO: replace the service UUID with a value from your own system
+Future<void> _getConnectedDevices() async {
+  try {
+    final List<ConnectedBleDevice> devices = await _ble.getConnectedDevices(
+        ['abcd1234-1234-1234-1234-1234567890aa']);
+
+    debugPrint('Connected devices: $connectedDevices');
+
+    // TODO: use the list of devices as needed
+  } on BluetoothScanException catch (e) {
+    _showErrorMessage(e.message);
+  }
+}
+```
+
+**Notes and Best Practices**
+
+- On iOS, the identifiers returned for each connected Bluetooth device are UUID values that are
+  specific to each iOS device. Therefore, if your app needs the ability to identify particular
+  Bluetooth devices across multiple iOS devices, you may need to maintain a mapping of iOS UUID
+  values and other values, such as Bluetooth device BDAs or names.
+- On iOS and macOS, a list of service UUIDs must be provided to the `getConnectedDevices` method.
+  These platforms do not support getting a list of all connected devices. Rather, a service UUID
+  must be provided to filter the list of connected devices.
 
 ### **Starting a Bluetooth Scan for Detecting Nearby BLE Devices**:
 

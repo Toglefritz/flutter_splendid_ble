@@ -8,10 +8,12 @@ import 'package:flutter_splendid_ble/shared/models/bluetooth_permission_status.d
 import 'package:flutter_splendid_ble/shared/models/bluetooth_status.dart';
 import 'package:permission_handler/permission_handler.dart';
 
+import '../central/connected_devices/connected_devices_route.dart';
 import '../central/scan/scan_route.dart';
 import '../central/scan_configuration/scan_configuration_route.dart';
 import 'home_route.dart';
 import 'home_view.dart';
+import 'models/home_menu_items.dart';
 
 /// A controller for the [HomeRoute] that manages the state and owns all business logic.
 class HomeController extends State<HomeRoute> {
@@ -125,6 +127,19 @@ class HomeController extends State<HomeRoute> {
         _checkAdapterStatus();
       }
     });
+  }
+
+  /// Handles taps on the menu [PopupMenuButton].
+  void onMenuSelected(HomeMenuItem item) {
+    switch (item) {
+      case HomeMenuItem.connectedDevices:
+        Navigator.push<void>(
+          context,
+          MaterialPageRoute<void>(
+            builder: (BuildContext context) => const ConnectedDevicesRoute(),
+          ),
+        );
+    }
   }
 
   /// Checks the status of the Bluetooth adapter on the host device (assuming one is present).

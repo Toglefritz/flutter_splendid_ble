@@ -8,6 +8,7 @@ enum SharedMethod: String, CaseIterable {
 
 /// An enumeration of of method channel names for functions called from apps acting as BLE central devices.
 enum CentralMethod: String, CaseIterable {
+    case getConnectedDevices = "getConnectedDevices"
     case startScan = "startScan"
     case stopScan = "stopScan"
     case connect = "connect"

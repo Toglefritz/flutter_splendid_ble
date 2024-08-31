@@ -99,6 +99,10 @@
   "@notAvailable": {
     "description": "An error message indicating that Bluetooth is not available on the host device"
   },
+  "noConnectedDevices": "No connected devices",
+    "@noConnectedDevices": {
+        "description": "A message indicating that no BLE devices are currently connected"
+    },
   "or": "or",
   "@or": {
     "description": "Its just the word \"or\" in English"
@@ -147,6 +151,10 @@
   "@serviceUuids": {
     "description": "Label used for the scan service UUIDs form field"
   },
+  "showConnectedDevices": "Show connected devices",
+    "@showConnectedDevices": {
+        "description": "A label for a menu item that will show connected BLE devices"
+    },
   "startScan": "Start\nscan",
   "@startScan": {
     "description": "Used on a button allowing the user to start a Bluetooth scan"
