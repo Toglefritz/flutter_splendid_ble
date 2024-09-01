@@ -45,25 +45,58 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
     }
     
     public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
+        if isSharedMethod(call.method) {
+            handleSharedMethod(call, result)
+        } else if isCentralMethod(call.method) {
+            handleCentralMethod(call, result)
+        } else {
+            // The provided method did not match any of those defined in MethodChannelMethods.swift
+            result(FlutterMethodNotImplemented)
+        }
+    }
+    
+    /// A utility function to check if an incoming Method Channel call is related to shared functionality used for both the central
+    /// and the peripheral roles. It returns true for shared device methods and false otherwise. This helps in routing the call to the correct handler.
+    private func isSharedMethod(_ methodName: String) -> Bool {
+        return SharedMethod.allCases.map { $0.rawValue }.contains(methodName)
+    }
+    
+    /// A utility function to check if an incoming Method Channel call is related to central device functionality. It returns true for central
+    /// device methods and false otherwise. This helps in routing the call to the correct handler.
+    private func isCentralMethod(_ methodName: String) -> Bool {
+        return CentralMethod.allCases.map { $0.rawValue }.contains(methodName)
+    }
+    
+    /// Handles all Method Channel calls related to functionality that is shared between the BLE central and BLE peripheral device roles. This includes
+    /// operations like requesting permissions and checking on the status of the host device's Bluetooth adapter.
+    private func handleSharedMethod(_ call: FlutterMethodCall, _ result: @escaping FlutterResult) {
         switch call.method {
-        case "requestBluetoothPermissions":
+        case SharedMethod.requestBluetoothPermissions.rawValue:
             let permissionStatus: String = requestBluetoothPermissions().rawValue
             result(permissionStatus)
             
-        case "emitCurrentPermissionStatus":
+        case SharedMethod.emitCurrentPermissionStatus.rawValue:
             emitCurrentPermissionStatus()
             result(nil)
             
-        case "checkBluetoothAdapterStatus":
+        case SharedMethod.checkBluetoothAdapterStatus.rawValue:
             // Check the status of the Bluetooth adapter
             let status = centralManager.state == .poweredOn ? "available" : "notAvailable"
             result(status)
             
-        case "emitCurrentBluetoothStatus":
+        case SharedMethod.emitCurrentBluetoothStatus.rawValue:
             emitCurrentBluetoothStatus()
             result(nil)
-
-        case "getConnectedDevices":
+        default:
+            result(FlutterMethodNotImplemented)
+        }
+    }
+    
+    /// Handles all Method Channel calls related to functionality that is shared between the BLE central and BLE peripheral device roles. This includes
+    /// operations like requesting permissions and checking on the status of the host device's Bluetooth adapter.
+    private func handleCentralMethod(_ call: FlutterMethodCall, _ result: @escaping FlutterResult) {
+        switch call.method {
+        case CentralMethod.getConnectedDevices.rawValue:
             if let arguments = call.arguments as? [String: Any],
                let serviceUUIDs = arguments["serviceUUIDs"] as? [String] {
                 let connectedDevices = getConnectedDevices(withServiceUUIDs: serviceUUIDs)
@@ -74,7 +107,7 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
                                     details: nil))
             }
             
-        case "startScan":
+        case CentralMethod.startScan.rawValue:
             var serviceUUIDs: [CBUUID]? = nil
             var options: [String: Any]? = nil
             
@@ -105,12 +138,12 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
             centralManager.scanForPeripherals(withServices: serviceUUIDs, options: options)
             result(nil)
             
-        case "stopScan":
+        case CentralMethod.stopScan.rawValue:
             // Stop scanning for BLE devices
             centralManager.stopScan()
             result(nil)
             
-        case "connect":
+        case CentralMethod.connect.value:
             if let arguments = call.arguments as? [String: Any],
                let deviceAddress = arguments["address"] as? String {
                 connect(deviceAddress: deviceAddress)
@@ -119,7 +152,7 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
                 result(FlutterError(code: "INVALID_ARGUMENT", message: "Device address cannot be null.", details: nil))
             }
             
-        case "disconnect":
+        case CentralMethod.disconnect.rawValue:
             if let arguments = call.arguments as? [String: Any],
                let deviceAddress = arguments["address"] as? String {
                 disconnect(deviceAddress: deviceAddress)
@@ -128,7 +161,7 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
                 result(FlutterError(code: "INVALID_ARGUMENT", message: "Device address cannot be null.", details: nil))
             }
             
-        case "getCurrentConnectionState":
+        case CentralMethod.getCurrentConnectionState.rawValue:
             if let arguments = call.arguments as? [String: Any],
                let deviceAddress = arguments["address"] as? String {
                 let connectionState = getCurrentConnectionState(deviceAddress: deviceAddress).lowercased()
@@ -137,7 +170,7 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
                 result(FlutterError(code: "INVALID_ARGUMENT", message: "Device address cannot be null.", details: nil))
             }
             
-        case "discoverServices":
+        case CentralMethod.discoverServices.rawValue:
             guard let args = call.arguments as? [String: Any],
                   let deviceAddress = args["address"] as? String,
                   let peripheral = peripheralsMap[deviceAddress] else {
@@ -148,7 +181,7 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
             peripheral.discoverServices(nil)
             result(nil)
             
-        case "writeCharacteristic":
+        case CentralMethod.writeCharacteristic.rawValue:
             // First, ensure that we're dealing with a dictionary of arguments.
             guard let arguments = call.arguments as? [String: Any] else {
                 result(FlutterError(code: "INVALID_ARGUMENT", message: "Arguments are not in the expected format", details: nil))
@@ -176,7 +209,7 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
             peripheral.writeValue(dataValue, for: characteristic, type: writeType)
             result(nil)
             
-        case "readCharacteristic":
+        case CentralMethod.readCharacteristic.rawValue:
             guard let arguments = call.arguments as? [String: Any],
                   let characteristicUuidStr = arguments["characteristicUuid"] as? String,
                   let deviceAddress = arguments["address"] as? String,
@@ -191,10 +224,10 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
             peripheral.readValue(for: characteristic)
             result(nil)
             
-        case "subscribeToCharacteristic":
+        case CentralMethod.subscribeToCharacteristic.rawValue:
             subscribeToCharacteristic(call: call, result: result)
             
-        case "unsubscribeFromCharacteristic":
+        case CentralMethod.unsubscribeFromCharacteristic.rawValue:
             unsubscribeFromCharacteristic(call: call, result: result)
             
         default:
