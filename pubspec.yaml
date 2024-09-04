@@ -11,6 +11,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_web_plugins:
+    sdk: flutter
   plugin_platform_interface: ^2.1.8
 
 dev_dependencies:
@@ -29,3 +31,6 @@ flutter:
         pluginClass: FlutterSplendidBlePlugin
       macos:
         pluginClass: FlutterSplendidBlePlugin
+      web:
+        pluginClass: CentralJsInterop
+        fileName: central/central_js_interop.dart
