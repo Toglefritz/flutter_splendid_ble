@@ -46,7 +46,10 @@ class HomeController extends State<HomeRoute> {
   @override
   void initState() {
     if (kIsWeb) {
-      // TODO(Toglefritz): Request permissions for web
+      // The web platform does not require permissions to be requested
+      _permissionsGranted = true;
+
+      // Check the status of the Web Bluetooth API
       _checkAdapterStatus();
     } else if (Platform.isAndroid) {
       _requestAndroidPermissions();

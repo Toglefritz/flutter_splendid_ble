@@ -47,9 +47,11 @@ class HomeView extends StatelessWidget {
         ),
       ),
       bottomNavigationBar: SafeArea(
+        minimum: const EdgeInsets.all(16),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            // If permissions are denied, show an error message
             if (state.permissionsGranted == false)
               Padding(
                 padding: const EdgeInsets.only(top: 16),
@@ -57,11 +59,37 @@ class HomeView extends StatelessWidget {
                   error: AppLocalizations.of(context)!.missingPermissions,
                 ),
               ),
-            if (state.bluetoothStatus != BluetoothStatus.enabled)
+
+            // If Bluetooth is disabled or not available, show an error message
+            if (state.bluetoothStatus == BluetoothStatus.disabled)
               ErrorMessage(
                 error: state.bluetoothStatus == BluetoothStatus.disabled
                     ? AppLocalizations.of(context)!.bluetoothDisabled
                     : AppLocalizations.of(context)!.notAvailable,
+              ),
+
+            // If the Bluetooth status is unknown, show a loading indicator
+            if (state.bluetoothStatus == null)
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(right: 16),
+                    child: SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        color: Theme.of(context).primaryColorLight,
+                      ),
+                    ),
+                  ),
+                  Text(
+                    AppLocalizations.of(context)!.checkingBluetoothStatus,
+                    style: const TextStyle(
+                      fontSize: 18,
+                    ),
+                  ),
+                ],
               ),
           ],
         ),

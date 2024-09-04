@@ -104,20 +104,12 @@ class CentralPlatformWeb extends CentralPlatformInterface {
     return controller.stream;
   }
 
-  /// Requests Bluetooth permissions from the user.
-  ///
-  /// This method communicates with the native platform code to request Bluetooth permissions.
-  /// It returns one of the values from the [BluetoothPermissionStatus] enumeration.
-  ///
-  /// * `BluetoothPermissionStatus.GRANTED`: Permission is granted.
-  /// * `BluetoothPermissionStatus.DENIED`: Permission is denied.
-  ///
-  /// Returns a [Future] containing the [BluetoothPermissionStatus] representing whether permission was granted or not.
+  /// Web platforms do not require explicit permission to use Bluetooth Low Energy (BLE) features in the same way that
+  /// mobile and desktop platforms do. This method always returns [BluetoothPermissionStatus.granted] to indicate that
+  /// permission is implicitly granted on web platforms. The Web Bluetooth API implicitly grants permission to use BLE
+  /// when the user selects a device to which they wish to connect.
   @override
-  Future<BluetoothPermissionStatus> requestBluetoothPermissions() async {
-    // TODO(Toglefritz): Implement this method.
-    throw UnimplementedError();
-  }
+  Future<BluetoothPermissionStatus> requestBluetoothPermissions() async => BluetoothPermissionStatus.granted;
 
   /// Emits the current Bluetooth permission status to the Dart side.
   ///
