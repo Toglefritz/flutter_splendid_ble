@@ -18,6 +18,10 @@ class ConnectedDevicesController extends State<ConnectedDevicesRoute> {
   /// A list of Bluetooth devices currently connected to the host device.
   List<ConnectedBleDevice>? connectedDevices;
 
+  /// An error condition resulting from the attempt to get connected Bluetooth devices. This error is displayed in the
+  /// UI.
+  String? errorMessage;
+
   @override
   void initState() {
     _getConnectedDevices();
@@ -38,6 +42,24 @@ class ConnectedDevicesController extends State<ConnectedDevicesRoute> {
       });
     } on BluetoothScanException catch (e) {
       _showErrorMessage(e.message);
+
+      setState(() {
+        errorMessage = e.message;
+      });
+    } catch (e) {
+      if (e is UnsupportedError) {
+        _showErrorMessage(e.message ?? 'This platform does not support getting connected devices.');
+
+        setState(() {
+          errorMessage = e.message ?? 'This platform does not support getting connected devices.';
+        });
+      } else {
+        _showErrorMessage('An error occurred while getting connected devices.');
+
+        setState(() {
+          errorMessage = 'An error occurred while getting connected devices.';
+        });
+      }
     }
   }
 

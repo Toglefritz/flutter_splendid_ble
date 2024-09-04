@@ -18,3 +18,13 @@ import 'package:js/js.dart';
 /// Checks the availability of the Bluetooth API on the device using the Web Bluetooth API.
 @JS('navigator.bluetooth.getAvailability')
 external Future<bool> getBluetoothAvailability();
+
+/// Checks if the browser supports the `getDevieces` method from the  Web Bluetooth API. See
+/// [https://developer.mozilla.org/en-US/docs/Web/API/Bluetooth/getDevices](https://developer.mozilla.org/en-US/docs/Web/API/Bluetooth/getDevices)
+/// for more information.
+@JS('Object.prototype.hasOwnProperty')
+external bool hasBluetoothGetDevicesMethod();
+
+/// Gets a list of device information for all Bluetooth devices that are currently connected to the browser.
+@JS('navigator.bluetooth.getDevices')
+external Future<List<dynamic>> getConnectedDevicesJs();

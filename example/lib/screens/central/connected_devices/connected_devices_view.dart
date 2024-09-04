@@ -22,8 +22,33 @@ class ConnectedDevicesView extends StatelessWidget {
       appBar: const MainAppBar(),
       body: CustomScrollView(
         slivers: [
+          // If there was an error getting devices, show the error.
+          if (state.errorMessage != null)
+            SliverFillRemaining(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Icon(
+                      Icons.warning_amber_rounded,
+                      color: Colors.red[900],
+                      size: 48,
+                    ),
+                  ),
+                  Text(
+                    state.errorMessage!,
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          color: Colors.red[900],
+                        ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ),
+
           // Show a loading indicator while getting connected devices
-          if (state.connectedDevices == null)
+          if (state.connectedDevices == null && state.errorMessage == null)
             const SliverFillRemaining(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,

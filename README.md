@@ -408,6 +408,17 @@ The example below demonstrates how to retrieve a list of connected Bluetooth dev
 device, the name and address are returned. This information is represented by objects of the
 `ConnectedBluetoothDevice` class.
 
+**Important Note for Web Platforms**
+
+Support for the JavaScript methods used to get connected devices is limited in web browsers because
+the API is currently in an "experimental" state. Therefore, care should be taken when implementing
+this feature on web platforms. Be sure to implement correct error handling so that the app's 
+user experience is not compromised.
+
+If the ability to get connected Bluetooth devices is not supported on the web platform, the 
+`getConnectedDevices` method will throw an `UnsupportedError` exception. This exception can be 
+caught and handled appropriately in your code.
+
 **Example**
 
 ```dart
@@ -423,6 +434,12 @@ Future<void> _getConnectedDevices() async {
     // TODO: use the list of devices as needed
   } on BluetoothScanException catch (e) {
     _showErrorMessage(e.message);
+  } catch (e) {
+    if (e is UnsupportedError) {
+      // TODO: Handle the case where getting connected devices is not supported on the platform.
+    } else {
+      // TODO: Handle other exceptions that may occur.
+    }
   }
 }
 ```

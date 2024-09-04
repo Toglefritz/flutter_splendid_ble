@@ -111,41 +111,68 @@ class CentralPlatformWeb extends CentralPlatformInterface {
   @override
   Future<BluetoothPermissionStatus> requestBluetoothPermissions() async => BluetoothPermissionStatus.granted;
 
-  /// Emits the current Bluetooth permission status to the Dart side.
-  ///
-  /// This method communicates with the native platform code to obtain the current Bluetooth permission status and emits it to any listeners on the Dart side.
-  ///
-  /// Listeners on the Dart side will receive one of the following enum values from [BluetoothPermissionStatus]:
-  ///
-  /// * `BluetoothPermissionStatus.GRANTED`: Indicates that Bluetooth permission is granted.
-  /// * `BluetoothPermissionStatus.DENIED`: Indicates that Bluetooth permission is denied.
-  ///
-  /// Returns a [Stream] of [BluetoothPermissionStatus] values representing the current Bluetooth permission status on the device.
+  /// Web platforms do not require explicit permission to use Bluetooth Low Energy (BLE) features in the same way that
+  /// mobile and desktop platforms do. This method always returns [BluetoothPermissionStatus.granted] to indicate that
+  /// permission is implicitly granted on web platforms. The Web Bluetooth API implicitly grants permission to use BLE
+  /// when the user selects a device to which they wish to connect.
   @override
   Stream<BluetoothPermissionStatus> emitCurrentPermissionStatus() {
-    // TODO(Toglefritz): Implement this method.
-    throw UnimplementedError();
+    // Create a StreamController to handle the stream of Bluetooth permission status updates
+    final StreamController<BluetoothPermissionStatus> controller =
+        StreamController<BluetoothPermissionStatus>.broadcast()
+
+          // Emit the current permission status
+          ..add(BluetoothPermissionStatus.granted);
+
+    // Return the stream. Clients can listen to this stream to receive Bluetooth permission status updates.
+    return controller.stream;
   }
 
   /// Gets a list of identifiers for all connected devices.
   ///
-  /// This method communicates with the native platform code to obtain a list of all connected devices.
+  /// This method communicates with the Web Bluetooth API on web platforms to obtain a list of all connected devices.
   /// It returns a list of device identifiers as strings.
   ///
-  /// On iOS, the identifiers returned by this method are the UUIDs of the connected peripherals. This means that the
-  /// identifiers are specific to the iOS device on which this method is called. The same Bluetooth device will be
-  /// associated with different identifiers on different iOS devices. Therefore, it may be necessary for the Flutter
-  /// side to maintain a mapping between the device identifiers and the device addresses, or other identifiers, if
-  /// cross-device consistency is required.
+  /// The `getDevices` method from the Web Bluetooth API is currently experimental and may not be supported on all
+  /// browsers. This method checks if the `getDevices` method is available before attempting to call it. If the method
+  /// is not available, it throws an [UnsupportedError]. Classes consuming this app should make certain to implement
+  /// good error handling to account for this string possibility.
   ///
-  /// On Android, the process is simpler because this method will return a list of BDA (Bluetooth Device Address)
-  /// strings, which are unique identifiers for each connected device. These identifiers are consistent across devices.
+  /// See [https://developer.mozilla.org/en-US/docs/Web/API/Bluetooth/getDevices](https://developer.mozilla.org/en-US/docs/Web/API/Bluetooth/getDevices)
+  /// for more information about current browser support for the `getDevices` method.
   ///
   /// Returns a [Future] containing a list of [ConnectedBleDevice] objects representing Bluetooth devices.
   @override
-  Future<List<ConnectedBleDevice>> getConnectedDevices(List<String> serviceUUIDs) async {
-    // TODO(Toglefritz): Implement this method.
-    throw UnimplementedError();
+  Future<List<ConnectedBleDevice>> getConnectedDevices(_) async {
+    try {
+      // Feature detection for 'getDevices' support
+      final bool isSupported = hasBluetoothGetDevicesMethod();
+
+      if (!isSupported) {
+        throw UnsupportedError('The browser does not support the getDevices method.');
+      }
+
+      // Get a list of connected devices
+      final List<dynamic> devices = await getConnectedDevicesJs();
+
+      // Parse the device information and return a list of ConnectedBleDevice objects
+      return devices.map((device) {
+        final Map<String, dynamic> deviceInfo = device as Map<String, dynamic>;
+
+        return ConnectedBleDevice(
+          name: deviceInfo['name'] as String,
+          address: deviceInfo['identifier'] as String,
+        );
+      }).toList();
+    } catch (e) {
+      // Handle a NoSuchMethodError by throwing an UnsupportedError. This condition should already be caught by the
+      // check on support for the 'getDevices' method, but this is a safeguard.
+      if (e is NoSuchMethodError) {
+        throw UnsupportedError('The getDevices method is not available in this browser.');
+      } else {
+        rethrow;
+      }
+    }
   }
 
   /// Starts a scan for nearby Bluetooth Low Energy (BLE) devices and returns a stream of discovered devices.
