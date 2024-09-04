@@ -47,8 +47,7 @@ class HomeController extends State<HomeRoute> {
   void initState() {
     if (kIsWeb) {
       // TODO(Toglefritz): Request permissions for web
-      _permissionsGranted = true;
-      _bluetoothStatus = BluetoothStatus.enabled;
+      _checkAdapterStatus();
     } else if (Platform.isAndroid) {
       _requestAndroidPermissions();
     } else if (Platform.isMacOS || Platform.isIOS) {
@@ -153,6 +152,13 @@ class HomeController extends State<HomeRoute> {
         setState(() {
           _bluetoothStatus = status;
         });
+
+        // On web platforms, since this method works by polling, the stream will be canceled after the first event
+        // indicating that Bluetooth capabilities are available. This approach assumes that Bluetooth services will
+        // not become unavailable later.
+        if (kIsWeb && status == BluetoothStatus.enabled) {
+          _bluetoothStatusStream?.cancel();
+        }
       });
     } catch (e) {
       debugPrint('Unable to get Bluetooth status with exception, $e');
