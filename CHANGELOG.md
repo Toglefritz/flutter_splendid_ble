@@ -117,3 +117,8 @@ All notable changes to the `flutter_splendid_ble` plugin will be documented in t
 ## [0.13.0] 2024/08/31
 
 - Added method to get connected Bluetooth devices (currently only for iOS and macOS)
+
+## [0.14.0] 2025/01/25
+
+- Created a new documentation site using Docusaurus: https://splendid-ble.web.app/
+- Updated handling of scan filters on Android
