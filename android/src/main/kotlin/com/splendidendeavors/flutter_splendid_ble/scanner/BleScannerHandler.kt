@@ -75,11 +75,20 @@ class BleScannerHandler(private val channel: MethodChannel, activity: Context) {
                 override fun onScanResult(callbackType: Int, result: ScanResult?) {
                     result?.let {
                         // Extract the manufacturer data
-                        val manufacturerDataBytes = it.scanRecord?.manufacturerSpecificData?.get(0)
-                        val manufacturerData =
-                            manufacturerDataBytes?.joinToString(separator = "") { byte ->
-                                "%02x".format(byte)
+                        val manufacturerDataMap = it.scanRecord?.manufacturerSpecificData
+                        val manufacturerData = manufacturerDataMap?.let { dataMap ->
+                            val stringBuilder = StringBuilder()
+                            for (i in 0 until dataMap.size()) {
+                                val key = dataMap.keyAt(i)
+                                val value = dataMap[key]
+                                value?.joinToString(separator = "") { byte ->
+                                    "%02x".format(byte)
+                                }?.let { hexString ->
+                                    stringBuilder.append(hexString)
+                                }
                             }
+                            stringBuilder.toString()
+                        }
 
 
                         // Create a map with device details
