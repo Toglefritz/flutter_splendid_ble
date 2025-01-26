@@ -16,6 +16,7 @@ plugin provides a comprehensive tool for versatile BLE operations.
 
 - [Features](#features)
 - [Main Goals](#main-goals)
+- [Documentation Site](#documentation-site)
 - [Installation](#installation)
 - [Prerequisites](#prerequisites)
     - [iOS/macOS Prerequisites](#iosmacos-prerequisites)
@@ -82,6 +83,10 @@ include:
 - Handle connection errors and other exceptions.
 - Monitor connection status and other state changes.
 - Have a really good time.
+
+## Documentation Site
+
+For detailed documentation and other information, visit the [Flutter Splendid BLE Documentation Site](https://splendid-ble.web.app/).
 
 ## Installation
 
