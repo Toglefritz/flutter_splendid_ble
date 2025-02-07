@@ -143,7 +143,7 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
             centralManager.stopScan()
             result(nil)
             
-        case CentralMethod.connect.value:
+        case CentralMethod.connect.rawValue:
             if let arguments = call.arguments as? [String: Any],
                let deviceAddress = arguments["address"] as? String {
                 connect(deviceAddress: deviceAddress)
