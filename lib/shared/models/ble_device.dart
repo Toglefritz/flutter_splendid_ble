@@ -1,3 +1,5 @@
+import 'manufacturer_data.dart';
+
 /// Represents a discovered BLE device.
 class BleDevice {
   /// The name of the device.
@@ -14,7 +16,7 @@ class BleDevice {
   /// The manufacturer data associated with the device.
   ///
   /// Bluetooth devices are not required to provide manufacturer data so this field is nullable.
-  final String? manufacturerData;
+  final ManufacturerData? manufacturerData;
 
   /// Creates an instance of [BleDevice].
   BleDevice({
@@ -33,7 +35,8 @@ class BleDevice {
       name: map['name'] as String?,
       address: map['address'] as String,
       rssi: map['rssi'] as int,
-      manufacturerData: map['manufacturerData'] as String?,
+      manufacturerData:
+          map['manufacturerData'] == null ? null : ManufacturerData.fromString(map['manufacturerData'] as String),
     );
   }
 }
