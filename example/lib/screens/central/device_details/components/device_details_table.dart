@@ -33,7 +33,7 @@ class DeviceDetailsTable extends StatelessWidget {
           children: <Widget>[
             TableCell(
               child: Container(
-                height: 40.0,
+                height: 50.0,
                 alignment: Alignment.center,
                 child: Text(
                   AppLocalizations.of(context)!.address,
@@ -46,7 +46,7 @@ class DeviceDetailsTable extends StatelessWidget {
             ),
             TableCell(
               child: Container(
-                height: 40.0,
+                height: 50.0,
                 alignment: Alignment.center,
                 child: Text(
                   device.address,
@@ -61,7 +61,7 @@ class DeviceDetailsTable extends StatelessWidget {
           children: <Widget>[
             TableCell(
               child: Container(
-                height: 40.0,
+                height: 50.0,
                 alignment: Alignment.center,
                 child: Text(
                   AppLocalizations.of(context)!.connectionStatus,
@@ -74,7 +74,7 @@ class DeviceDetailsTable extends StatelessWidget {
             ),
             TableCell(
               child: Container(
-                height: 40.0,
+                height: 50.0,
                 alignment: Alignment.center,
                 child: Text(
                   connectionState.name.capitalize(),
@@ -89,7 +89,7 @@ class DeviceDetailsTable extends StatelessWidget {
           children: <Widget>[
             TableCell(
               child: Container(
-                height: 40.0,
+                height: 50.0,
                 alignment: Alignment.center,
                 child: Text(
                   AppLocalizations.of(context)!.rssi,
@@ -102,7 +102,7 @@ class DeviceDetailsTable extends StatelessWidget {
             ),
             TableCell(
               child: Container(
-                height: 40.0,
+                height: 50.0,
                 alignment: Alignment.center,
                 child: Text(
                   device.rssi.toString(),
@@ -117,7 +117,7 @@ class DeviceDetailsTable extends StatelessWidget {
           children: <Widget>[
             TableCell(
               child: Container(
-                height: 40.0,
+                height: 50.0,
                 alignment: Alignment.center,
                 child: Text(
                   AppLocalizations.of(context)!.manufacturerData,
@@ -130,10 +130,10 @@ class DeviceDetailsTable extends StatelessWidget {
             ),
             TableCell(
               child: Container(
-                height: 40.0,
+                height: 50.0,
                 alignment: Alignment.center,
                 child: Text(
-                  device.manufacturerData.toString(),
+                  device.manufacturerData?.toFormattedString() ?? '',
                   style: Theme.of(context).textTheme.bodyLarge,
                   textAlign: TextAlign.center,
                 ),

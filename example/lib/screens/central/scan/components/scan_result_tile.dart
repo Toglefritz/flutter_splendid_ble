@@ -42,7 +42,7 @@ class ScanResultTile extends StatelessWidget {
           child: Table(
             columnWidths: const <int, TableColumnWidth>{
               0: FlexColumnWidth(),
-              1: FlexColumnWidth(3),
+              1: FlexColumnWidth(2),
             },
             defaultVerticalAlignment: TableCellVerticalAlignment.middle,
             children: <TableRow>[
@@ -61,7 +61,6 @@ class ScanResultTile extends StatelessWidget {
                     child: Text(
                       device.name ?? '--',
                       style: Theme.of(context).textTheme.bodySmall,
-                      textAlign: TextAlign.center,
                     ),
                   ),
                 ],
@@ -81,7 +80,6 @@ class ScanResultTile extends StatelessWidget {
                     child: Text(
                       device.address,
                       style: Theme.of(context).textTheme.bodySmall,
-                      textAlign: TextAlign.center,
                     ),
                   ),
                 ],
@@ -99,7 +97,6 @@ class ScanResultTile extends StatelessWidget {
                   ),
                   TableCell(
                     child: FractionallySizedBox(
-                      widthFactor: 0.5,
                       child: LinearProgressIndicator(
                         value: (100 - device.rssi.abs()) / 100,
                         borderRadius: BorderRadius.circular(8.0),
@@ -109,6 +106,26 @@ class ScanResultTile extends StatelessWidget {
                   ),
                 ],
               ),
+              if (device.manufacturerData != null)
+                TableRow(
+                  children: <Widget>[
+                    TableCell(
+                      child: Text(
+                        AppLocalizations.of(context)!.manufacturerData,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                    TableCell(
+                      child: Text(
+                        device.manufacturerData!.toFormattedString(),
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ),
+                  ],
+                ),
             ],
           ),
         ),
