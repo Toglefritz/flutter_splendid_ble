@@ -338,7 +338,7 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
            // Send device information to Flutter side
            let jsonData = try? JSONSerialization.data(withJSONObject: deviceMap, options: [])
            if let jsonData = jsonData, let jsonString = String(data: jsonData, encoding: .utf8) {
-               channel.invokeMethod("bleDeviceScanned", arguments: jsonString)
+               centralChannel.invokeMethod("bleDeviceScanned", arguments: jsonString)
            }
        }
    }
