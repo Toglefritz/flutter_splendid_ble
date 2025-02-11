@@ -20,14 +20,14 @@ All notable changes to the `flutter_splendid_ble` plugin will be documented in t
 
 - Finalized support for Android.
 - Added support for Bluetooth operations MacOS:
-  - Bluetooth status checking.
-  - Emitting current Bluetooth status.
-  - Bluetooth device scanning.
-  - Bluetooth device connection handling.
-  - Bluetooth service and characteristic discovery and subscription.
-  - Reading from Bluetooth characteristics.
-  - Writing to Bluetooth characteristics.
-  - Terminating a connection to a BLE device.
+    - Bluetooth status checking.
+    - Emitting current Bluetooth status.
+    - Bluetooth device scanning.
+    - Bluetooth device connection handling.
+    - Bluetooth service and characteristic discovery and subscription.
+    - Reading from Bluetooth characteristics.
+    - Writing to Bluetooth characteristics.
+    - Terminating a connection to a BLE device.
 - Added MacOS support to the example application.
 - Comprehensive documentation for MacOS functionality.
 - Added automated test for all plugin methods.
@@ -35,14 +35,14 @@ All notable changes to the `flutter_splendid_ble` plugin will be documented in t
 ## [0.3.0] 2023/11/07
 
 - Added support for Bluetooth operations on iOS:
-  - Bluetooth status checking.
-  - Emitting current Bluetooth status.
-  - Bluetooth device scanning.
-  - Bluetooth device connection handling.
-  - Bluetooth service and characteristic discovery and subscription.
-  - Reading from Bluetooth characteristics.
-  - Writing to Bluetooth characteristics.
-  - Terminating a connection to a BLE device.
+    - Bluetooth status checking.
+    - Emitting current Bluetooth status.
+    - Bluetooth device scanning.
+    - Bluetooth device connection handling.
+    - Bluetooth service and characteristic discovery and subscription.
+    - Reading from Bluetooth characteristics.
+    - Writing to Bluetooth characteristics.
+    - Terminating a connection to a BLE device.
 - Added iOS support to the example application.
 - Comprehensive documentation for iOS functionality.
 - Added extensive usage/tutorials content to README.
@@ -122,3 +122,14 @@ All notable changes to the `flutter_splendid_ble` plugin will be documented in t
 
 - Created a new documentation site using Docusaurus: https://splendid-ble.web.app/
 - Updated handling of scan filters on Android
+
+## [0.15.0] 2025/02/10
+
+- Added support for scanning BLE peripherals capable of accepting scan requests. Devices like this
+  may spread their advertising data over multiple packets. This change allows app using this plugin
+  to get the full data for this type of device.
+- Updated documentation
+
+### Breaking Changes
+- Manufacturer data for the `BleDevice` class is now represented by a custom class rather than a string; this is the `ManufacturerData` class.
+  - If you wish to continue using the manufacturer data as a string, you can use `manufacturerData.payload` to get the raw data.
