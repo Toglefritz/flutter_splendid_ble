@@ -94,7 +94,7 @@ First, add the following line to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  flutter_splendid_ble: ^0.12.0
+  flutter_splendid_ble: ^0.15.0
 ```
 
 Then run:
@@ -132,9 +132,8 @@ Bluetooth and the reasons for accessing it. Below are the required keys and thei
 
 ```xml
 
-<key>NSBluetoothAlwaysUsageDescription</key><string>This app uses Bluetooth to connect to external
-devices.
-</string>
+<key>NSBluetoothAlwaysUsageDescription</key>
+<string>This app uses Bluetooth to connect to external devices.</string>
 ```
 
 2. NSBluetoothPeripheralUsageDescription (iOS only)
@@ -145,9 +144,8 @@ devices.
 
 ```xml
 
-<key>NSBluetoothPeripheralUsageDescription</key><string>This app uses Bluetooth to communicate with
-external peripherals.
-</string>
+<key>NSBluetoothPeripheralUsageDescription</key>
+<string>This app uses Bluetooth to communicate with external peripherals.</string>
 ```
 
 3. NSBluetoothAlwaysAndWhenInUseUsageDescription (macOS only)
@@ -159,9 +157,8 @@ external peripherals.
 
 ```xml
 
-<key>NSBluetoothAlwaysAndWhenInUseUsageDescription</key><string>This app uses Bluetooth to connect
-to external devices at all times.
-</string>
+<key>NSBluetoothAlwaysAndWhenInUseUsageDescription</key>
+<string>This app uses Bluetooth to connect to external devices at all times.</string>
 ```
 
 #### Adding Capabilities
@@ -479,7 +476,7 @@ import 'dart:async';
 final SplendidBleCentral _ble = SplendidBleCentral();
 
 /// A [StreamSubscription] used to listen for newly discovered BLE devices.
-StreamSubscription<BluetoothDevice>? _scanStream;
+StreamSubscription<BleDevice>? _scanStream;
 
 /// Begins a scan for nearby BLE devices.
 void _startBluetoothScan() {
@@ -490,7 +487,7 @@ void _startBluetoothScan() {
 }
 
 /// Called when a new device is detected by the Bluetooth scan.
-void _onDeviceDetected(BluetoothDevice device) {
+void _onDeviceDetected(BleDevice device) {
   // Handle the discovered device, e.g., by updating a list or attempting a connection.
 }
 
