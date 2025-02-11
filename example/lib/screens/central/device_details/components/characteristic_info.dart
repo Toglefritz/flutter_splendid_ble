@@ -98,7 +98,7 @@ class _CharacteristicInfoState extends State<CharacteristicInfo> {
               onTap: () => _readCharacteristicValue(widget.characteristic),
               child: Icon(
                 Icons.download_outlined,
-                color: Theme.of(context).primaryColor.withOpacity(0.8),
+                color: Theme.of(context).primaryColor.withValues(alpha: 0.8),
               ),
             ),
         ],

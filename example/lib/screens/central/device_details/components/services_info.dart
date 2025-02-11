@@ -31,7 +31,7 @@ class ServicesInfo extends StatelessWidget {
           bottomLeft: const Radius.circular(12.0),
           bottomRight: const Radius.circular(12.0),
         ),
-        color: Theme.of(context).primaryColorLight.withOpacity(0.15),
+        color: Theme.of(context).primaryColorLight.withValues(alpha: 0.15),
         border: Border.all(
           color: Theme.of(context).primaryColorLight,
           width: 2.0,

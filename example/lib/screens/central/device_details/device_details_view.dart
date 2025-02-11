@@ -59,7 +59,7 @@ class DeviceDetailsView extends StatelessWidget {
                           Radius.circular(state.isConnected ? 12.0 : 0.0),
                     ),
                     color:
-                        Theme.of(context).primaryColorLight.withOpacity(0.15),
+                        Theme.of(context).primaryColorLight.withValues(alpha: 0.15),
                     border: Border.all(
                       color: Theme.of(context).primaryColorLight,
                       width: 2.0,
