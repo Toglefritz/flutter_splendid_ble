@@ -12,7 +12,160 @@ plugin provides a comprehensive tool for versatile BLE operations.
 [![pub package](https://img.shields.io/pub/v/flutter_splendid_ble.svg)](https://pub.dev/packages/flutter_splendid_ble)
 [![style: very good analysis](https://img.shields.io/badge/style-very_good_analysis-B22C89.svg)](https://pub.dev/packages/very_good_analysis)
 
-## Table of Contents
+## Quick Start Guide
+
+This guide provides a streamlined setup process to help you quickly integrate the Flutter Splendid
+BLE plugin into your project and perform essential Bluetooth Low Energy (BLE) operations. For more
+advanced use cases and configurations, refer to the full documentation on the
+[Flutter Splendid BLE Documentation Site](https://splendid-ble.web.app/)
+
+### **Step 1**: Set Up Your Flutter Project
+
+If you haven’t already, create a new Flutter project:
+
+```bash
+flutter create splendid_ble_demo
+cd splendid_ble_demo
+```
+
+Add the flutter_splendid_ble dependency to your pubspec.yaml:
+
+```
+dependencies:
+  flutter_splendid_ble: ^0.15.0
+```
+
+Run:
+
+```bash
+flutter pub get
+```
+
+### **Step 2**: Configure Platform-Specific Settings
+
+#### Android Configuration
+
+Modify your android/app/src/main/AndroidManifest.xml to include the necessary BLE permissions:
+
+```xml
+<uses-permission android:name="android.permission.BLUETOOTH" />
+<uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
+<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+<uses-permission android:name="android.permission.BLUETOOTH_SCAN" />
+<uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+
+<uses-feature android:name="android.hardware.bluetooth" />
+<uses-feature android:name="android.hardware.bluetooth_le" android:required="true" />
+```
+
+#### iOS/macOS Configuration
+
+Edit your ios/Runner/Info.plist:
+
+```xml
+<key>NSBluetoothAlwaysUsageDescription</key>
+<string>This app requires Bluetooth to connect to BLE devices.</string>
+
+<key>NSBluetoothPeripheralUsageDescription</key>
+<string>This app communicates with BLE peripherals.</string>
+
+<key>NSBluetoothAlwaysAndWhenInUseUsageDescription</key>
+<string>This app requires Bluetooth access at all times.</string>
+```
+
+Enable background modes for Bluetooth by going to Xcode → Signing & Capabilities → Background Modes,
+then enable:
+- Uses Bluetooth LE accessories
+- Acts as a Bluetooth LE accessory
+
+### **Step 3**: Scan for BLE Devices
+
+Start scanning for nearby BLE devices:
+
+```dart
+import 'dart:async';
+
+/// A StreamSubscription used to listen for discovered BLE devices.
+StreamSubscription<BleDevice>? scanSubscription;
+
+/// Start scanning for nearby devices.
+void startScan() {
+  scanSubscription = bleCentral.startScan().listen(
+    (device) {
+      print('Discovered device: ${device.name} (${device.address})');
+    },
+    onError: (error) {
+      print('Scan error: $error');
+    },
+  );
+}
+
+/// Stop the scan when it's no longer needed.
+void stopScan() {
+  scanSubscription?.cancel();
+}
+```
+
+### **Step 4**: Connect to a BLE Device
+
+Once a device is discovered, you can initiate a connection:
+
+```dart
+/// A StreamSubscription used to listen for connection state updates.
+StreamSubscription<BleConnectionState>? connectionSubscription;
+
+/// Connect to a BLE device.
+void connectToDevice(BleDevice device) {
+  connectionSubscription = bleCentral.connect(deviceAddress: device.address).listen(
+    (state) {
+      print('Connection state: $state');
+    },
+    onError: (error) {
+      print('Connection error: $error');
+    },
+  );
+}
+
+/// Disconnect from the device when done.
+void disconnectFromDevice(BleDevice device) {
+  bleCentral.disconnect(device.address);
+  connectionSubscription?.cancel();
+}
+```
+
+### **Step 5**: Write to a BLE Characteristic
+
+Writing data to a characteristic (e.g., sending a command to a device):
+
+```dart
+/// Write a value to a BLE characteristic.
+Future<void> writeCharacteristic(BleCharacteristic characteristic, String value) async {
+  List<int> bytes = value.codeUnits; // Convert string to byte list
+  await characteristic.writeValue(value: bytes);
+  print('Wrote: $value');
+}
+```
+
+### **Step 6**: Read from a BLE Characteristic
+
+Reading data from a characteristic (e.g., retrieving sensor data):
+
+```dart
+/// Read a value from a BLE characteristic.
+Future<void> readCharacteristic(BleCharacteristic characteristic) async {
+  BleCharacteristicValue value = await characteristic.readValue<BleCharacteristicValue>();
+  String result = String.fromCharCodes(value.value); // Convert bytes to string
+  print('Read: $result');
+}
+```
+
+### Final Notes
+- Always request permissions before starting any BLE operations.
+- Stop scanning once a device is found to save battery.
+- Handle connection states properly, including disconnecting when done.
+- Some characteristics may require specific permissions or authentication to read/write.
+
+## Detailed Documentation Table of Contents
 
 - [Features](#features)
 - [Main Goals](#main-goals)
@@ -86,7 +239,8 @@ include:
 
 ## Documentation Site
 
-For detailed documentation and other information, visit the [Flutter Splendid BLE Documentation Site](https://splendid-ble.web.app/).
+For detailed documentation and other information, visit
+the [Flutter Splendid BLE Documentation Site](https://splendid-ble.web.app/).
 
 ## Installation
 
