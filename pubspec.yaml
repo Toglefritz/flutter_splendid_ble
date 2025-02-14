@@ -29,3 +29,5 @@ flutter:
         pluginClass: FlutterSplendidBlePlugin
       macos:
         pluginClass: FlutterSplendidBlePlugin
+      windows:
+        pluginClass: FlutterSplendidBlePlugin
