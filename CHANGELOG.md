@@ -133,3 +133,7 @@ All notable changes to the `flutter_splendid_ble` plugin will be documented in t
 ### Breaking Changes
 - Manufacturer data for the `BleDevice` class is now represented by a custom class rather than a string; this is the `ManufacturerData` class.
   - If you wish to continue using the manufacturer data as a string, you can use `manufacturerData.payload` to get the raw data.
+
+## [0.16.0] 2025/04/07
+
+- Added support for scanning BLE peripherals capable of accepting scan requests on macOS platforms.
