@@ -82,7 +82,7 @@ class FlutterSplendidBlePlugin : FlutterPlugin, MethodCallHandler {
             }
 
             "getConnectedDevices" -> {
-                result.notImplemented("Getting connected devices is not yet implemented on Android")
+                result.notImplemented()
             }
 
             "startScan" -> {
