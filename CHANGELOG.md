@@ -137,7 +137,12 @@ All notable changes to the `flutter_splendid_ble` plugin will be documented in t
 ## [0.16.0] 2025/04/07
 
 - Added support for scanning BLE peripherals capable of accepting scan requests on macOS platforms.
-- 
-## [0.16.1] 2025/04/019
+
+## [0.16.1] 2025/04/19
 
 - Updated Android Gradle plugin version and dependencies
+
+## [0.16.2] 2025/06/14
+
+- Updated example app localization dependencies
+- Fixed scan filtering by UUID for Android

@@ -32,7 +32,7 @@ Add the flutter_splendid_ble dependency to your pubspec.yaml:
 
 ```
 dependencies:
-  flutter_splendid_ble: ^0.16.1
+  flutter_splendid_ble: ^0.16.2
 ```
 
 Run:
