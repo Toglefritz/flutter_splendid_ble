@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_splendid_ble/central/models/ble_connection_state.dart';
 import 'package:flutter_splendid_ble/shared/models/ble_device.dart';
 import '../../../../extensions/string_capitalization.dart';
+import '../../../../l10n/app_localizations.dart';
 
 /// A [Table] used to display information about the given [device], which is an instance of [BleDevice].
 class DeviceDetailsTable extends StatelessWidget {

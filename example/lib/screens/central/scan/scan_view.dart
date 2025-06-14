@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
+import '../../../l10n/app_localizations.dart';
 import '../../components/loading_indicator.dart';
 import '../../components/main_app_bar.dart';
 import 'components/scan_result_tile.dart';

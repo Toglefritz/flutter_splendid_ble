@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_splendid_ble/shared/models/ble_device.dart';
+
+import '../../../../l10n/app_localizations.dart';
 
 /// Displays information about a Bluetooth device detected by the Bluetooth scan.
 ///

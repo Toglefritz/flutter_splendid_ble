@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_splendid_ble/shared/models/bluetooth_status.dart';
 
+import '../../l10n/app_localizations.dart';
 import '../components/main_app_bar.dart';
 
 import 'components/error_message.dart';

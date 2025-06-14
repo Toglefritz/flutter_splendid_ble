@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_splendid_ble/central/models/scan_settings.dart';
 
+import '../../../l10n/app_localizations.dart';
 import '../../components/main_app_bar.dart';
 import 'scan_configuration_controller.dart';
 import 'scan_configuration_route.dart';

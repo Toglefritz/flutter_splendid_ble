@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_splendid_ble/central/models/ble_characteristic.dart';
 import 'package:flutter_splendid_ble/central/models/ble_service.dart';
 
+import '../../../../l10n/app_localizations.dart';
 import 'characteristic_info.dart';
 
 /// Contains a list of Bluetooth GATT services discovered from a Bluetooth device, each of which is presented in a

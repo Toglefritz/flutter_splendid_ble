@@ -2,9 +2,9 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_splendid_ble/central/models/ble_characteristic_value.dart';
 
+import '../../../l10n/app_localizations.dart';
 import 'characteristic_interaction_route.dart';
 import 'characteristic_interaction_view.dart';
 import 'models/message.dart';
