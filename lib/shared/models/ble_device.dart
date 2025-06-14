@@ -31,12 +31,18 @@ class BleDevice {
   /// The [map], which contains information about the discovered Bluetooth device, comes from the plugin's method
   /// channel. Therefore, the type annotation is <dynamic, dynamic>.
   factory BleDevice.fromMap(Map<dynamic, dynamic> map) {
+    // Parse the manufacturer data from the string if it exists.
+    final String? manufacturerDataString = map['manufacturerData'] as String?;
+    ManufacturerData? manufacturerData;
+    if (manufacturerDataString != null && manufacturerDataString.isNotEmpty) {
+      manufacturerData = ManufacturerData.fromString(manufacturerDataString);
+    }
+
     return BleDevice(
       name: map['name'] as String?,
       address: map['address'] as String,
       rssi: map['rssi'] as int,
-      manufacturerData:
-          map['manufacturerData'] == null ? null : ManufacturerData.fromString(map['manufacturerData'] as String),
+      manufacturerData: manufacturerData,
     );
   }
 }

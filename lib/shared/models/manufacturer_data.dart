@@ -40,6 +40,11 @@ class ManufacturerData {
   ///
   /// This factory constructor is used with data returned from the native side in response to Method Channel calls.
   factory ManufacturerData.fromString(String manufacturerData) {
+    // If the manufacturer data is empty, return an empty ManufacturerData instance.
+    if (manufacturerData.isEmpty) {
+      return ManufacturerData(manufacturerId: [], payload: []);
+    }
+
     // Convert the manufacturer data string to a list of integers.
     final Uint8List manufacturerDataInts = Uint8List.fromList(
       List<int>.generate(
