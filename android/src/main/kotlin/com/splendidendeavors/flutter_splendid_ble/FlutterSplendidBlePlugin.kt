@@ -16,7 +16,6 @@ import com.splendidendeavors.flutter_splendid_ble.adapter.BluetoothAdapterHandle
 import com.splendidendeavors.flutter_splendid_ble.`interface`.BleDeviceInterface
 import com.splendidendeavors.flutter_splendid_ble.scanner.BleScannerHandler
 
-
 import java.util.UUID
 
 /** FlutterSplendidBlePlugin */
@@ -89,7 +88,7 @@ class FlutterSplendidBlePlugin : FlutterPlugin, MethodCallHandler {
                 val filtersList = call.argument<List<Map<String, Any>>?>("filters")
                 val settingsMap = call.argument<Map<String, Any>?>("settings")
 
-                val scanFilters = filtersList?.map { bleScannerHandler.createScanFilterFromMap(it) }
+                val scanFilters = filtersList?.flatMap { bleScannerHandler.createScanFiltersFromMap(it) }
                 val scanSettings =
                     settingsMap?.let { bleScannerHandler.createScanSettingsFromMap(it) }
 

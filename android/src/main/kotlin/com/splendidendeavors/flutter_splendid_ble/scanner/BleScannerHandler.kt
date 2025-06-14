@@ -10,6 +10,10 @@ import android.content.Context
 import android.os.Build
 import androidx.annotation.RequiresApi
 import io.flutter.plugin.common.MethodChannel
+import android.os.ParcelUuid
+import java.util.UUID
+
+import android.util.Log
 
 /**
  * The `BleScannerHandler` class is responsible for managing Bluetooth Low Energy (BLE) scanning
@@ -74,6 +78,21 @@ class BleScannerHandler(private val channel: MethodChannel, activity: Context) {
             scanCallback = object : ScanCallback() {
                 override fun onScanResult(callbackType: Int, result: ScanResult?) {
                     result?.let {
+                        val resultServiceUuids = it.scanRecord?.serviceUuids?.map { parcelUuid -> parcelUuid.uuid }?.toSet() ?: emptySet()
+                        val filterServiceUuids = scanFilters?.mapNotNull { filter ->
+                            try {
+                                val field = ScanFilter::class.java.getDeclaredField("mUuid")
+                                field.isAccessible = true
+                                (field.get(filter) as? ParcelUuid)?.uuid
+                            } catch (e: Exception) {
+                                null
+                            }
+                        }?.toSet() ?: emptySet()
+
+                        val uuidFilterMatches = filterServiceUuids.isEmpty() || resultServiceUuids.any { uuid -> uuid in filterServiceUuids }
+
+                        if (!uuidFilterMatches) return
+
                         // Extract the manufacturer data
                         val manufacturerDataMap = it.scanRecord?.manufacturerSpecificData
                         val manufacturerData = manufacturerDataMap?.let { dataMap ->
@@ -114,6 +133,10 @@ class BleScannerHandler(private val channel: MethodChannel, activity: Context) {
             // were provided.
             if (scanFilters != null && scanSettings != null) {
                 bluetoothLeScanner.startScan(scanFilters, scanSettings, scanCallback)
+            } else if (scanFilters != null) {
+                bluetoothLeScanner.startScan(scanFilters, ScanSettings.Builder().build(), scanCallback)
+            } else if (scanSettings != null) {
+                bluetoothLeScanner.startScan(emptyList(), scanSettings, scanCallback)
             } else {
                 bluetoothLeScanner.startScan(scanCallback)
             }
@@ -160,22 +183,48 @@ class BleScannerHandler(private val channel: MethodChannel, activity: Context) {
      * @param filterMap The map containing the filter properties.
      * @return A ScanFilter instance corresponding to the given map.
      */
-    fun createScanFilterFromMap(filterMap: Map<String, Any>): ScanFilter {
-        val builder = ScanFilter.Builder()
+    fun createScanFiltersFromMap(filterMap: Map<String, Any>): List<ScanFilter> {
+        val baseBuilder: (UUID?) -> ScanFilter.Builder = { uuid ->
+            val builder = ScanFilter.Builder()
 
-        // Extract properties from the filterMap and apply them to the builder
-        filterMap["deviceName"]?.let { builder.setDeviceName(it as String) }
-        filterMap["deviceAddress"]?.let { builder.setDeviceAddress(it as String) }
-        filterMap["manufacturerData"]?.let {
-            val manufacturerId = (it as Map<*, *>)["manufacturerId"] as Int
-            val manufacturerData = (it["manufacturerData"] as? String)?.toByteArray()
-            val manufacturerDataMask = (it["manufacturerDataMask"] as? String)?.toByteArray()
-            if (manufacturerData != null) {
-                builder.setManufacturerData(manufacturerId, manufacturerData, manufacturerDataMask)
+            filterMap["deviceName"]?.let {
+                builder.setDeviceName(it as String)
             }
+
+            filterMap["deviceAddress"]?.let {
+                builder.setDeviceAddress(it as String)
+            }
+
+            uuid?.let {
+                builder.setServiceUuid(ParcelUuid(it))
+            }
+
+            filterMap["manufacturerData"]?.let {
+                val manufacturerId = (it as Map<*, *>)["manufacturerId"] as Int
+                val manufacturerData = (it["manufacturerData"] as? String)?.toByteArray()
+                val manufacturerDataMask = (it["manufacturerDataMask"] as? String)?.toByteArray()
+                if (manufacturerData != null) {
+                    builder.setManufacturerData(manufacturerId, manufacturerData, manufacturerDataMask)
+                }
+            }
+
+            builder
         }
 
-        return builder.build()
+        val serviceUuids = filterMap["serviceUuids"] as? List<*>
+
+        return if (serviceUuids != null && serviceUuids.isNotEmpty()) {
+            serviceUuids.mapNotNull {
+                try {
+                    val uuid = UUID.fromString(it as String)
+                    baseBuilder(uuid).build()
+                } catch (e: IllegalArgumentException) {
+                    null
+                }
+            }
+        } else {
+            listOf(baseBuilder(null).build())
+        }
     }
 
     /**
