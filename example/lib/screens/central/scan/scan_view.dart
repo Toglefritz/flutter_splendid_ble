@@ -37,6 +37,7 @@ class ScanView extends StatelessWidget {
       ),
       body: CustomScrollView(
         slivers: [
+          // If no devices have been discovered, show a loading indicator.
           if (state.discoveredDevices.isEmpty)
             const SliverFillRemaining(
               child: Column(
@@ -46,6 +47,8 @@ class ScanView extends StatelessWidget {
                 ],
               ),
             ),
+
+          // If devices have been discovered, show them in a list.
           if (state.discoveredDevices.isNotEmpty)
             SliverList.list(
               children: [

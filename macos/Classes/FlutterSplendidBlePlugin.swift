@@ -1,6 +1,7 @@
 import Cocoa
 import FlutterMacOS
 import CoreBluetooth
+import CoreBluetoothMock
 
 /// `FlutterSplendidBlePlugin` serves as the central bridge between Flutter code in a Dart environment and the native Bluetooth capabilities on MacOS devices.
 /// It adheres to the `FlutterPlugin` protocol to interface with Flutter, and `CBCentralManagerDelegate` to interact with the macOS Bluetooth stack.
@@ -20,11 +21,17 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
     /// the state and delegate callbacks for all BLE operations consistently.
     private var centralManager: CBCentralManager!
     
+    /// A fake version of the CBCentralManager that is used during testing.
+    //private var fakeCentralManager: CBMCentralManagerFactory.instance
+    
     /// A dictionary to store peripheral devices.
     ///
     /// The dictionary uses the peripheral's UUID string as the key and the `CBPeripheral` object as the value.
     /// This enables easy retrieval and management of peripheral connections.
     private var peripheralsMap: [String: CBPeripheral] = [:]
+    
+    /// A set of device names used to filter the results of a scan. Only devices with names appearing in this list will be returned by the scan.
+    private var scanNameFilters: Set<String> = []
     
     /// An optional `FlutterEventSink` which allows for sending scanning result data back to the Flutter side in real-time.
     private var scanResultSink: FlutterEventSink?
@@ -56,7 +63,10 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
             handleSharedMethod(call, result)
         } else if isCentralMethod(call.method) {
             handleCentralMethod(call, result)
-        } else {
+        } else if isTestMethod(call.method) {
+            handleTestMethod(call, result)
+        }
+        else {
             // The provided method did not match any of those defined in MethodChannelMethods.swift
             result(FlutterMethodNotImplemented)
         }
@@ -72,6 +82,11 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
     /// device methods and false otherwise. This helps in routing the call to the correct handler.
     private func isCentralMethod(_ methodName: String) -> Bool {
         return CentralMethod.allCases.map { $0.rawValue }.contains(methodName)
+    }
+    
+    /// A utility function to check if an incoming Method Channel call is related to test functionality. It returns true for test methods and false otherwise.
+    private func isTestMethod(_ methodName: String) -> Bool {
+        return TestMethod.allCases.map { $0.rawValue }.contains(methodName)
     }
     
     /// Handles all Method Channel calls related to functionality that is shared between the BLE central and BLE peripheral device roles. This includes
@@ -111,13 +126,23 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
             
             if let args = call.arguments as? [String: Any] {
                 // Handle Scan Filters
+                var expectedDeviceNames: Set<String> = []
                 if let filtersMap = args["filters"] as? [[String: Any]] {
                     serviceUUIDs = filtersMap.compactMap { filterDict in
                         if let uuidStrings = filterDict["serviceUuids"] as? [String] {
                             return uuidStrings.compactMap { CBUUID(string: $0) }
                         }
                         return nil
-                    }.flatMap { $0 } // Flatten the array of arrays
+                    }.flatMap { $0 }
+                    
+                    // Collect expected device names
+                    for filter in filtersMap {
+                        if let deviceName = filter["deviceName"] as? String {
+                            expectedDeviceNames.insert(deviceName)
+                        }
+                    }
+                    
+                    self.scanNameFilters = expectedDeviceNames
                 }
                 
                 // Handle Scan Settings
@@ -135,18 +160,18 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
             // Start scanning with optional service UUIDs and options.
             centralManager.scanForPeripherals(withServices: serviceUUIDs, options: options)
             result(nil)
-        
+            
         case CentralMethod.getConnectedDevices.rawValue:
             if let arguments = call.arguments as? [String: Any],
-                   let serviceUUIDs = arguments["serviceUUIDs"] as? [String] {
-                    let connectedDevices = getConnectedDevices(withServiceUUIDs: serviceUUIDs)
+               let serviceUUIDs = arguments["serviceUUIDs"] as? [String] {
+                let connectedDevices = getConnectedDevices(withServiceUUIDs: serviceUUIDs)
                 
-                    result(connectedDevices)
-                } else {
-                    result(FlutterError(code: "INVALID_ARGUMENTS",
-                                        message: "Expected a list of service UUIDs.",
-                                        details: nil))
-                }
+                result(connectedDevices)
+            } else {
+                result(FlutterError(code: "INVALID_ARGUMENTS",
+                                    message: "Expected a list of service UUIDs.",
+                                    details: nil))
+            }
             
         case CentralMethod.stopScan.rawValue:
             // Stop scanning for BLE devices
@@ -245,6 +270,18 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
         }
     }
     
+    /// Handles all Method Channel calls related to functionality that is only used during testing. These method includ mechanism for injecting mocked data into handlers within this class.
+    private func handleTestMethod(_ call: FlutterMethodCall, _ result: @escaping FlutterResult) {
+        switch call.method {
+        case TestMethod.testInjectScanDevice.rawValue:
+            // TODO: Implement this method
+            result(FlutterMethodNotImplemented)
+            
+        default:
+            result(FlutterMethodNotImplemented)
+        }
+    }
+    
     // MARK: - CBCentralManagerDelegate Methods
     
     /// Invoked when the central manager's state is updated.
@@ -256,92 +293,97 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
     }
     
     // A list of UUIDs discovered by the scanning process. This is used to determine if a peripheral about which data is sent in the didDiscover method
-   // below, was discovered previously. This information is, in turn, used to infer if a device has sent additional information to the device in a
-   // scan response.
-   var discoveredDevices: [UUID] = []
-
-   /// Called when a peripheral is discovered while scanning.
-   ///
-   /// Adds the discovered peripheral to the map if it isn't already there and prepares the device information to be sent to Flutter.
-   /// - Parameters:
-   ///   - central: The central manager providing this update.
-   ///   - peripheral: The `CBPeripheral` that was discovered.
-   ///   - advertisementData: A dictionary containing any advertisement and scan response data.
-   ///   - RSSI: The received signal strength indicator (RSSI) value for the peripheral.
-   ///
-   /// This function handles the discovery of BLE peripherals during a scan. It processes the advertisement data received from the peripheral
-   /// and prepares the device information to be sent to the Dart side of a Flutter application. The function supports BLE peripherals with
-   /// scannable advertisement data by leveraging the OS's automatic scan request mechanism.
-   ///
-   /// For BLE peripherals that support scannable advertisement data, the OS will automatically make a scan request after receiving the initial
-   /// advertisement packet. As a result, the `didDiscover` function will be called twice in quick succession for these devices:
-   ///
-   /// 1. The first call is triggered by the initial advertisement packet.
-   /// 2. The second call is triggered by the scan response packet.
-   ///
-   /// When this happens, the `CBPeripheral` will include additional advertisement data in the scan response, combining it with the initial data.
-   /// The function tracks the advertisement data for each discovered peripheral and waits for the scan response before sending the complete
-   /// data to the Dart side. This ensures that all relevant advertisement data, including manufacturer data, is captured and processed.
-   ///
-   /// The function uses two dictionaries to achieve this:
-   /// - `partialAdvertisementData`: Stores partial advertisement data for each peripheral.
-   /// - `scanResponseReceived`: Tracks whether the scan response has been received for each peripheral.
-   ///
-   /// The function checks the type of advertisement packet to determine if it should expect more data in a scan response. If the scan response
-   /// has been received, the function combines the initial advertisement data with the scan response data and sends the complete information
-   /// to the Dart side.
-   public func centralManager(_ central: CBCentralManager, didDiscover peripheral: CBPeripheral, advertisementData: [String: Any], rssi RSSI: NSNumber) {
-       // Add the peripheral to the map
-       peripheralsMap[peripheral.identifier.uuidString] = peripheral
-
-       // Check if the BLE device has indicated it supports scannable advertisement packets. If this is the case, the OS will automatically send a
-       // scan request and this function should receive another call when the scan response is received. This function will wait until all
-       // advertisement data is collected before returning it to the Dart side.
-       let isScannable = (advertisementData[CBAdvertisementDataIsConnectable] as? Bool ?? false) && discoveredDevices.contains(peripheral.identifier) == false
-
-       // Add the device to the list of discovered devices if it has not already been added
-       if discoveredDevices.contains(peripheral.identifier) == false {
-           discoveredDevices.append(peripheral.identifier)
-       }
-
-       // If the device does not indicate that more advertisement data is forthcoming, return the scan discovery information to the Dart side
-       if(!isScannable) {
-           // Create a dictionary with device details
-           var deviceMap: [String: Any?] = [
-               "name": peripheral.name,
-               "address": peripheral.identifier.uuidString,
-               "rssi": RSSI.intValue,
-           ]
-
-           // Extract the manufacturer data
-           let manufacturerData = advertisementData[CBAdvertisementDataManufacturerDataKey] as? Data
-
-           // Process the manufacturer data if it exists
-           if let manufacturerData = manufacturerData {
-               // Check that the data is at least 2 bytes long (to extract the manufacturer identifier)
-               if manufacturerData.count >= 2 {
-                   // Extract the manufacturer identifier (first two bytes)
-                   let manufacturerIdData = manufacturerData.subdata(in: 0..<2)
-                   // Extract the manufacturer-specific payload (the remaining bytes)
-                   let manufacturerPayloadData = manufacturerData.subdata(in: 2..<manufacturerData.count)
-
-                   // Convert both the data parts into uppercase hexadecimal strings
-                   let manufacturerIdHex = manufacturerIdData.map { String(format: "%02X", $0) }.joined()
-                   let manufacturerPayloadHex = manufacturerPayloadData.map { String(format: "%02X", $0) }.joined()
-
-                   let formattedManufacturerData = "\(manufacturerIdHex)\(manufacturerPayloadHex)"
-
-                   deviceMap["manufacturerData"] = formattedManufacturerData
-               }
-           }
-
-           // Send device information to Flutter side
-           let jsonData = try? JSONSerialization.data(withJSONObject: deviceMap, options: [])
-           if let jsonData = jsonData, let jsonString = String(data: jsonData, encoding: .utf8) {
-               centralChannel.invokeMethod("bleDeviceScanned", arguments: jsonString)
-           }
-       }
-   }
+    // below, was discovered previously. This information is, in turn, used to infer if a device has sent additional information to the device in a
+    // scan response.
+    var discoveredDevices: [UUID] = []
+    
+    /// Called when a peripheral is discovered while scanning.
+    ///
+    /// Adds the discovered peripheral to the map if it isn't already there and prepares the device information to be sent to Flutter.
+    /// - Parameters:
+    ///   - central: The central manager providing this update.
+    ///   - peripheral: The `CBPeripheral` that was discovered.
+    ///   - advertisementData: A dictionary containing any advertisement and scan response data.
+    ///   - RSSI: The received signal strength indicator (RSSI) value for the peripheral.
+    ///
+    /// This function handles the discovery of BLE peripherals during a scan. It processes the advertisement data received from the peripheral
+    /// and prepares the device information to be sent to the Dart side of a Flutter application. The function supports BLE peripherals with
+    /// scannable advertisement data by leveraging the OS's automatic scan request mechanism.
+    ///
+    /// For BLE peripherals that support scannable advertisement data, the OS will automatically make a scan request after receiving the initial
+    /// advertisement packet. As a result, the `didDiscover` function will be called twice in quick succession for these devices:
+    ///
+    /// 1. The first call is triggered by the initial advertisement packet.
+    /// 2. The second call is triggered by the scan response packet.
+    ///
+    /// When this happens, the `CBPeripheral` will include additional advertisement data in the scan response, combining it with the initial data.
+    /// The function tracks the advertisement data for each discovered peripheral and waits for the scan response before sending the complete
+    /// data to the Dart side. This ensures that all relevant advertisement data, including manufacturer data, is captured and processed.
+    ///
+    /// The function uses two dictionaries to achieve this:
+    /// - `partialAdvertisementData`: Stores partial advertisement data for each peripheral.
+    /// - `scanResponseReceived`: Tracks whether the scan response has been received for each peripheral.
+    ///
+    /// The function checks the type of advertisement packet to determine if it should expect more data in a scan response. If the scan response
+    /// has been received, the function combines the initial advertisement data with the scan response data and sends the complete information
+    /// to the Dart side.
+    public func centralManager(_ central: CBCentralManager, didDiscover peripheral: CBPeripheral, advertisementData: [String: Any], rssi RSSI: NSNumber) {
+        // If scan filters for appliance names have been specified, only continue with devices matching one of the names.
+        guard scanNameFilters.isEmpty || scanNameFilters.contains(peripheral.name ?? "") else {
+            return
+        }
+        
+        // Add the peripheral to the map
+        peripheralsMap[peripheral.identifier.uuidString] = peripheral
+        
+        // Check if the BLE device has indicated it supports scannable advertisement packets. If this is the case, the OS will automatically send a
+        // scan request and this function should receive another call when the scan response is received. This function will wait until all
+        // advertisement data is collected before returning it to the Dart side.
+        let isScannable = (advertisementData[CBAdvertisementDataIsConnectable] as? Bool ?? false) && discoveredDevices.contains(peripheral.identifier) == false
+        
+        // Add the device to the list of discovered devices if it has not already been added
+        if discoveredDevices.contains(peripheral.identifier) == false {
+            discoveredDevices.append(peripheral.identifier)
+        }
+        
+        // If the device does not indicate that more advertisement data is forthcoming, return the scan discovery information to the Dart side
+        if(!isScannable) {
+            // Create a dictionary with device details
+            var deviceMap: [String: Any?] = [
+                "name": peripheral.name,
+                "address": peripheral.identifier.uuidString,
+                "rssi": RSSI.intValue,
+            ]
+            
+            // Extract the manufacturer data
+            let manufacturerData = advertisementData[CBAdvertisementDataManufacturerDataKey] as? Data
+            
+            // Process the manufacturer data if it exists
+            if let manufacturerData = manufacturerData {
+                // Check that the data is at least 2 bytes long (to extract the manufacturer identifier)
+                if manufacturerData.count >= 2 {
+                    // Extract the manufacturer identifier (first two bytes)
+                    let manufacturerIdData = manufacturerData.subdata(in: 0..<2)
+                    // Extract the manufacturer-specific payload (the remaining bytes)
+                    let manufacturerPayloadData = manufacturerData.subdata(in: 2..<manufacturerData.count)
+                    
+                    // Convert both the data parts into uppercase hexadecimal strings
+                    let manufacturerIdHex = manufacturerIdData.map { String(format: "%02X", $0) }.joined()
+                    let manufacturerPayloadHex = manufacturerPayloadData.map { String(format: "%02X", $0) }.joined()
+                    
+                    let formattedManufacturerData = "\(manufacturerIdHex)\(manufacturerPayloadHex)"
+                    
+                    deviceMap["manufacturerData"] = formattedManufacturerData
+                }
+            }
+            
+            // Send device information to Flutter side
+            let jsonData = try? JSONSerialization.data(withJSONObject: deviceMap, options: [])
+            if let jsonData = jsonData, let jsonString = String(data: jsonData, encoding: .utf8) {
+                centralChannel.invokeMethod("bleDeviceScanned", arguments: jsonString)
+            }
+        }
+    }
     
     /// Called by the system when a connection to the peripheral is successfully established.
     /// This method triggers a callback to the Flutter side to inform it of the connection status.
@@ -542,7 +584,7 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
         // Invoke method on Flutter side
         centralChannel.invokeMethod("permissionStatusUpdated", arguments: status)
     }
-
+    
     /// Gets a list of Bluetooth devices that are currently connected to the device.
     ///
     /// This function accepts a list of service UUIDs used to filter the list of connected BLE devices to return. This list must contain at least one UUID because requesting
@@ -561,7 +603,7 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
             ]
         }
     }
-
+    
     // MARK: Adapter Status Helper Methods
     
     ///  The methods in this section manage the Bluetooth adapter on a MacOS device and communicates its status to the Dart side of a Flutter app.

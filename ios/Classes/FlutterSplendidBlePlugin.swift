@@ -25,6 +25,9 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
     /// This enables easy retrieval and management of peripheral connections.
     private var peripheralsMap: [String: CBPeripheral] = [:]
     
+    /// A set of device names used to filter the results of a scan. Only devices with names appearing in this list will be returned by the scan.
+    private var scanNameFilters: Set<String> = []
+    
     // Holds the UUIDs of characteristics for which a read operation has been initiated.
     private var pendingReadRequests: [CBUUID: Bool] = [:]
     
@@ -113,13 +116,24 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
             
             if let args = call.arguments as? [String: Any] {
                 // Handle Scan Filters
+                var expectedDeviceNames: Set<String> = []
                 if let filtersMap = args["filters"] as? [[String: Any]] {
+                    // Service UUID filters
                     serviceUUIDs = filtersMap.compactMap { filterDict in
                         if let uuidStrings = filterDict["serviceUuids"] as? [String] {
                             return uuidStrings.compactMap { CBUUID(string: $0) }
                         }
                         return nil
-                    }.flatMap { $0 } // Flatten the array of arrays
+                    }.flatMap { $0 }
+                    
+                    // Collect expected device names
+                    for filter in filtersMap {
+                        if let deviceName = filter["deviceName"] as? String {
+                            expectedDeviceNames.insert(deviceName)
+                        }
+                    }
+                    
+                    self.scanNameFilters = expectedDeviceNames
                 }
                 
                 // Handle Scan Settings
@@ -300,6 +314,11 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
     /// has been received, the function combines the initial advertisement data with the scan response data and sends the complete information
     /// to the Dart side.
     public func centralManager(_ central: CBCentralManager, didDiscover peripheral: CBPeripheral, advertisementData: [String: Any], rssi RSSI: NSNumber) {
+        // If scan filters for appliance names have been specified, only continue with devices matching one of the names.
+        guard scanNameFilters.isEmpty || scanNameFilters.contains(peripheral.name ?? "") else {
+            return
+        }
+        
         // Add the peripheral to the map
         peripheralsMap[peripheral.identifier.uuidString] = peripheral
         
