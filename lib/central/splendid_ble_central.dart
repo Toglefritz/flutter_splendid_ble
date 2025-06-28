@@ -2,6 +2,7 @@ import '../shared/models/ble_device.dart';
 import '../shared/models/bluetooth_permission_status.dart';
 import '../shared/models/bluetooth_status.dart';
 import 'central_platform_interface.dart';
+import 'fake_central_method_channel.dart';
 import 'models/ble_connection_state.dart';
 import 'models/ble_service.dart';
 import 'models/connected_ble_device.dart';
@@ -28,41 +29,54 @@ typedef SplendidBle = SplendidBleCentral;
 /// [SplendidBleCentral] provides an interface to interact with Bluetooth functionalities from a Flutter app acting
 /// as a BLE central device.
 class SplendidBleCentral {
+  /// The platform interface used to perform Bluetooth operations.
+  ///
+  /// This allows for dependency injection of different platform implementations (e.g., a fake platform for testing).
+  /// If no platform is explicitly provided, the default singleton [CentralPlatformInterface.instance] is used.
+  final CentralPlatformInterface _platform;
+
+  /// Creates an instance of [SplendidBleCentral].
+  ///
+  /// By default, this uses the singleton [CentralPlatformInterface.instance], but you can provide a custom
+  /// implementation (such as [FakeCentralMethodChannel]) for testing.
+  SplendidBleCentral({CentralPlatformInterface? platform}) : _platform = platform ?? CentralPlatformInterface.instance;
+
   /// Asks the platform to check the current status of the Bluetooth adapter.
   ///
   /// Returns a [Future] containing the current [BluetoothStatus].
   Future<BluetoothStatus> checkBluetoothAdapterStatus() async {
-    return CentralPlatformInterface.instance.checkBluetoothAdapterStatus();
+    return _platform.checkBluetoothAdapterStatus();
   }
 
   /// Emits the current status of the Bluetooth adapter whenever it changes.
   ///
   /// Returns a [Stream] of [BluetoothStatus].
   Stream<BluetoothStatus> emitCurrentBluetoothStatus() {
-    return CentralPlatformInterface.instance.emitCurrentBluetoothStatus();
+    return _platform.emitCurrentBluetoothStatus();
   }
+
   /// Returns a list of BLE device identifiers that are currently connected to the host device.
   Future<List<ConnectedBleDevice>> getConnectedDevices(List<String> serviceUUIDs) async {
-    return CentralPlatformInterface.instance.getConnectedDevices(serviceUUIDs);
+    return _platform.getConnectedDevices(serviceUUIDs);
   }
 
   /// Asks the platform to request Bluetooth permissions from the user.
   ///
   /// Returns a [Future] containing the current [BluetoothPermissionStatus].
   Future<BluetoothPermissionStatus> requestBluetoothPermissions() async {
-    return CentralPlatformInterface.instance.requestBluetoothPermissions();
+    return _platform.requestBluetoothPermissions();
   }
 
   /// Emits the current Bluetooth permission status whenever it changes.
   ///
   /// Returns a [Stream] of [BluetoothPermissionStatus].
   Stream<BluetoothPermissionStatus> emitCurrentPermissionStatus() {
-    return CentralPlatformInterface.instance.emitCurrentPermissionStatus();
+    return _platform.emitCurrentPermissionStatus();
   }
 
   /// Asks the platform to stop scanning for Bluetooth devices.
   void stopScan() {
-    return CentralPlatformInterface.instance.stopScan();
+    return _platform.stopScan();
   }
 
   /// Asks the platform to start scanning for Bluetooth devices.
@@ -72,7 +86,7 @@ class SplendidBleCentral {
     List<ScanFilter>? filters,
     ScanSettings? settings,
   }) {
-    return CentralPlatformInterface.instance.startScan(
+    return _platform.startScan(
       filters: filters,
       settings: settings,
     );
@@ -82,27 +96,25 @@ class SplendidBleCentral {
   ///
   /// Returns a [Stream] of [BleConnectionState].
   Stream<BleConnectionState> connect({required String deviceAddress}) {
-    return CentralPlatformInterface.instance
-        .connect(deviceAddress: deviceAddress);
+    return _platform.connect(deviceAddress: deviceAddress);
   }
 
   /// Asks the platform to discover available services for a connected device by its address.
   ///
   /// Returns a [Stream] of [BleService].
   Stream<List<BleService>> discoverServices(String deviceAddress) {
-    return CentralPlatformInterface.instance.discoverServices(deviceAddress);
+    return _platform.discoverServices(deviceAddress);
   }
 
   /// Asks the platform to disconnect from a Bluetooth device by its address.
   Future<void> disconnect(String deviceAddress) {
-    return CentralPlatformInterface.instance.disconnect(deviceAddress);
+    return _platform.disconnect(deviceAddress);
   }
 
   /// Asks the platform to get the current connection state for a Bluetooth device by its address.
   ///
   /// Returns a [Future] of [BleConnectionState].
   Future<BleConnectionState> getCurrentConnectionState(String deviceAddress) {
-    return CentralPlatformInterface.instance
-        .getCurrentConnectionState(deviceAddress);
+    return _platform.getCurrentConnectionState(deviceAddress);
   }
 }

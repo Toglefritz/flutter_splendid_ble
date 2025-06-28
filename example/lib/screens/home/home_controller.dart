@@ -175,7 +175,7 @@ class HomeController extends State<HomeRoute> {
       Navigator.pushReplacement<void, void>(
         context,
         MaterialPageRoute<void>(
-          builder: (BuildContext context) => const ScanRoute(),
+          builder: (BuildContext context) => ScanRoute(),
         ),
       );
     } else if (_permissionsGranted == false) {

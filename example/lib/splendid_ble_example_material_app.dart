@@ -4,17 +4,15 @@ import 'l10n/app_localizations.dart';
 import 'screens/home/home_route.dart';
 
 /// A [StatelessWidget] that builds the root [MaterialApp] for the Flutter BLE Example App.
-///
-/// This widget is responsible for creating the main application structure with an app bar and body content. The app
-/// bar displays the title 'Flutter Splendid BLE Example App', and the body includes an animated image from a network
-/// URL.
-///
-/// The [SplendidBleExampleApp] is returned by the [runApp] method in main.dart and serves as the starting point for
-/// the example application, setting the stage for any additional screens, widgets, or functionalities that might be
-/// added.
-class SplendidBleExampleApp extends StatelessWidget {
-  /// Creates an instance of [SplendidBleExampleApp].
-  const SplendidBleExampleApp({super.key});
+class SplendidBleExampleMaterialApp extends StatelessWidget {
+  /// The home route for the application, which is the main entry point of the app.
+  final Widget home;
+
+  /// Creates an instance of [SplendidBleExampleMaterialApp].
+  const SplendidBleExampleMaterialApp({
+    this.home = const HomeRoute(),
+    super.key,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -62,7 +60,7 @@ class SplendidBleExampleApp extends StatelessWidget {
       supportedLocales: const [
         Locale('en'), // English
       ],
-      home: const HomeRoute(),
+      home: home,
     );
   }
 }

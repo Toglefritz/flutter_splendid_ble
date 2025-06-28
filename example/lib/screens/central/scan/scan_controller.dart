@@ -15,7 +15,7 @@ import 'scan_view.dart';
 /// A controller for the [ScanRoute] that manages the state and owns all business logic.
 class ScanController extends State<ScanRoute> {
   /// A [SplendidBleCentral] instance used for Bluetooth operations conducted by this route.
-  final SplendidBleCentral _ble = SplendidBleCentral();
+  late SplendidBleCentral _ble;
 
   /// Determines if a scan is currently in progress.
   bool _scanInProgress = false;
@@ -31,6 +31,9 @@ class ScanController extends State<ScanRoute> {
 
   @override
   void initState() {
+    // Access the injected instance from the widget
+    _ble = widget.ble;
+
     _startBluetoothScan();
 
     super.initState();

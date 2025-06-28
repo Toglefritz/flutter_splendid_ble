@@ -2,17 +2,22 @@ import 'package:flutter/material.dart';
 
 import 'package:flutter_splendid_ble/central/models/scan_filter.dart';
 import 'package:flutter_splendid_ble/central/models/scan_settings.dart';
+import 'package:flutter_splendid_ble/central/splendid_ble_central.dart';
 import 'package:flutter_splendid_ble/shared/models/ble_device.dart';
 import 'scan_controller.dart';
 
 /// Automatically starts a scan for nearby Bluetooth devices and presents the detected devices in a list.
 class ScanRoute extends StatefulWidget {
   /// Creates an instance of [ScanRoute].
-  const ScanRoute({
+  ScanRoute({
+    SplendidBleCentral? ble,
     this.filters,
     this.settings,
     super.key,
-  });
+  }) : ble = ble ?? SplendidBleCentral();
+
+  /// A [SplendidBleCentral] instance used for Bluetooth operations conducted by this route.
+  final SplendidBleCentral ble;
 
   /// A list of [ScanFilter]s to be used for the scanning process.
   ///
