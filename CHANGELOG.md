@@ -146,3 +146,11 @@ All notable changes to the `flutter_splendid_ble` plugin will be documented in t
 
 - Updated example app localization dependencies
 - Fixed scan filtering by UUID for Android
+
+## [0.17.0] 2025/06/29
+
+- Updated filtering devices by name
+- Updated filtering devices by vendor ID
+- Updated filtering devices by manufacturer data
+- Added Bluetooth mocking tools for testing purposes
+- Added integration tests for the example app as references

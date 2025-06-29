@@ -3,6 +3,7 @@ import 'package:flutter_splendid_ble/central/fake_central_method_channel.dart';
 import 'package:flutter_splendid_ble/central/models/scan_filter.dart';
 import 'package:flutter_splendid_ble/central/splendid_ble_central.dart';
 import 'package:flutter_splendid_ble/shared/models/ble_device.dart';
+import 'package:flutter_splendid_ble/shared/models/manufacturer_data.dart';
 import 'package:flutter_splendid_ble_example/screens/central/scan/components/scan_result_tile.dart';
 import 'package:flutter_splendid_ble_example/screens/central/scan/scan_route.dart';
 import 'package:flutter_splendid_ble_example/screens/components/loading_indicator.dart';
@@ -200,6 +201,169 @@ void main() {
     // Only the matching device should be displayed.
     expect(find.byType(ScanResultTile), findsOneWidget);
     expect(find.text('Target Device'), findsOneWidget);
+    expect(find.text('Other Device'), findsNothing);
+  });
+
+  /// This test verifies that, when a filter for a specific service UUID is applied, the [ScanRoute] only displays
+  /// devices that advertise that service.
+  testWidgets('ScanRoute applies service UUID filter correctly', (WidgetTester tester) async {
+    // Add multiple devices, with different advertised service UUIDs
+    fakeCentral
+      ..addFakeDevice(
+        BleDevice(
+          name: 'Target Device',
+          address: '00:11:22:33:44:55',
+          rssi: -50,
+          manufacturerData: null,
+          advertisedServiceUuids: ['abcd1234-1234-1234-1234-1234567890aa'],
+        ),
+      )
+      ..addFakeDevice(
+        BleDevice(
+          name: 'Other Device',
+          address: '00:11:22:33:44:66',
+          rssi: -60,
+          manufacturerData: null,
+          advertisedServiceUuids: ['abcd1234-1234-1234-1234-1234567890bb'],
+        ),
+      );
+
+    await tester.pumpWidget(
+      SplendidBleExampleMaterialApp(
+        home: ScanRoute(
+          ble: ble,
+          filters: [
+            ScanFilter(
+              serviceUuids: ['abcd1234-1234-1234-1234-1234567890aa'],
+            ),
+          ],
+        ),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    // Only the device with the matching service UUID should be displayed.
+    expect(find.byType(ScanResultTile), findsOneWidget);
+    expect(find.text('Target Device'), findsOneWidget);
+    expect(find.text('Other Device'), findsNothing);
+  });
+
+  /// This test verifies that, when a filter for a specific manufacturer ID is applied, the [ScanRoute] only displays
+  /// devices whose manufacturer data includes the specified ID.
+  testWidgets('ScanRoute applies manufacturer ID filter correctly', (WidgetTester tester) async {
+    // Manufacturer ID: 0x004C (Apple, for example)
+    final List<int> manufacturerIdBytes = [0x4C, 0x00];
+    final List<int> payload = [0x01, 0x02, 0x03];
+
+    fakeCentral
+      ..addFakeDevice(
+        BleDevice(
+          name: 'Target Device',
+          address: '00:11:22:33:44:55',
+          rssi: -50,
+          manufacturerData: ManufacturerData(
+            manufacturerId: manufacturerIdBytes,
+            payload: payload,
+          ),
+          advertisedServiceUuids: [],
+        ),
+      )
+      ..addFakeDevice(
+        BleDevice(
+          name: 'Other Device',
+          address: '00:11:22:33:44:66',
+          rssi: -60,
+          manufacturerData: ManufacturerData(
+            manufacturerId: [0x01, 0x02],
+            payload: [0x99],
+          ),
+          advertisedServiceUuids: [],
+        ),
+      );
+
+    await tester.pumpWidget(
+      SplendidBleExampleMaterialApp(
+        home: ScanRoute(
+          ble: ble,
+          filters: [
+            ScanFilter(
+              manufacturerId: 0x004C,
+            ),
+          ],
+        ),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    // Only the device with the matching manufacturer ID should be displayed.
+    expect(find.byType(ScanResultTile), findsOneWidget);
+    expect(find.text('Target Device'), findsOneWidget);
+    expect(find.text('Other Device'), findsNothing);
+  });
+
+  /// This test verifies that the [ScanRoute] uses the custom manufacturer ID matcher when provided. In this test, the
+  /// manufacturer ID is encoded in the first two bytes of the device name, and the custom matcher extracts and matches
+  /// this ID.
+  testWidgets('ScanRoute uses custom manufacturer ID matcher correctly', (WidgetTester tester) async {
+    // The target manufacturer ID in little-endian format is 0x004C (Apple).
+    final List<int> manufacturerIdBytes = [0x4C, 0x00];
+    final String encodedPrefix = manufacturerIdBytes.map(String.fromCharCode).join();
+    // The target device name will be prefixed with the encoded manufacturer ID.
+    final String targetDeviceName = '$encodedPrefix Target Device';
+
+    fakeCentral
+      ..addFakeDevice(
+        BleDevice(
+          name: targetDeviceName,
+          address: '00:11:22:33:44:55',
+          rssi: -50,
+          manufacturerData: null,
+          advertisedServiceUuids: [],
+        ),
+      )
+      ..addFakeDevice(
+        BleDevice(
+          name: 'Other Device',
+          address: '00:11:22:33:44:66',
+          rssi: -60,
+          manufacturerData: null,
+          advertisedServiceUuids: [],
+        ),
+      );
+
+    await tester.pumpWidget(
+      SplendidBleExampleMaterialApp(
+        home: ScanRoute(
+          ble: ble,
+          filters: [
+            ScanFilter(
+              manufacturerId: 0x004C,
+              customVendorIdMatcher: (BleDevice device) {
+                // Custom logic to extract the manufacturer ID from the device name.
+                if (device.name == null) {
+                  return false;
+                } else if (device.name!.length >= 2) {
+                  final bytes = device.name!.codeUnits.take(2).toList();
+                  final id = bytes[0] | (bytes[1] << 8);
+
+                  return id == 0x004C;
+                }
+
+                return false;
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    // Only the device with a name-encoded manufacturer ID should be shown.
+    expect(find.byType(ScanResultTile), findsOneWidget);
+    expect(find.textContaining('Target Device'), findsOneWidget);
     expect(find.text('Other Device'), findsNothing);
   });
 }

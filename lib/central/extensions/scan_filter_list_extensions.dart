@@ -1,4 +1,5 @@
 import '../../shared/models/ble_device.dart';
+import '../../shared/models/manufacturer_data.dart';
 import '../models/scan_filter.dart';
 
 /// Contains utility methods for working with [ScanFilter]s.
@@ -31,12 +32,61 @@ extension ScanFilterListExtensions on List<ScanFilter>? {
                 (String uuid) => filter.serviceUuids!.map((f) => f.toLowerCase()).contains(uuid),
               );
 
-      // If both conditions match, return true.
-      if (matchesName && matchesService) {
+      // Check if the device matches the manufacturer ID specified in the filter.
+      final bool matchesManufacturer = _matchesManufacturerId(device, filter);
+
+      // If all conditions match, return true.
+      if (matchesName && matchesService && matchesManufacturer) {
         return true;
       }
     }
 
+    return false;
+  }
+
+  /// Checks if the device matches the manufacturer ID specified in the [filter].
+  ///
+  /// This checks the following:
+  /// - Manufacturer Specific Data (AD type 0xFF): Matches the 16-bit Bluetooth SIG company identifier.
+  /// - Service Data fields (AD types 0x16 or 0x21): May contain a custom manufacturer identifier depending on the vendor's encoding.
+  /// - MAC address: Compares the first 3 bytes (OUI) if the manufacturer ID corresponds to a known OUI prefix.
+  /// - Custom matcher: Uses [ScanFilter.customVendorIdMatcher] for any vendor-specific logic.
+  ///
+  /// If the [filter] does not specify a manufacturer ID, this returns true.
+  bool _matchesManufacturerId(BleDevice device, ScanFilter filter) {
+    // If no manufacturer ID is specified in the filter, return true to include all devices.
+    if (filter.manufacturerId == null) return true;
+
+    final int id = filter.manufacturerId!;
+    final ManufacturerData? data = device.manufacturerData;
+
+    // Check Manufacturer Specific Data (AD type 0xFF)
+    if (data != null && data.manufacturerId.length >= 2) {
+      // Extract the first two bytes as the manufacturer ID. This is the standard way to include manufacturer ID.
+      final int extractedId = data.manufacturerId[0] | (data.manufacturerId[1] << 8);
+      if (extractedId == id) {
+        return true;
+      }
+    }
+
+    // Check MAC address OUI (first 3 bytes of address if it's in standard format). This is another common way to
+    // identify manufacturers.
+    final String mac = device.address.toUpperCase().replaceAll(':', '');
+    if (mac.length >= 6) {
+      final int? ouiPrefix = int.tryParse(mac.substring(0, 6), radix: 16);
+      if (ouiPrefix != null && (ouiPrefix & 0xFFFF) == id) {
+        return true;
+      }
+    }
+
+    // Check custom matcher if provided.
+    if (filter.customVendorIdMatcher != null) {
+      if (filter.customVendorIdMatcher!(device)) {
+        return true;
+      }
+    }
+
+    // NOTE: Matching manufacturer ID in service data is vendor-specific and not implemented here.
     return false;
   }
 }

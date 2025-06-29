@@ -1,3 +1,5 @@
+import '../../shared/models/ble_device.dart';
+
 /// The `ScanFilter` class is used to define criteria that determine which Bluetooth devices are returned during a
 /// scan for BLE (Bluetooth Low Energy) devices.
 ///
@@ -29,7 +31,35 @@ class ScanFilter {
   final List<String>? serviceUuids;
 
   /// The manufacturer ID associated with a specific device manufacturer.
+  ///
+  /// Bluetooth devices can include manufacturer-specific data in their advertisements. The manufacturer ID is
+  /// generally a 16-bit identifier that corresponds to the manufacturer of the device. There is no dedicated field
+  /// for including the manufacturer ID in the advertisement, but there are a few conventional methods by which
+  /// manufacturers include vendor-specific data:
+  ///
+  /// - The most common method is to include it as the first two bytes of the Manufacturer Specific Data field
+  ///   (AD type 0xFF) in the advertisement payload. This field is formatted as a 16-bit company identifier assigned by
+  ///   the Bluetooth SIG, followed by manufacturer-defined custom data.
+  ///
+  /// - Some devices may embed a vendor-specific identifier within the Service Data fields (AD types 0x16 or 0x21),
+  ///   typically as part of a custom protocol. This is not standardized and depends on the vendor’s implementation.
+  ///
+  /// - Although not a direct representation of the manufacturer ID, the Bluetooth MAC address may reveal the vendor
+  ///   through its Organizationally Unique Identifier (OUI), which is assigned by the IEEE and comprises the first
+  ///   three bytes of the address.
+  ///
+  /// These techniques can be used together or separately to identify the device's manufacturer depending on the use case.
   final int? manufacturerId;
+
+  /// A custom function that determines whether the vendor ID in a [BleDevice] matches a desired value.
+  ///
+  /// Some devices may encode their vendor ID in a non-standard way that cannot be captured through the conventional
+  /// Manufacturer Specific Data or MAC address OUI. This optional function allows specifying custom logic for
+  /// matching vendor IDs.
+  ///
+  /// The function should return `true` if the [BleDevice] matches the expected vendor ID using the desired logic.
+  /// If this function is provided, it will be called in addition to the standard manufacturer ID checks.
+  final bool Function(BleDevice device)? customVendorIdMatcher;
 
   /// Additional manufacturer data that must match the advertised data.
   final Map<int, List<int>>? manufacturerData;
@@ -43,11 +73,13 @@ class ScanFilter {
   /// [serviceUuids] filters devices based on their advertised service UUIDs.
   /// [manufacturerId] filters devices based on their manufacturer ID.
   /// [manufacturerData] filters devices based on their manufacturer-specific data.
+  /// [customVendorIdMatcher] allows custom logic for matching vendor IDs in cases where standard methods are insufficient.
   ScanFilter({
     this.deviceName,
     this.serviceUuids,
     this.manufacturerId,
     this.manufacturerData,
+    this.customVendorIdMatcher,
   });
 
   /// Converts the [ScanFilter] instance into a map representation.
@@ -59,6 +91,7 @@ class ScanFilter {
       'serviceUuids': serviceUuids,
       'manufacturerId': manufacturerId,
       'manufacturerData': manufacturerData,
+      'customVendorIdMatcher': null,
     };
   }
 }
