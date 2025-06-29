@@ -366,4 +366,62 @@ void main() {
     expect(find.textContaining('Target Device'), findsOneWidget);
     expect(find.text('Other Device'), findsNothing);
   });
+
+  /// This test verifies that, when a filter for full manufacturer data is applied, the [ScanRoute] only displays
+  /// devices that exactly match the specified manufacturer ID and payload.
+  testWidgets('ScanRoute applies full manufacturer data filter correctly', (WidgetTester tester) async {
+    final List<int> manufacturerIdBytes = [0x4C, 0x00]; // Apple ID in little-endian
+    final List<int> payload = [0x10, 0x20, 0x30];
+
+    // Create a ManufacturerData instance with the specified manufacturer ID and payload.
+    final ManufacturerData matchingData = ManufacturerData(
+      manufacturerId: manufacturerIdBytes,
+      payload: payload,
+    );
+
+    fakeCentral
+      ..addFakeDevice(
+        BleDevice(
+          name: 'Matching Device',
+          address: '00:11:22:33:44:55',
+          rssi: -45,
+          manufacturerData: matchingData,
+          advertisedServiceUuids: [],
+        ),
+      )
+      ..addFakeDevice(
+        BleDevice(
+          name: 'Non-matching Device',
+          address: '00:11:22:33:44:66',
+          rssi: -55,
+          manufacturerData: ManufacturerData(
+            manufacturerId: manufacturerIdBytes,
+            payload: [0x99, 0x88],
+          ),
+          advertisedServiceUuids: [],
+        ),
+      );
+
+    await tester.pumpWidget(
+      SplendidBleExampleMaterialApp(
+        home: ScanRoute(
+          ble: ble,
+          filters: [
+            ScanFilter(
+              manufacturerData: {
+                0x004C: payload,
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    // Only the matching device should be shown.
+    expect(find.byType(ScanResultTile), findsOneWidget);
+    expect(find.text('Matching Device'), findsOneWidget);
+    expect(find.text('Non-matching Device'), findsNothing);
+  });
 }

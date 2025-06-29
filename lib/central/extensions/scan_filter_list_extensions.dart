@@ -35,8 +35,28 @@ extension ScanFilterListExtensions on List<ScanFilter>? {
       // Check if the device matches the manufacturer ID specified in the filter.
       final bool matchesManufacturer = _matchesManufacturerId(device, filter);
 
+      // Check if full manufacturer data matches exactly.
+      final ManufacturerData? data = device.manufacturerData;
+      bool matchesManufacturerData = false;
+      if (filter.manufacturerData != null && data != null) {
+        // Convert ManufacturerData to a compatible map for comparison.
+        final Map<int, List<int>> deviceMap = {
+          (data.manufacturerId[0] | (data.manufacturerId[1] << 8)): data.payload,
+        };
+
+        if (filter.manufacturerData!.length == deviceMap.length &&
+            filter.manufacturerData!.keys.every(
+              (int key) => deviceMap.containsKey(key) && _listEquals(filter.manufacturerData![key]!, deviceMap[key]!),
+            )) {
+          matchesManufacturerData = true;
+        }
+      } else {
+        // If no manufacturer data is specified in the filter, we consider it a match.
+        matchesManufacturerData = filter.manufacturerData == null || filter.manufacturerData!.isEmpty;
+      }
+
       // If all conditions match, return true.
-      if (matchesName && matchesService && matchesManufacturer) {
+      if (matchesName && matchesService && matchesManufacturer && matchesManufacturerData) {
         return true;
       }
     }
@@ -88,5 +108,13 @@ extension ScanFilterListExtensions on List<ScanFilter>? {
 
     // NOTE: Matching manufacturer ID in service data is vendor-specific and not implemented here.
     return false;
+  }
+
+  bool _listEquals(List<int> a, List<int> b) {
+    if (a.length != b.length) return false;
+    for (int i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) return false;
+    }
+    return true;
   }
 }
