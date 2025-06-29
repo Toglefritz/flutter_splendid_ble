@@ -2,7 +2,6 @@ import '../shared/models/ble_device.dart';
 import '../shared/models/bluetooth_permission_status.dart';
 import '../shared/models/bluetooth_status.dart';
 import 'central_platform_interface.dart';
-import 'fake_central_method_channel.dart';
 import 'models/ble_connection_state.dart';
 import 'models/ble_service.dart';
 import 'models/connected_ble_device.dart';
@@ -36,9 +35,6 @@ class SplendidBleCentral {
   final CentralPlatformInterface _platform;
 
   /// Creates an instance of [SplendidBleCentral].
-  ///
-  /// By default, this uses the singleton [CentralPlatformInterface.instance], but you can provide a custom
-  /// implementation (such as [FakeCentralMethodChannel]) for testing.
   SplendidBleCentral({CentralPlatformInterface? platform}) : _platform = platform ?? CentralPlatformInterface.instance;
 
   /// Asks the platform to check the current status of the Bluetooth adapter.

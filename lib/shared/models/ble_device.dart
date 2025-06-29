@@ -10,6 +10,13 @@ class BleDevice {
   /// The Bluetooth address of the device.
   final String address;
 
+  /// A list of services advertised by the device.
+  ///
+  /// BLE devices can advertise multiple services, so this is a list of UUIDs. This list of service UUIDs includes only
+  /// those that the device advertises during the scan. It does not include all services that the device may support.
+  /// Additional service can be discovered after connecting to the device.
+  final List<String> advertisedServiceUuids;
+
   /// The RSSI (Received Signal Strength Indicator) value for the device.
   final int rssi;
 
@@ -22,6 +29,7 @@ class BleDevice {
   BleDevice({
     required this.name,
     required this.address,
+    required this.advertisedServiceUuids,
     required this.rssi,
     required this.manufacturerData,
   });
@@ -38,9 +46,15 @@ class BleDevice {
       manufacturerData = ManufacturerData.fromString(manufacturerDataString);
     }
 
+    // Get the advertised service UUIDs, which is a list of strings.
+    final List<dynamic>? advertisedServiceUuidsDynamic = map['advertisedServiceUuids'] as List<dynamic>?;
+    final List<String>? advertisedServiceUuids =
+        advertisedServiceUuidsDynamic?.map((dynamic uuid) => uuid as String).toList();
+
     return BleDevice(
       name: map['name'] as String?,
       address: map['address'] as String,
+      advertisedServiceUuids: advertisedServiceUuids ?? [],
       rssi: map['rssi'] as int,
       manufacturerData: manufacturerData,
     );

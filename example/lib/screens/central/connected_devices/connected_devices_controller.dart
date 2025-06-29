@@ -42,13 +42,14 @@ class ConnectedDevicesController extends State<ConnectedDevicesRoute> {
   }
 
   /// Handles taps on one of the connected devices.
-  void onResultTap(ConnectedBleDevice deviceIdentifier) {
+  void onResultTap(ConnectedBleDevice connectedDevice) {
     // Create a BleDevice instance from the device address.
-    final device = BleDevice(
-      address: deviceIdentifier.address,
-      name: deviceIdentifier.name,
-      rssi: deviceIdentifier.rssi, // Always zero
-      manufacturerData: deviceIdentifier.manufacturerData, // Always null
+    final BleDevice device = BleDevice(
+      address: connectedDevice.address,
+      name: connectedDevice.name,
+      rssi: connectedDevice.rssi, // Always zero
+      manufacturerData: connectedDevice.manufacturerData, // Always null
+      advertisedServiceUuids: connectedDevice.advertisedServiceUuids,
     );
 
     Navigator.pushReplacement<void, void>(

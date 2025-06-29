@@ -1,5 +1,3 @@
-import 'dart:developer';
-
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_splendid_ble/central/fake_central_method_channel.dart';
 import 'package:flutter_splendid_ble/central/models/scan_filter.dart';
@@ -72,6 +70,7 @@ void main() {
         address: '00:11:22:33:44:55',
         rssi: -50,
         manufacturerData: null,
+        advertisedServiceUuids: ['abcd1234-1234-1234-1234-1234567890aa'],
       ),
     );
 
@@ -98,6 +97,7 @@ void main() {
       address: '01:02:03:04:05:06',
       rssi: -45,
       manufacturerData: null,
+      advertisedServiceUuids: ['abcd1234-1234-1234-1234-1234567890aa'],
     );
     fakeCentral
       ..addFakeDevice(device)
@@ -131,6 +131,7 @@ void main() {
           address: '00:11:22:33:44:$i',
           rssi: -50 - i,
           manufacturerData: null,
+          advertisedServiceUuids: ['abcd1234-1234-1234-1234-1234567890aa'],
         ),
       );
     }
@@ -168,6 +169,7 @@ void main() {
           address: '00:11:22:33:44:55',
           rssi: -50,
           manufacturerData: null,
+          advertisedServiceUuids: ['abcd1234-1234-1234-1234-1234567890aa'],
         ),
       )
       ..addFakeDevice(
@@ -176,6 +178,7 @@ void main() {
           address: '00:11:22:33:44:66',
           rssi: -60,
           manufacturerData: null,
+          advertisedServiceUuids: ['abcd1234-1234-1234-1234-1234567890bb'],
         ),
       );
 
@@ -193,8 +196,6 @@ void main() {
     );
 
     await tester.pumpAndSettle();
-
-    debugger();
 
     // Only the matching device should be displayed.
     expect(find.byType(ScanResultTile), findsOneWidget);

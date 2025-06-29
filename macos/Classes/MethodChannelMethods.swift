@@ -20,8 +20,3 @@ enum CentralMethod: String, CaseIterable {
     case subscribeToCharacteristic = "subscribeToCharacteristic"
     case unsubscribeFromCharacteristic = "unsubscribeFromCharacteristic"
 }
-
-/// An enumeration of method channel names for functions that are only used during testing.
-enum TestMethod: String, CaseIterable {
-    case testInjectScanDevice = "testInjectScanDevice"
-}

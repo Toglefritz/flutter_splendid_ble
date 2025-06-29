@@ -24,6 +24,7 @@ import '../shared/models/ble_device.dart';
 import '../shared/models/bluetooth_permission_status.dart';
 import '../shared/models/bluetooth_status.dart';
 import 'central_platform_interface.dart';
+import 'extensions/scan_filter_list_extensions.dart';
 import 'models/connected_ble_device.dart';
 
 /// An implementation of [CentralPlatformInterface] that uses method channels.
@@ -177,7 +178,13 @@ class CentralMethodChannel extends CentralPlatformInterface {
             } else {
               device = BleDevice.fromMap(call.arguments as Map<dynamic, dynamic>);
             }
-            streamController.add(device);
+
+            // Apply additional filtering on Dart side. Filtering is also done on the native side, but this allows for
+            // more complex filtering logic that may not be feasible on the native side.
+            // If the device matches the provided filters, add it to the stream.
+            if (filters?.deviceMatchesFilters(device) ?? true) {
+              streamController.add(device);
+            }
           } catch (e) {
             streamController.addError(
               FormatException('Failed to parse discovered device info: $e'),
@@ -252,6 +259,7 @@ class CentralMethodChannel extends CentralPlatformInterface {
         }
       })
       ..invokeMethod('connect', {'address': deviceAddress});
+
     return connectionStateStreamController.stream;
   }
 

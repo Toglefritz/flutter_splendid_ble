@@ -11,6 +11,7 @@ import '../shared/models/ble_device.dart';
 import '../shared/models/bluetooth_permission_status.dart';
 import '../shared/models/bluetooth_status.dart';
 import 'central_platform_interface.dart';
+import 'extensions/scan_filter_list_extensions.dart';
 import 'models/connected_ble_device.dart';
 
 /// A fake implementation of [CentralPlatformInterface] designed for use in unit and widget tests.
@@ -57,7 +58,7 @@ class FakeCentralMethodChannel extends CentralPlatformInterface {
 
   /// A stream controller used to emit the current Bluetooth permission status to listeners.
   final StreamController<BluetoothPermissionStatus> _permissionStatusController =
-  StreamController<BluetoothPermissionStatus>.broadcast();
+      StreamController<BluetoothPermissionStatus>.broadcast();
 
   /// A stream controller that emits fake BLE devices found during scanning.
   final StreamController<BleDevice> _scanResultsController = StreamController<BleDevice>.broadcast();
@@ -126,8 +127,12 @@ class FakeCentralMethodChannel extends CentralPlatformInterface {
   Future<List<ConnectedBleDevice>> getConnectedDevices(List<String> serviceUUIDs) async {
     final List<ConnectedBleDevice> fakeConnectedDevices = _fakeDevices
         .map(
-          (BleDevice device) => ConnectedBleDevice(name: device.name ?? '', address: device.address),
-    )
+          (BleDevice device) => ConnectedBleDevice(
+            name: device.name ?? '',
+            address: device.address,
+            advertisedServiceUuids: device.advertisedServiceUuids,
+          ),
+        )
         .toList();
 
     return fakeConnectedDevices;
@@ -138,11 +143,17 @@ class FakeCentralMethodChannel extends CentralPlatformInterface {
     // Simulate a scan by adding fake devices after a short delay.
     Future.delayed(const Duration(milliseconds: 100), () {
       for (final BleDevice device in _fakeDevices) {
-        _scanResultsController.add(device);
+        // Check that the device matches the filters. The filtering logic is the same as the logic used in
+        // `CentralMethodChannel`. However, note that the filtering applied by the native side is not used here so it is
+        // not a perfect match.
+        if(filters?.deviceMatchesFilters(device) ?? true) {
+          _scanResultsController.add(device);
+        }
+        // If the device does not match the filters, it is ignored.
       }
     });
 
-    return _scanResultsController.stream;
+      return _scanResultsController.stream;
   }
 
   @override
@@ -157,7 +168,9 @@ class FakeCentralMethodChannel extends CentralPlatformInterface {
 
     // Simulate a connection process with a delay.
     Future.delayed(const Duration(milliseconds: 50), () {
-      controller..add(BleConnectionState.connecting)..add(BleConnectionState.connected);
+      controller
+        ..add(BleConnectionState.connecting)
+        ..add(BleConnectionState.connected);
       _connectionStates[deviceAddress] = BleConnectionState.connected;
     });
 

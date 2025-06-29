@@ -9,6 +9,7 @@ class ConnectedBleDevice extends BleDevice {
   ConnectedBleDevice({
     required String super.name,
     required super.address,
+    required super.advertisedServiceUuids,
   }) : super(
           rssi: 0, // The RSSI value is not needed for connected devices.
           manufacturerData: null, // The manufacturer data is not needed for connected devices.
@@ -22,6 +23,7 @@ class ConnectedBleDevice extends BleDevice {
     return ConnectedBleDevice(
       name: map['name'] as String,
       address: map['identifier'] as String,
+      advertisedServiceUuids: map['advertisedServiceUuids'] as List<String>,
     );
   }
 }

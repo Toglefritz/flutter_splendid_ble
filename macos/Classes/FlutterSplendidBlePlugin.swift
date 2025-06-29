@@ -1,7 +1,6 @@
 import Cocoa
 import FlutterMacOS
 import CoreBluetooth
-import CoreBluetoothMock
 
 /// `FlutterSplendidBlePlugin` serves as the central bridge between Flutter code in a Dart environment and the native Bluetooth capabilities on MacOS devices.
 /// It adheres to the `FlutterPlugin` protocol to interface with Flutter, and `CBCentralManagerDelegate` to interact with the macOS Bluetooth stack.
@@ -63,8 +62,6 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
             handleSharedMethod(call, result)
         } else if isCentralMethod(call.method) {
             handleCentralMethod(call, result)
-        } else if isTestMethod(call.method) {
-            handleTestMethod(call, result)
         }
         else {
             // The provided method did not match any of those defined in MethodChannelMethods.swift
@@ -82,11 +79,6 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
     /// device methods and false otherwise. This helps in routing the call to the correct handler.
     private func isCentralMethod(_ methodName: String) -> Bool {
         return CentralMethod.allCases.map { $0.rawValue }.contains(methodName)
-    }
-    
-    /// A utility function to check if an incoming Method Channel call is related to test functionality. It returns true for test methods and false otherwise.
-    private func isTestMethod(_ methodName: String) -> Bool {
-        return TestMethod.allCases.map { $0.rawValue }.contains(methodName)
     }
     
     /// Handles all Method Channel calls related to functionality that is shared between the BLE central and BLE peripheral device roles. This includes
@@ -270,18 +262,6 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
         }
     }
     
-    /// Handles all Method Channel calls related to functionality that is only used during testing. These method includ mechanism for injecting mocked data into handlers within this class.
-    private func handleTestMethod(_ call: FlutterMethodCall, _ result: @escaping FlutterResult) {
-        switch call.method {
-        case TestMethod.testInjectScanDevice.rawValue:
-            // TODO: Implement this method
-            result(FlutterMethodNotImplemented)
-            
-        default:
-            result(FlutterMethodNotImplemented)
-        }
-    }
-    
     // MARK: - CBCentralManagerDelegate Methods
     
     /// Invoked when the central manager's state is updated.
@@ -348,10 +328,14 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
         
         // If the device does not indicate that more advertisement data is forthcoming, return the scan discovery information to the Dart side
         if(!isScannable) {
+            // Get a list of service UUIDs as strings, to be sent to the Dart side.
+            let advertisedServiceUuids = (advertisementData[CBAdvertisementDataServiceUUIDsKey] as? [CBUUID])?.map { $0.uuidString }
+            
             // Create a dictionary with device details
             var deviceMap: [String: Any?] = [
                 "name": peripheral.name,
                 "address": peripheral.identifier.uuidString,
+                "advertisedServiceUuids": advertisedServiceUuids,
                 "rssi": RSSI.intValue,
             ]
             

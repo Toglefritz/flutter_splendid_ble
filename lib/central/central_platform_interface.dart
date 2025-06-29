@@ -17,8 +17,10 @@ abstract class CentralPlatformInterface extends PlatformInterface {
   /// Constructs a [CentralPlatformInterface].
   CentralPlatformInterface() : super(token: _token);
 
+  /// The token used to verify that the instance is a valid implementation of [CentralPlatformInterface].
   static final Object _token = Object();
 
+  /// The default instance of [CentralPlatformInterface] to use.
   static CentralPlatformInterface _instance = CentralMethodChannel();
 
   /// The default instance of [CentralPlatformInterface] to use.

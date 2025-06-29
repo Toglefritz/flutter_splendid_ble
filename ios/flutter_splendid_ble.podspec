@@ -5,13 +5,13 @@
 Pod::Spec.new do |s|
   s.name             = 'flutter_splendid_ble'
   s.version          = '0.0.1'
-  s.summary          = 'A new Flutter plugin project.'
+  s.summary          = 'A Bluetooth Low Energy plugin for Flutter.'
   s.description      = <<-DESC
-A new Flutter plugin project.
+A comprehensive Flutter plugin for interacting with Bluetooth Low Energy (BLE) devices.
                        DESC
-  s.homepage         = 'http://example.com'
+  s.homepage         = 'https://pub.dev/packages/flutter_splendid_ble'
   s.license          = { :file => '../LICENSE' }
-  s.author           = { 'Your Company' => 'email@example.com' }
+  s.author           = { 'Splendid Endeavors' => 'email@example.com' }
   s.source           = { :path => '.' }
   s.source_files = 'Classes/**/*'
   s.dependency 'Flutter'
