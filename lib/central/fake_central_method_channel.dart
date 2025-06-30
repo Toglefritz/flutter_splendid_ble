@@ -98,6 +98,30 @@ class FakeCentralMethodChannel extends CentralPlatformInterface {
     _servicesByDevice[deviceAddress] = services;
   }
 
+  /// Sets the simulated connection state for a given BLE device.
+  ///
+  /// This method allows tests to control the connection state of a device directly, without waiting for asynchronous
+  /// connection streams to emit values. It is useful for simulating connection and disconnection events in tests
+  /// that depend on the device's current state.
+  void setConnectionState(String deviceAddress, BleConnectionState state) {
+    _connectionStates[deviceAddress] = state;
+    _connectionControllers[deviceAddress]?.add(state);
+  }
+
+  /// Simulates a connection state update by emitting a new value on the connection stream.
+  ///
+  /// This method can be used in tests to simulate real-time changes in connection state after
+  /// a device has been connected or disconnected.
+  ///
+  /// Example usage:
+  /// ```dart
+  /// fakeCentral.simulateConnectionStateUpdate('00:11:22:33:44:55', BleConnectionState.disconnected);
+  /// ```
+  void simulateConnectionStateUpdate(String deviceAddress, BleConnectionState state) {
+    _connectionStates[deviceAddress] = state;
+    _connectionControllers[deviceAddress]?.add(state);
+  }
+
   /// Sets a mock read value for a specific characteristic UUID.
   void setMockReadValue(String characteristicUuid, List<int> value) {
     _mockReadValues[characteristicUuid] = value;
@@ -163,16 +187,12 @@ class FakeCentralMethodChannel extends CentralPlatformInterface {
 
   @override
   Stream<BleConnectionState> connect({required String deviceAddress}) {
-    final controller = StreamController<BleConnectionState>.broadcast();
+    final StreamController<BleConnectionState> controller = StreamController<BleConnectionState>.broadcast();
     _connectionControllers[deviceAddress] = controller;
 
-    // Simulate a connection process with a delay.
-    Future.delayed(const Duration(milliseconds: 50), () {
-      controller
-        ..add(BleConnectionState.connecting)
-        ..add(BleConnectionState.connected);
-      _connectionStates[deviceAddress] = BleConnectionState.connected;
-    });
+    // Add the initial connection state, or default to disconnected if not set.
+    final BleConnectionState initialState = _connectionStates[deviceAddress] ?? BleConnectionState.disconnected;
+    controller.add(initialState);
 
     return controller.stream;
   }
@@ -190,7 +210,7 @@ class FakeCentralMethodChannel extends CentralPlatformInterface {
 
   @override
   Stream<List<BleService>> discoverServices(String deviceAddress) {
-    final controller = StreamController<List<BleService>>.broadcast();
+    final StreamController<List<BleService>> controller = StreamController<List<BleService>>.broadcast();
     _serviceControllers[deviceAddress] = controller;
 
     Future.delayed(const Duration(milliseconds: 30), () {

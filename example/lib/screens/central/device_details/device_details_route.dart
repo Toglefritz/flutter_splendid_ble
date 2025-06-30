@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_splendid_ble/central/splendid_ble_central.dart';
 import 'package:flutter_splendid_ble/shared/models/ble_device.dart';
 
 import '../scan/scan_route.dart';
@@ -17,10 +18,14 @@ import 'device_details_controller.dart';
 /// in the `connect` method.
 class DeviceDetailsRoute extends StatefulWidget {
   /// Creates an instance of [DeviceDetailsRoute].
-  const DeviceDetailsRoute({
+  DeviceDetailsRoute({
     required this.device,
+    SplendidBleCentral? ble,
     super.key,
-  });
+  }) : ble = ble ?? SplendidBleCentral();
+
+  /// A [SplendidBleCentral] instance used for Bluetooth operations conducted by this route.
+  final SplendidBleCentral ble;
 
   /// A [BleDevice] instance selected from the Bluetooth scan. Details and controls for this device will be
   /// presented by this route.

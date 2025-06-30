@@ -28,7 +28,7 @@ import 'package:flutter_test/flutter_test.dart';
 /// flutter test integration_test/screens/scan/scan_route_test.dart
 /// ```
 void main() {
-  /// Set up a fake
+  /// Set up a fake [SplendidBle] instance that uses the fake central for testing.
   late SplendidBle ble;
 
   /// Set up the fake central method channel before running the tests. This is used to simulate Bluetooth functionality

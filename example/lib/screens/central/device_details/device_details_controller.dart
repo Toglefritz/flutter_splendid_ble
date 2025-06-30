@@ -16,7 +16,7 @@ import 'device_details_view.dart';
 /// A controller for the [DeviceDetailsRoute] that manages the state and owns all business logic.
 class DeviceDetailsController extends State<DeviceDetailsRoute> {
   /// A [SplendidBleCentral] instance used for Bluetooth operations conducted by this route.
-  final SplendidBleCentral _ble = SplendidBleCentral();
+  late SplendidBleCentral _ble;
 
   /// A [StreamSubscription] for the connection state between the Flutter app and the Bluetooth peripheral.
   StreamSubscription<BleConnectionState>? _connectionStateStream;
@@ -54,6 +54,10 @@ class DeviceDetailsController extends State<DeviceDetailsRoute> {
 
   @override
   void initState() {
+    // Access the injected instance from the widget
+    _ble = widget.ble;
+
+    // Get the current connection state of the device provided to this route.
     _getCurrentConnectionState();
 
     super.initState();
@@ -128,7 +132,7 @@ class DeviceDetailsController extends State<DeviceDetailsRoute> {
   /// Handles errors resulting from an attempt to connect to a peripheral.
   void _handleConnectionError(BluetoothConnectionException error) {
     // Create the SnackBar with the error message
-    final snackBar = SnackBar(
+    final SnackBar snackBar = SnackBar(
       content: Text('Error connecting to Bluetooth device: $error'),
       action: SnackBarAction(
         label: 'Dismiss',

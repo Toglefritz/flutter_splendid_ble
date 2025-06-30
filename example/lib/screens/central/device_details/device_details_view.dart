@@ -72,6 +72,8 @@ class DeviceDetailsView extends StatelessWidget {
                   ),
                 ),
               ),
+
+              // If the device is not connected, show the connect button.
               if (!state.isConnected)
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -89,6 +91,8 @@ class DeviceDetailsView extends StatelessWidget {
                   indent: 16.0,
                   endIndent: 16.0,
                 ),
+
+              // If the device is connected and has no discovered services, show the discover services button.
               if (state.isConnected && state.discoveredServices.isEmpty)
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -101,6 +105,8 @@ class DeviceDetailsView extends StatelessWidget {
                     loading: state.discoveringServices,
                   ),
                 ),
+
+              // If the device is connected and has discovered services, show the services info.
               if (state.isConnected)
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16.0),
