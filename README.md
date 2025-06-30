@@ -19,6 +19,15 @@ BLE plugin into your project and perform essential Bluetooth Low Energy (BLE) op
 advanced use cases and configurations, refer to the full documentation on the
 [Flutter Splendid BLE Documentation Site](https://splendid-ble.web.app/)
 
+## Testing
+
+The Flutter Splendid BLE plugin includes robust testing capabilities to support reliable development
+workflows. It provides a `FakeCentralMethodChannel` implementation that allows developers to simulate
+Bluetooth scanning, connection states, characteristic read/write operations, and more, entirely in a
+test environment without requiring physical BLE hardware. These tools are designed to make it easy
+to write both unit and integration tests that validate application logic under realistic BLE
+scenarios. For detailed instructions and examples, refer to the TESTING.md file in this repository.
+
 ### **Step 1**: Set Up Your Flutter Project
 
 If you haven’t already, create a new Flutter project:
@@ -48,14 +57,15 @@ flutter pub get
 Modify your android/app/src/main/AndroidManifest.xml to include the necessary BLE permissions:
 
 ```xml
-<uses-permission android:name="android.permission.BLUETOOTH" />
-<uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
-<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-<uses-permission android:name="android.permission.BLUETOOTH_SCAN" />
-<uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
 
-<uses-feature android:name="android.hardware.bluetooth" />
-<uses-feature android:name="android.hardware.bluetooth_le" android:required="true" />
+<uses-permission android:name="android.permission.BLUETOOTH" /><uses-permission
+android:name="android.permission.BLUETOOTH_ADMIN" /><uses-permission
+android:name="android.permission.ACCESS_FINE_LOCATION" /><uses-permission
+android:name="android.permission.BLUETOOTH_SCAN" /><uses-permission
+android:name="android.permission.BLUETOOTH_CONNECT" />
+
+<uses-feature android:name="android.hardware.bluetooth" /><uses-feature
+android:name="android.hardware.bluetooth_le" android:required="true" />
 ```
 
 #### iOS/macOS Configuration
@@ -63,18 +73,23 @@ Modify your android/app/src/main/AndroidManifest.xml to include the necessary BL
 Edit your ios/Runner/Info.plist:
 
 ```xml
-<key>NSBluetoothAlwaysUsageDescription</key>
-<string>This app requires Bluetooth to connect to BLE devices.</string>
 
-<key>NSBluetoothPeripheralUsageDescription</key>
-<string>This app communicates with BLE peripherals.</string>
+<key>NSBluetoothAlwaysUsageDescription</key><string>This app requires Bluetooth to connect to BLE
+devices.
+</string>
 
-<key>NSBluetoothAlwaysAndWhenInUseUsageDescription</key>
-<string>This app requires Bluetooth access at all times.</string>
+<key>NSBluetoothPeripheralUsageDescription</key><string>This app communicates with BLE
+peripherals.
+</string>
+
+<key>NSBluetoothAlwaysAndWhenInUseUsageDescription</key><string>This app requires Bluetooth access
+at all times.
+</string>
 ```
 
 Enable background modes for Bluetooth by going to Xcode → Signing & Capabilities → Background Modes,
 then enable:
+
 - Uses Bluetooth LE accessories
 - Acts as a Bluetooth LE accessory
 
@@ -91,7 +106,7 @@ StreamSubscription<BleDevice>? scanSubscription;
 /// Start scanning for nearby devices.
 void startScan() {
   scanSubscription = bleCentral.startScan().listen(
-    (device) {
+        (device) {
       print('Discovered device: ${device.name} (${device.address})');
     },
     onError: (error) {
@@ -117,7 +132,7 @@ StreamSubscription<BleConnectionState>? connectionSubscription;
 /// Connect to a BLE device.
 void connectToDevice(BleDevice device) {
   connectionSubscription = bleCentral.connect(deviceAddress: device.address).listen(
-    (state) {
+        (state) {
       print('Connection state: $state');
     },
     onError: (error) {
@@ -160,6 +175,7 @@ Future<void> readCharacteristic(BleCharacteristic characteristic) async {
 ```
 
 ### Final Notes
+
 - Always request permissions before starting any BLE operations.
 - Stop scanning once a device is found to save battery.
 - Handle connection states properly, including disconnecting when done.
@@ -286,8 +302,9 @@ Bluetooth and the reasons for accessing it. Below are the required keys and thei
 
 ```xml
 
-<key>NSBluetoothAlwaysUsageDescription</key>
-<string>This app uses Bluetooth to connect to external devices.</string>
+<key>NSBluetoothAlwaysUsageDescription</key><string>This app uses Bluetooth to connect to external
+devices.
+</string>
 ```
 
 2. NSBluetoothPeripheralUsageDescription (iOS only)
@@ -298,8 +315,9 @@ Bluetooth and the reasons for accessing it. Below are the required keys and thei
 
 ```xml
 
-<key>NSBluetoothPeripheralUsageDescription</key>
-<string>This app uses Bluetooth to communicate with external peripherals.</string>
+<key>NSBluetoothPeripheralUsageDescription</key><string>This app uses Bluetooth to communicate with
+external peripherals.
+</string>
 ```
 
 3. NSBluetoothAlwaysAndWhenInUseUsageDescription (macOS only)
@@ -311,8 +329,9 @@ Bluetooth and the reasons for accessing it. Below are the required keys and thei
 
 ```xml
 
-<key>NSBluetoothAlwaysAndWhenInUseUsageDescription</key>
-<string>This app uses Bluetooth to connect to external devices at all times.</string>
+<key>NSBluetoothAlwaysAndWhenInUseUsageDescription</key><string>This app uses Bluetooth to connect
+to external devices at all times.
+</string>
 ```
 
 #### Adding Capabilities
