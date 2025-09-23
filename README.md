@@ -104,8 +104,9 @@ import 'dart:async';
 StreamSubscription<BleDevice>? scanSubscription;
 
 /// Start scanning for nearby devices.
-void startScan() {
-  scanSubscription = bleCentral.startScan().listen(
+void startScan() async {
+  final Stream<BleDevice> scanStream = await bleCentral.startScan();
+  scanSubscription = scanStream.listen(
         (device) {
       print('Discovered device: ${device.name} (${device.address})');
     },
@@ -130,8 +131,9 @@ Once a device is discovered, you can initiate a connection:
 StreamSubscription<BleConnectionState>? connectionSubscription;
 
 /// Connect to a BLE device.
-void connectToDevice(BleDevice device) {
-  connectionSubscription = bleCentral.connect(deviceAddress: device.address).listen(
+void connectToDevice(BleDevice device) async {
+  final Stream<BleConnectionState> connectionStream = await bleCentral.connect(deviceAddress: device.address);
+  connectionSubscription = connectionStream.listen(
         (state) {
       print('Connection state: $state');
     },
@@ -155,8 +157,10 @@ Writing data to a characteristic (e.g., sending a command to a device):
 ```dart
 /// Write a value to a BLE characteristic.
 Future<void> writeCharacteristic(BleCharacteristic characteristic, String value) async {
-  List<int> bytes = value.codeUnits; // Convert string to byte list
-  await characteristic.writeValue(value: bytes);
+  await bleCentral.writeCharacteristic(
+    characteristic: characteristic,
+    value: value,
+  );
   print('Wrote: $value');
 }
 ```
@@ -168,7 +172,10 @@ Reading data from a characteristic (e.g., retrieving sensor data):
 ```dart
 /// Read a value from a BLE characteristic.
 Future<void> readCharacteristic(BleCharacteristic characteristic) async {
-  BleCharacteristicValue value = await characteristic.readValue<BleCharacteristicValue>();
+  BleCharacteristicValue value = await bleCentral.readCharacteristic(
+    characteristic: characteristic,
+    timeout: Duration(seconds: 10),
+  );
   String result = String.fromCharCodes(value.value); // Convert bytes to string
   print('Read: $result');
 }
@@ -652,11 +659,10 @@ final SplendidBleCentral _ble = SplendidBleCentral();
 StreamSubscription<BleDevice>? _scanStream;
 
 /// Begins a scan for nearby BLE devices.
-void _startBluetoothScan() {
+void _startBluetoothScan() async {
 // Assuming `filters` and `settings` are already defined and passed to the widget.
-  _scanStream = _ble
-      .startScan(filters: filters, settings: settings)
-      .listen((device) => _onDeviceDetected(device), onError: _handleScanError);
+  final Stream<BleDevice> scanStream = await _ble.startScan(filters: filters, settings: settings);
+  _scanStream = scanStream.listen((device) => _onDeviceDetected(device), onError: _handleScanError);
 }
 
 /// Called when a new device is detected by the Bluetooth scan.
@@ -672,7 +678,7 @@ void _handleScanError(Object error) {
 /// Stops the Bluetooth scan.
 Future<void> stopScan() async {
   try {
-    await SplendidBleMethodChannel.stopScan();
+    await _ble.stopScan();
     // Handle successful scan stop if necessary.
   } on BluetoothScanException catch (e) {
     // Handle the exception, possibly by showing an error message to the user.
@@ -742,9 +748,10 @@ final SplendidBleCentral _ble = SplendidBleCentral();
 StreamSubscription<BleConnectionState>? _connectionStream;
 
 /// Attempt to connect to the [BleDevice].
-void _connectToDevice(BleDevice device) {
+void _connectToDevice(BleDevice device) async {
   try {
-    _connectionStream = _ble.connect(deviceAddress: device.address).listen(
+    final Stream<BleConnectionState> connectionStream = await _ble.connect(deviceAddress: device.address);
+    _connectionStream = connectionStream.listen(
       _onConnectionStateUpdate,
     );
   } catch (e) {
@@ -760,7 +767,7 @@ void _handleConnectionError(Object error) {
 }
 
 /// Called when the connection state is updated.
-void _onConnectionStateUpdate(ConnectionState state) {
+void _onConnectionStateUpdate(BleConnectionState state) {
   // Handle the updated connection state, e.g., by updating the UI or starting service discovery.
 }
 
@@ -813,8 +820,9 @@ StreamSubscription<List<BleService>>? _servicesDiscoveredStream;
 
 /// Starts the service discovery process for the connected BLE device.
 // Replace `widget.device.address` with the Bluetooth address of your device
-void startServiceDiscovery() {
-  _servicesDiscoveredStream = _ble.discoverServices(widget.device.address).listen(
+void startServiceDiscovery() async {
+  final Stream<List<BleService>> servicesStream = await _ble.discoverServices(widget.device.address);
+  _servicesDiscoveredStream = servicesStream.listen(
     _onServiceDiscovered,
   );
 }
@@ -890,9 +898,10 @@ StreamSubscription<BleCharacteristicValue>? _characteristicValueListener;
 BLECharacteristicListener(this._blePlugin, this._characteristic);
 
 /// Subscribes to the characteristic updates.
-void subscribeToCharacteristic() {
+void subscribeToCharacteristic() async {
   if (_characteristic.properties.notify || _characteristic.properties.indicate) {
-    _characteristicValueListener = _blePlugin.subscribeToCharacteristic(_characteristic).listen(
+    final Stream<BleCharacteristicValue> characteristicStream = await _blePlugin.subscribeToCharacteristic(_characteristic);
+    _characteristicValueListener = characteristicStream.listen(
       _onCharacteristicChanged,
     );
   } else {
@@ -1009,12 +1018,10 @@ import 'dart:convert';
 /// Writes a string value to the given BLE characteristic.
 Future<void> writeStringToCharacteristic(String value, BleCharacteristic characteristic) async {
   try {
-    // Convert the string to a UTF-8 encoded List<int>
-    List<int> bytesToWrite = utf8.encode(value);
-
-    // Write the byte data to the characteristic
-    await characteristic.writeValue(
-      value: bytesToWrite,
+    // Write the string value to the characteristic using the central method
+    await _ble.writeCharacteristic(
+      characteristic: characteristic,
+      value: value,
     );
 
     print("Successfully wrote value to the characteristic.");
@@ -1074,8 +1081,10 @@ import 'dart:convert';
 Future<void> readCharacteristicValue(BleCharacteristic characteristic) async {
   try {
     // Read the characteristic value.
-    BleCharacteristicValue characteristicValue = await characteristic.readValue<
-        BleCharacteristicValue>();
+    BleCharacteristicValue characteristicValue = await _ble.readCharacteristic(
+      characteristic: characteristic,
+      timeout: Duration(seconds: 10),
+    );
 
     // Update the state with the new value.
     setState(() {
@@ -1083,7 +1092,7 @@ Future<void> readCharacteristicValue(BleCharacteristic characteristic) async {
     });
 
     // Optionally, decode the value if it's expected to be a string or other data structure.
-    // String stringValue = utf8.decode(characteristicValue.toList());
+    // String stringValue = utf8.decode(characteristicValue.value);
 
     debugPrint('Successfully read characteristic value.');
   } catch (e) {
