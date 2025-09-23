@@ -154,3 +154,8 @@ All notable changes to the `flutter_splendid_ble` plugin will be documented in t
 - Updated filtering devices by manufacturer data
 - Added Bluetooth mocking tools for testing purposes
 - Added integration tests for the example app as references
+
+## [0.18.0] 2025/09/23
+
+- Updated Method Channel calls to be asynchronous
+  - Async Method Channel calls allow for more robust error handling 
