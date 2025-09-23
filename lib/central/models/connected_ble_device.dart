@@ -18,7 +18,7 @@ class ConnectedBleDevice extends BleDevice {
   /// Converts a Map to a [ConnectedBleDevice] object.
   ///
   /// The [map], which contains information about the connected Bluetooth device, comes from the plugin's method
-  /// channel. Therefore, the type annotation is <dynamic, dynamic>.
+  /// channel. Therefore, the type annotation is `<dynamic, dynamic>`.
   factory ConnectedBleDevice.fromMap(Map<dynamic, dynamic> map) {
     return ConnectedBleDevice(
       name: map['name'] as String,

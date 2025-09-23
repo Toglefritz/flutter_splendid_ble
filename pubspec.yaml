@@ -19,7 +19,7 @@ dev_dependencies:
   integration_test:
     sdk: flutter
   # Provides Lint rules for Flutter and Dart
-  very_good_analysis: ^6.0.0
+  very_good_analysis: ^10.0.0
 
 flutter:
   plugin:

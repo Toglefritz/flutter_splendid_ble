@@ -133,7 +133,7 @@ class FakeCentralMethodChannel extends CentralPlatformInterface {
   }
 
   @override
-  Stream<BluetoothStatus> emitCurrentBluetoothStatus() {
+  Future<Stream<BluetoothStatus>> emitCurrentBluetoothStatus() async {
     return _bluetoothStatusController.stream;
   }
 
@@ -143,7 +143,7 @@ class FakeCentralMethodChannel extends CentralPlatformInterface {
   }
 
   @override
-  Stream<BluetoothPermissionStatus> emitCurrentPermissionStatus() {
+  Future<Stream<BluetoothPermissionStatus>> emitCurrentPermissionStatus() async {
     return _permissionStatusController.stream;
   }
 
@@ -163,21 +163,21 @@ class FakeCentralMethodChannel extends CentralPlatformInterface {
   }
 
   @override
-  Stream<BleDevice> startScan({List<ScanFilter>? filters, ScanSettings? settings}) {
+  Future<Stream<BleDevice>> startScan({List<ScanFilter>? filters, ScanSettings? settings}) async {
     // Simulate a scan by adding fake devices after a short delay.
     Future.delayed(const Duration(milliseconds: 100), () {
       for (final BleDevice device in _fakeDevices) {
         // Check that the device matches the filters. The filtering logic is the same as the logic used in
         // `CentralMethodChannel`. However, note that the filtering applied by the native side is not used here so it is
         // not a perfect match.
-        if(filters?.deviceMatchesFilters(device) ?? true) {
+        if (filters.deviceMatchesFilters(device)) {
           _scanResultsController.add(device);
         }
         // If the device does not match the filters, it is ignored.
       }
     });
 
-      return _scanResultsController.stream;
+    return _scanResultsController.stream;
   }
 
   @override
@@ -186,7 +186,7 @@ class FakeCentralMethodChannel extends CentralPlatformInterface {
   }
 
   @override
-  Stream<BleConnectionState> connect({required String deviceAddress}) {
+  Future<Stream<BleConnectionState>> connect({required String deviceAddress}) async {
     final StreamController<BleConnectionState> controller = StreamController<BleConnectionState>.broadcast();
     _connectionControllers[deviceAddress] = controller;
 
@@ -209,7 +209,7 @@ class FakeCentralMethodChannel extends CentralPlatformInterface {
   }
 
   @override
-  Stream<List<BleService>> discoverServices(String deviceAddress) {
+  Future<Stream<List<BleService>>> discoverServices(String deviceAddress) async {
     final StreamController<List<BleService>> controller = StreamController<List<BleService>>.broadcast();
     _serviceControllers[deviceAddress] = controller;
 
@@ -244,7 +244,7 @@ class FakeCentralMethodChannel extends CentralPlatformInterface {
   }
 
   @override
-  Stream<BleCharacteristicValue> subscribeToCharacteristic(BleCharacteristic characteristic) {
+  Future<Stream<BleCharacteristicValue>> subscribeToCharacteristic(BleCharacteristic characteristic) async {
     final controller = StreamController<BleCharacteristicValue>.broadcast();
     _characteristicStreams[characteristic.uuid] = controller;
 
@@ -252,8 +252,8 @@ class FakeCentralMethodChannel extends CentralPlatformInterface {
   }
 
   @override
-  void unsubscribeFromCharacteristic(BleCharacteristic characteristic) {
-    _characteristicStreams[characteristic.uuid]?.close();
+  Future<void> unsubscribeFromCharacteristic(BleCharacteristic characteristic) async {
+    await _characteristicStreams[characteristic.uuid]?.close();
     _characteristicStreams.remove(characteristic.uuid);
   }
 }

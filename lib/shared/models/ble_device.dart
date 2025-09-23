@@ -37,7 +37,7 @@ class BleDevice {
   /// Converts a Map to a [BleDevice] object.
   ///
   /// The [map], which contains information about the discovered Bluetooth device, comes from the plugin's method
-  /// channel. Therefore, the type annotation is <dynamic, dynamic>.
+  /// channel. Therefore, the type annotation is `<dynamic, dynamic>`.
   factory BleDevice.fromMap(Map<dynamic, dynamic> map) {
     // Parse the manufacturer data from the string if it exists.
     final String? manufacturerDataString = map['manufacturerData'] as String?;

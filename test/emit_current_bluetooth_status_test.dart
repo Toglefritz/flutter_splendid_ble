@@ -27,7 +27,7 @@ void main() {
     final List<BluetoothStatus> emittedStatuses = <BluetoothStatus>[];
 
     final Stream<BluetoothStatus> statusStream =
-        methodChannelFlutterBle.emitCurrentBluetoothStatus();
+        await methodChannelFlutterBle.emitCurrentBluetoothStatus();
 
     // Listen to the stream and add emitted statuses to the list
     final StreamSubscription<BluetoothStatus> subscription =
@@ -43,8 +43,8 @@ void main() {
     );
 
     // After a delay, change the emitted status to BluetoothStatus.disabled
-    Future.delayed(const Duration(milliseconds: 100), () {
-      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+    Future.delayed(const Duration(milliseconds: 100), () async {
+      await TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .handlePlatformMessage(
         channel.name,
         const StandardMethodCodec().encodeMethodCall(
@@ -55,12 +55,12 @@ void main() {
     });
 
     // After a delay, verify the emitted statuses
-    await Future.delayed(const Duration(milliseconds: 200), () {
+    await Future.delayed(const Duration(milliseconds: 200), () async {
       expect(
         emittedStatuses,
         [BluetoothStatus.enabled, BluetoothStatus.disabled],
       );
-      subscription.cancel();
+      await subscription.cancel();
     });
   });
 

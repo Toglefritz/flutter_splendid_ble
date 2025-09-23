@@ -9,3 +9,4 @@ linter:
     avoid_escaping_inner_quotes: false
     sort_constructors_first: false
     prefer_int_literals: false
+    avoid_catches_without_on_clauses: false

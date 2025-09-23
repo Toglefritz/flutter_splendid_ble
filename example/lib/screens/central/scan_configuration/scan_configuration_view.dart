@@ -30,7 +30,7 @@ class ScanConfigurationView extends StatelessWidget {
                   style: Theme.of(context).textTheme.headlineMedium,
                 ),
                 DropdownButtonFormField<ScanMode>(
-                  value: state.scanMode,
+                  initialValue: state.scanMode,
                   items: [
                     DropdownMenuItem(
                       value: ScanMode.lowPower,

@@ -51,8 +51,10 @@ class ScanController extends State<ScanRoute> {
   /// option is typically filtering by the UUID of the primary service of the BLE devices detected by the scan. This
   /// allows manufacturers of Bluetooth devices to ensure that only their devices are returned by the Bluetooth scan,
   /// which is obviously useful for building a companion mobile app for these devices.
-  void _startBluetoothScan() {
-    _scanStream = _ble.startScan(filters: widget.filters, settings: widget.settings).listen(
+  Future<void> _startBluetoothScan() async {
+    final Stream<BleDevice> scanStream = await _ble.startScan(filters: widget.filters, settings: widget.settings);
+
+    _scanStream = scanStream.listen(
       _onDeviceDetected,
       // ignore: inference_failure_on_untyped_parameter
       onError: (dynamic error) {

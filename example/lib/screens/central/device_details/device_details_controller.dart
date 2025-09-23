@@ -28,8 +28,7 @@ class DeviceDetailsController extends State<DeviceDetailsRoute> {
   BleConnectionState get currentConnectionState => _currentConnectionState;
 
   /// A utility for checking if the device is connected.
-  bool get isConnected =>
-      currentConnectionState == BleConnectionState.connected;
+  bool get isConnected => currentConnectionState == BleConnectionState.connected;
 
   /// Determines if a connection attempt is currently in progress.
   bool _connecting = false;
@@ -105,16 +104,16 @@ class DeviceDetailsController extends State<DeviceDetailsRoute> {
 
   /// Handles taps on the "Connect" button, which starts the process of establishing a connection with the
   /// provided [BleDevice].
-  void onConnectTap() {
+  Future<void> onConnectTap() async {
     setState(() {
       _connecting = true;
     });
 
     try {
-      _connectionStateStream = _ble
-          .connect(deviceAddress: widget.device.address)
-          // ignore: inference_failure_on_untyped_parameter
-          .listen(
+      final Stream<BleConnectionState> connectionStateStream = await _ble.connect(deviceAddress: widget.device.address);
+      // ignore: inference_failure_on_untyped_parameter
+
+      _connectionStateStream = connectionStateStream.listen(
         onConnectionStateUpdate,
         // ignore: inference_failure_on_untyped_parameter
         onError: (error) {
@@ -148,15 +147,16 @@ class DeviceDetailsController extends State<DeviceDetailsRoute> {
 
   /// Handles taps on the "Discover Services" button, which starts the BLE service and characteristic discovery
   /// process.
-  void onDiscoverServicesTap() {
+  Future<void> onDiscoverServicesTap() async {
     setState(() {
       _discoveringServices = true;
     });
 
-    _servicesDiscoveredStream =
-        _ble.discoverServices(widget.device.address).listen(
-              _onServiceDiscovered,
-            );
+    final Stream<List<BleService>> servicesDiscoveredStream = await _ble.discoverServices(widget.device.address);
+
+    _servicesDiscoveredStream = servicesDiscoveredStream.listen(
+      _onServiceDiscovered,
+    );
   }
 
   /// A callback used each time a new service is discovered and emitted to the [Stream].

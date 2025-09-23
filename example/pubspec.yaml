@@ -22,7 +22,7 @@ dependencies:
   # Provides internationalization and localization
   intl: ^0.20.2
   # Provides a cross-platform (iOS, Android) API to request and check permissions
-  permission_handler: ^12.0.0+1
+  permission_handler: ^12.0.1
 
 dev_dependencies:
   flutter_test:

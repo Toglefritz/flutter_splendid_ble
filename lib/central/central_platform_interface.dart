@@ -42,7 +42,7 @@ abstract class CentralPlatformInterface extends PlatformInterface {
   }
 
   /// Emits the current Bluetooth adapter status to the Dart side.
-  Stream<BluetoothStatus> emitCurrentBluetoothStatus() {
+  Future<Stream<BluetoothStatus>> emitCurrentBluetoothStatus() async {
     throw UnimplementedError(
       'emitCurrentBluetoothStatus() has not been implemented.',
     );
@@ -63,7 +63,7 @@ abstract class CentralPlatformInterface extends PlatformInterface {
   }
 
   /// Emits the current Bluetooth permission status whenever it changes.
-  Stream<BluetoothPermissionStatus> emitCurrentPermissionStatus() {
+  Future<Stream<BluetoothPermissionStatus>> emitCurrentPermissionStatus() async {
     throw UnimplementedError(
       'emitCurrentPermissionStatus() has not been implemented.',
     );
@@ -73,7 +73,7 @@ abstract class CentralPlatformInterface extends PlatformInterface {
   /// devices that were discovered. On the Flutter side, listeners can be added to this stream so they can
   /// respond to Bluetooth devices being discovered, for example by presenting the list in the user interface
   /// or enabling controllers to find and connect to specific devices.
-  Stream<BleDevice> startScan({
+  Future<Stream<BleDevice>> startScan({
     List<ScanFilter>? filters,
     ScanSettings? settings,
   }) {
@@ -86,12 +86,12 @@ abstract class CentralPlatformInterface extends PlatformInterface {
   }
 
   /// Initiates a connection to a BLE peripheral and returns a Stream representing the connection state.
-  Stream<BleConnectionState> connect({required String deviceAddress}) {
+  Future<Stream<BleConnectionState>> connect({required String deviceAddress}) async {
     throw UnimplementedError('connect() has not been implemented.');
   }
 
   /// Triggers the service discovery process manually.
-  Stream<List<BleService>> discoverServices(String deviceAddress) {
+  Future<Stream<List<BleService>>> discoverServices(String deviceAddress) async {
     throw UnimplementedError('discoverServices() has not been implemented.');
   }
 
@@ -128,9 +128,9 @@ abstract class CentralPlatformInterface extends PlatformInterface {
   }
 
   /// Subscribes to a Bluetooth characteristic to listen for updates.
-  Stream<BleCharacteristicValue> subscribeToCharacteristic(
+  Future<Stream<BleCharacteristicValue>> subscribeToCharacteristic(
     BleCharacteristic characteristic,
-  ) {
+  ) async {
     throw UnimplementedError(
       'subscribeToCharacteristic() has not been implemented.',
     );

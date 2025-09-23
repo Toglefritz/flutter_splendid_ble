@@ -47,7 +47,7 @@ class SplendidBleCentral {
   /// Emits the current status of the Bluetooth adapter whenever it changes.
   ///
   /// Returns a [Stream] of [BluetoothStatus].
-  Stream<BluetoothStatus> emitCurrentBluetoothStatus() {
+  Future<Stream<BluetoothStatus>> emitCurrentBluetoothStatus() async {
     return _platform.emitCurrentBluetoothStatus();
   }
 
@@ -66,7 +66,7 @@ class SplendidBleCentral {
   /// Emits the current Bluetooth permission status whenever it changes.
   ///
   /// Returns a [Stream] of [BluetoothPermissionStatus].
-  Stream<BluetoothPermissionStatus> emitCurrentPermissionStatus() {
+  Future<Stream<BluetoothPermissionStatus>> emitCurrentPermissionStatus() async {
     return _platform.emitCurrentPermissionStatus();
   }
 
@@ -78,10 +78,10 @@ class SplendidBleCentral {
   /// Asks the platform to start scanning for Bluetooth devices.
   ///
   /// Returns a [Stream] of [BleDevice] found during the scan.
-  Stream<BleDevice> startScan({
+  Future<Stream<BleDevice>> startScan({
     List<ScanFilter>? filters,
     ScanSettings? settings,
-  }) {
+  }) async {
     return _platform.startScan(
       filters: filters,
       settings: settings,
@@ -91,14 +91,14 @@ class SplendidBleCentral {
   /// Asks the platform to connect to a Bluetooth device by its address.
   ///
   /// Returns a [Stream] of [BleConnectionState].
-  Stream<BleConnectionState> connect({required String deviceAddress}) {
+  Future<Stream<BleConnectionState>> connect({required String deviceAddress}) async {
     return _platform.connect(deviceAddress: deviceAddress);
   }
 
   /// Asks the platform to discover available services for a connected device by its address.
   ///
   /// Returns a [Stream] of [BleService].
-  Stream<List<BleService>> discoverServices(String deviceAddress) {
+  Future<Stream<List<BleService>>> discoverServices(String deviceAddress) async {
     return _platform.discoverServices(deviceAddress);
   }
 

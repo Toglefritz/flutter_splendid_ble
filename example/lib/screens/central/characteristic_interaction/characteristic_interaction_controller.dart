@@ -11,8 +11,7 @@ import 'models/message.dart';
 import 'models/message_source.dart';
 
 /// A controller for the [CharacteristicInteractionRoute] that manages the state and owns all business logic.
-class CharacteristicInteractionController
-    extends State<CharacteristicInteractionRoute> {
+class CharacteristicInteractionController extends State<CharacteristicInteractionRoute> {
   /// A list of "messages" sent between the host mobile device and a Bluetooth peripheral, in either direction.
   List<Message> messages = [];
 
@@ -23,13 +22,15 @@ class CharacteristicInteractionController
   StreamSubscription<BleCharacteristicValue>? _characteristicValueListener;
 
   @override
-  void initState() {
+  Future<void> initState() async {
     super.initState();
 
     // Set a lister for changes in the characteristic value
-    _characteristicValueListener = widget.characteristic.subscribe().listen(
-          _onCharacteristicChanged,
-        );
+    final Stream<BleCharacteristicValue> characteristicValueListener = await widget.characteristic.subscribe();
+
+    _characteristicValueListener = characteristicValueListener.listen(
+      _onCharacteristicChanged,
+    );
   }
 
   /// A callback invoked when the value of the Bluetooth characteristic changes.
@@ -45,8 +46,7 @@ class CharacteristicInteractionController
     }
 
     // Create a Message instance for the new event
-    final Message newMessage =
-        Message(contents: eventContent, source: MessageSource.peripheral);
+    final Message newMessage = Message(contents: eventContent, source: MessageSource.peripheral);
 
     // Add the new message to the list
     setState(() {
