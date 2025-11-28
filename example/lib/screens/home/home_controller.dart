@@ -53,14 +53,15 @@ class HomeController extends State<HomeRoute> {
   /// The user will be prompted to allow the app to use various Bluetooth features of their mobile device. These
   /// permissions must be granted for the app to function since its whole deal is doing Bluetooth stuff.
   Future<void> _requestBluetoothPermissions() async {
-    // Request Bluetooth permissions through the plugin
-    await _ble.requestBluetoothPermissions();
+    // Set up the permission status listener before requesting permissions. This ensures we don't miss the initial
+    // status emission.
+    final Stream<BluetoothPermissionStatus> bluetoothPermissionsStream = await _ble.emitCurrentPermissionStatus();
 
-    // Listen for permission status changes
-    final Stream<BluetoothPermissionStatus> bluetoothPermissionsStream =
-        await _ble.emitCurrentPermissionStatus();
-
+    // Set up the listener IMMEDIATELY after getting the stream. The microtask in emitCurrentPermissionStatus ensures
+    // we have time to attach this listener.
     _bluetoothPermissionsStream = bluetoothPermissionsStream.listen((event) {
+      debugPrint('Received permission status: $event');
+
       // Check if permission has been granted or not
       if (event != BluetoothPermissionStatus.granted) {
         // If permission is denied, show a SnackBar with a relevant message
@@ -82,6 +83,11 @@ class HomeController extends State<HomeRoute> {
         _checkAdapterStatus();
       }
     });
+
+    // Now request Bluetooth permissions through the plugin
+    // This will trigger the permission dialog if needed, and the result
+    // will be emitted through the stream we're already listening to
+    await _ble.requestBluetoothPermissions();
   }
 
   /// Handles taps on the menu [PopupMenuButton].
@@ -104,11 +110,9 @@ class HomeController extends State<HomeRoute> {
   /// of the host device's Bluetooth adapter, which is represented by the enum, [BluetoothStatus].
   Future<void> _checkAdapterStatus() async {
     try {
-      final Stream<BluetoothStatus> bluetoothStatusStream =
-          await _ble.emitCurrentBluetoothStatus();
+      final Stream<BluetoothStatus> bluetoothStatusStream = await _ble.emitCurrentBluetoothStatus();
 
-      _bluetoothStatusStream =
-          bluetoothStatusStream.listen((BluetoothStatus status) {
+      _bluetoothStatusStream = bluetoothStatusStream.listen((BluetoothStatus status) {
         setState(() {
           _bluetoothStatus = status;
         });
@@ -128,8 +132,7 @@ class HomeController extends State<HomeRoute> {
   /// the boolean indicating if permissions have been granted is true by default), navigate to the [ScanRoute].
   /// Otherwise, show a [SnackBar] to indicate that permissions have not been granted yet.
   void onStartScanTap() {
-    if ((_permissionsGranted ?? false) &&
-        _bluetoothStatus == BluetoothStatus.enabled) {
+    if ((_permissionsGranted ?? false) && _bluetoothStatus == BluetoothStatus.enabled) {
       Navigator.pushReplacement<void, void>(
         context,
         MaterialPageRoute<void>(
@@ -146,8 +149,7 @@ class HomeController extends State<HomeRoute> {
   /// Long-pressing on the start scan button navigates directly to the [ScanConfigurationRoute], allowing the scan
   /// to be configured before it starts
   void onStartScanLongPress() {
-    if ((_permissionsGranted ?? false) &&
-        _bluetoothStatus == BluetoothStatus.enabled) {
+    if ((_permissionsGranted ?? false) && _bluetoothStatus == BluetoothStatus.enabled) {
       Navigator.pushReplacement<void, void>(
         context,
         MaterialPageRoute<void>(

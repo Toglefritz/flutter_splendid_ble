@@ -22,10 +22,15 @@ class CharacteristicInteractionController extends State<CharacteristicInteractio
   StreamSubscription<BleCharacteristicValue>? _characteristicValueListener;
 
   @override
-  Future<void> initState() async {
+  void initState() {
     super.initState();
 
     // Set a lister for changes in the characteristic value
+    _subscriptToCharacteristic();
+  }
+
+  /// Establishes a listener for changes in the value of the BLE characteristic provided to this route.
+  Future<void> _subscriptToCharacteristic() async {
     final Stream<BleCharacteristicValue> characteristicValueListener = await widget.characteristic.subscribe();
 
     _characteristicValueListener = characteristicValueListener.listen(
