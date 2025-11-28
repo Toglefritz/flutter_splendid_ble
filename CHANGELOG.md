@@ -159,3 +159,21 @@ All notable changes to the `flutter_splendid_ble` plugin will be documented in t
 
 - Updated Method Channel calls to be asynchronous
   - Async Method Channel calls allow for more robust error handling 
+
+## [0.19.0] 2025/11/28
+
+- Implemented native Android Bluetooth permission handling
+  - Added `BluetoothPermissionsHandler` class for Android platform
+  - Automatic permission selection based on Android version (API 23-34)
+  - Android 12+ (API 31+): Requests BLUETOOTH_SCAN and BLUETOOTH_CONNECT permissions
+  - Android 10-11 (API 29-30): Requests ACCESS_FINE_LOCATION permission
+  - Android 6-9 (API 23-28): Requests ACCESS_FINE_LOCATION permission
+- Fixed `MissingPluginException` for `requestBluetoothPermissions` and `emitCurrentPermissionStatus` on Android
+- Updated `FlutterSplendidBlePlugin` to implement `ActivityAware` for proper permission request handling
+- Fixed race condition in permission status emission to ensure listeners receive initial values
+- Updated AndroidManifest.xml with version-specific permission declarations
+- Updated example app to demonstrate proper permission request flow
+- Added unit tests for permission methods
+
+### Breaking Changes
+- Android apps must now declare Bluetooth permissions in their AndroidManifest.xml (see documentation)
