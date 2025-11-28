@@ -2,11 +2,11 @@ import 'dart:convert';
 
 /// Represents the value of a Bluetooth characteristic.
 ///
-/// This class encapsulates the value of a specific Bluetooth characteristic fetched from a connected device. The
-/// value is typically a list of integers, representing bytes of data from the characteristic.
+/// This class encapsulates the value of a specific Bluetooth characteristic fetched from a connected device. The value
+/// is typically a list of integers, representing bytes of data from the characteristic.
 ///
-/// Along with the value, the class provides details about the characteristic's UUID and the Bluetooth device's
-/// address from which the value was read.
+/// Along with the value, the class provides details about the characteristic's UUID and the Bluetooth device's address
+/// from which the value was read.
 ///
 /// Instances of this class can be used to easily manage, display, or process the characteristic values in your
 /// application.
@@ -27,14 +27,14 @@ class BleCharacteristicValue {
 
   /// The MAC address of the Bluetooth device.
   ///
-  /// This address uniquely identifies the Bluetooth device from which the value was read. This is especially
-  /// useful if your application is communicating with multiple devices simultaneously.
+  /// This address uniquely identifies the Bluetooth device from which the value was read. This is especially useful if
+  /// your application is communicating with multiple devices simultaneously.
   final String deviceAddress;
 
   /// The actual value of the characteristic.
   ///
-  /// This is a list of integers, where each integer represents a byte of data rom the characteristic. The structure
-  /// and meaning of this data is typically defined by the Bluetooth service specification to which the characteristic
+  /// This is a list of integers, where each integer represents a byte of data rom the characteristic. The structure and
+  /// meaning of this data is typically defined by the Bluetooth service specification to which the characteristic
   /// belongs.
   final List<int> value;
 
@@ -56,15 +56,14 @@ class BleCharacteristicValue {
   /// Factory constructor that creates an instance of [BleCharacteristicValue] from a map. This is typically used to
   /// convert data coming from the platform side using methods provided by the *flutter_splendid_ble* plugin.
   ///
-  /// The map is expected to have the keys 'characteristicUuid', 'deviceAddress',
-  /// and 'value'.
+  /// The map is expected to have the keys 'characteristicUuid', 'deviceAddress', and 'value'.
   ///
   /// Example:
   /// ```dart
   /// final mapData = {
-  ///   'characteristicUuid': 'some-uuid',
-  ///   'deviceAddress': '00:1A:7D:DA:71:11',
-  ///   'value': [10, 20, 30],
+  /// 'characteristicUuid': 'some-uuid',
+  /// 'deviceAddress': '00:1A:7D:DA:71:11',
+  /// 'value': [10, 20, 30],
   /// };
   /// final charValue = BleCharacteristicValue.fromMap(mapData);
   /// print(charValue.characteristicUuid);  // prints 'some-uuid'

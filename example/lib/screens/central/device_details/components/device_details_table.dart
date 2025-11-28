@@ -16,8 +16,7 @@ class DeviceDetailsTable extends StatelessWidget {
   /// The [BleDevice] about which the [DeviceDetailsTable] displays information.
   final BleDevice device;
 
-  /// The [BleConnectionState] representing the state of the connection between the [device] and the host
-  /// mobile device.
+  /// The [BleConnectionState] representing the state of the connection between the [device] and the host mobile device.
   final BleConnectionState connectionState;
 
   @override

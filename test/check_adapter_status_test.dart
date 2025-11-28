@@ -11,8 +11,8 @@ void main() {
   _testCheckBluetoothAdapterStatus(channel);
 }
 
-/// Tests that the `checkBluetoothAdapterStatus` method returns the expected value for mocked responses to the
-/// platform specific functions.
+/// Tests that the `checkBluetoothAdapterStatus` method returns the expected value for mocked responses to the platform
+/// specific functions.
 void _testCheckBluetoothAdapterStatus(MethodChannel channel) {
   for (final BluetoothStatus status in BluetoothStatus.values) {
     setUp(() {

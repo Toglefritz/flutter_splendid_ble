@@ -31,16 +31,16 @@ class TableButton extends StatelessWidget {
   final VoidCallback onTap;
 
   /// Determines the side of the [Table] or other widget on which the [TableButton] will appear. This parameter can
-  /// accept values of [ButtonSide.top] or [ButtonSide.bottom]. If set to [ButtonSide.top], the [TableButton] will
-  /// use rounded top corners and square bottom corners. If set to [ButtonSide.bottom], the [TableButton] will
-  /// use rounded bottom corners and square top corners.
+  /// accept values of [ButtonSide.top] or [ButtonSide.bottom]. If set to [ButtonSide.top], the [TableButton] will use
+  /// rounded top corners and square bottom corners. If set to [ButtonSide.bottom], the [TableButton] will use rounded
+  /// bottom corners and square top corners.
   final ButtonSide side;
 
   /// The text label to display on the [TableButton] if [loading] is false.
   final String text;
 
-  /// Determines whether the button should be displayed in a loading state. If true, the content of the button is
-  /// a [LoadingIndicator]. If false, the content of the button is the [text]. If a value is not provided, the
+  /// Determines whether the button should be displayed in a loading state. If true, the content of the button is a
+  /// [LoadingIndicator]. If false, the content of the button is the [text]. If a value is not provided, the
   /// [TableButton] will use a value of false by default, meaning the [text] will be displayed on the button.
   final bool? loading;
 

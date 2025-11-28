@@ -18,8 +18,8 @@ import 'package:flutter_test/flutter_test.dart';
 /// - A single device is found
 /// - A device is discovered multiple times (should only appear once)
 ///
-/// The tests use a fake implementation of the CentralPlatformInterface to mock Bluetooth scan results without
-/// requiring actual BLE hardware.
+/// The tests use a fake implementation of the CentralPlatformInterface to mock Bluetooth scan results without requiring
+/// actual BLE hardware.
 ///
 /// To run this test, use:
 ///
@@ -44,7 +44,8 @@ void main() {
   });
 
   /// This test verifies that the [ScanRoute] displays no devices when the scan returns nothing.
-  testWidgets('ScanRoute displays no devices when scan returns nothing', (WidgetTester tester) async {
+  testWidgets('ScanRoute displays no devices when scan returns nothing',
+      (WidgetTester tester) async {
     // Initialize the fake central with no devices.
     await tester.pumpWidget(
       SplendidBleExampleMaterialApp(
@@ -64,7 +65,8 @@ void main() {
 
   /// This test verifies that the [ScanRoute] displays one device when a single device is discovered. It also validates
   /// that the device's information is correctly displayed in the UI.
-  testWidgets('ScanRoute displays one device when one is discovered', (WidgetTester tester) async {
+  testWidgets('ScanRoute displays one device when one is discovered',
+      (WidgetTester tester) async {
     fakeCentral.addFakeDevice(
       BleDevice(
         name: 'Test Device',
@@ -92,7 +94,8 @@ void main() {
 
   /// This test verifies that the [ScanRoute] avoids listing duplicate devices. It simulates a scenario where the same
   /// device is detected multiple times during the scan, and ensures that it only appears once in the UI.
-  testWidgets('ScanRoute avoids listing duplicate devices', (WidgetTester tester) async {
+  testWidgets('ScanRoute avoids listing duplicate devices',
+      (WidgetTester tester) async {
     final device = BleDevice(
       name: 'Repeated Device',
       address: '01:02:03:04:05:06',
@@ -120,7 +123,8 @@ void main() {
   /// This test verifies that the [ScaRoute] displays the correct number of devices when multiple unique devices are
   /// discovered. In this test, a large number of unique devices are added to the fake central, and the test checks that
   /// each is displayed and that the view does not encounter any overflows or other layout issues.
-  testWidgets('ScanRoute displays multiple unique devices correctly', (WidgetTester tester) async {
+  testWidgets('ScanRoute displays multiple unique devices correctly',
+      (WidgetTester tester) async {
     // The number of unique devices to add for this test.
     const int numberOfDevices = 10;
 
@@ -149,10 +153,15 @@ void main() {
     final Finder scrollableFinder = find.byType(CustomScrollView);
     for (int i = 0; i < numberOfDevices; i++) {
       // Find the ScanResultTile for each device by its text.
-      final Finder deviceFinder = find.widgetWithText(ScanResultTile, 'Device $i');
+      final Finder deviceFinder =
+          find.widgetWithText(ScanResultTile, 'Device $i');
 
       // Scroll until the device tile is visible.
-      await tester.dragUntilVisible(deviceFinder, scrollableFinder, const Offset(0, 1));
+      await tester.dragUntilVisible(
+        deviceFinder,
+        scrollableFinder,
+        const Offset(0, 1),
+      );
 
       // Verify that the device tile is found in the widget tree.
       expect(find.widgetWithText(ScanResultTile, 'Device $i'), findsOneWidget);
@@ -161,7 +170,8 @@ void main() {
 
   /// This test verifies that, when a filter for a specific device name is applied, the [ScanRoute] only displays
   /// devices that match the filter criteria.
-  testWidgets('ScanRoute applies device name filter correctly', (WidgetTester tester) async {
+  testWidgets('ScanRoute applies device name filter correctly',
+      (WidgetTester tester) async {
     // Add multiple devices,with different names
     fakeCentral
       ..addFakeDevice(
@@ -206,7 +216,8 @@ void main() {
 
   /// This test verifies that, when a filter for a specific service UUID is applied, the [ScanRoute] only displays
   /// devices that advertise that service.
-  testWidgets('ScanRoute applies service UUID filter correctly', (WidgetTester tester) async {
+  testWidgets('ScanRoute applies service UUID filter correctly',
+      (WidgetTester tester) async {
     // Add multiple devices, with different advertised service UUIDs
     fakeCentral
       ..addFakeDevice(
@@ -251,7 +262,8 @@ void main() {
 
   /// This test verifies that, when a filter for a specific manufacturer ID is applied, the [ScanRoute] only displays
   /// devices whose manufacturer data includes the specified ID.
-  testWidgets('ScanRoute applies manufacturer ID filter correctly', (WidgetTester tester) async {
+  testWidgets('ScanRoute applies manufacturer ID filter correctly',
+      (WidgetTester tester) async {
     // Manufacturer ID: 0x004C (Apple, for example)
     final List<int> manufacturerIdBytes = [0x4C, 0x00];
     final List<int> payload = [0x01, 0x02, 0x03];
@@ -306,10 +318,12 @@ void main() {
   /// This test verifies that the [ScanRoute] uses the custom manufacturer ID matcher when provided. In this test, the
   /// manufacturer ID is encoded in the first two bytes of the device name, and the custom matcher extracts and matches
   /// this ID.
-  testWidgets('ScanRoute uses custom manufacturer ID matcher correctly', (WidgetTester tester) async {
+  testWidgets('ScanRoute uses custom manufacturer ID matcher correctly',
+      (WidgetTester tester) async {
     // The target manufacturer ID in little-endian format is 0x004C (Apple).
     final List<int> manufacturerIdBytes = [0x4C, 0x00];
-    final String encodedPrefix = manufacturerIdBytes.map(String.fromCharCode).join();
+    final String encodedPrefix =
+        manufacturerIdBytes.map(String.fromCharCode).join();
     // The target device name will be prefixed with the encoded manufacturer ID.
     final String targetDeviceName = '$encodedPrefix Target Device';
 
@@ -369,8 +383,12 @@ void main() {
 
   /// This test verifies that, when a filter for full manufacturer data is applied, the [ScanRoute] only displays
   /// devices that exactly match the specified manufacturer ID and payload.
-  testWidgets('ScanRoute applies full manufacturer data filter correctly', (WidgetTester tester) async {
-    final List<int> manufacturerIdBytes = [0x4C, 0x00]; // Apple ID in little-endian
+  testWidgets('ScanRoute applies full manufacturer data filter correctly',
+      (WidgetTester tester) async {
+    final List<int> manufacturerIdBytes = [
+      0x4C,
+      0x00,
+    ]; // Apple ID in little-endian
     final List<int> payload = [0x10, 0x20, 0x30];
 
     // Create a ManufacturerData instance with the specified manufacturer ID and payload.

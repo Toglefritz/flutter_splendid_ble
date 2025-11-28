@@ -8,34 +8,35 @@ import 'models/connected_ble_device.dart';
 import 'models/scan_filter.dart';
 import 'models/scan_settings.dart';
 
-/// [SplendidBleCentral] provides an interface to interact with Bluetooth functionalities from a Flutter app acting
-/// as a BLE central device.
+/// [SplendidBleCentral] provides an interface to interact with Bluetooth functionalities from a Flutter app acting as a
+/// BLE central device.
 ///
 /// This class offers methods to check and monitor the status of the Bluetooth adapter, scan for devices,
 /// connect/disconnect to/from devices, and manage Bluetooth permissions. It serves as a bridge to the underlying
 /// platform-specific Bluetooth implementation, abstracting the complexity and providing a simple API for Flutter
 /// applications.
 ///
-/// The class primarily uses asynchronous patterns like [Future] and [Stream] to provide real-time updates and
-/// responses to Bluetooth operations. The methods in this class delegate the actual operations to
+/// The class primarily uses asynchronous patterns like [Future] and [Stream] to provide real-time updates and responses
+/// to Bluetooth operations. The methods in this class delegate the actual operations to
 /// `FlutterSplendidBlePlatform.instance`, ensuring platform-agnostic behavior.
 
-/// This type is an alias for [SplendidBleCentral] and is used to maintain compatibility with the previous
-/// version of the plugin. It is recommended to use [SplendidBleCentral] instead because, when peripheral mode is
-/// eventually introduced, the use of [SplendidBleCentral] will be more clear.
+/// This type is an alias for [SplendidBleCentral] and is used to maintain compatibility with the previous version of
+/// the plugin. It is recommended to use [SplendidBleCentral] instead because, when peripheral mode is eventually
+/// introduced, the use of [SplendidBleCentral] will be more clear.
 typedef SplendidBle = SplendidBleCentral;
 
-/// [SplendidBleCentral] provides an interface to interact with Bluetooth functionalities from a Flutter app acting
-/// as a BLE central device.
+/// [SplendidBleCentral] provides an interface to interact with Bluetooth functionalities from a Flutter app acting as a
+/// BLE central device.
 class SplendidBleCentral {
   /// The platform interface used to perform Bluetooth operations.
   ///
-  /// This allows for dependency injection of different platform implementations (e.g., a fake platform for testing).
-  /// If no platform is explicitly provided, the default singleton [CentralPlatformInterface.instance] is used.
+  /// This allows for dependency injection of different platform implementations (e.g., a fake platform for testing). If
+  /// no platform is explicitly provided, the default singleton [CentralPlatformInterface.instance] is used.
   final CentralPlatformInterface _platform;
 
   /// Creates an instance of [SplendidBleCentral].
-  SplendidBleCentral({CentralPlatformInterface? platform}) : _platform = platform ?? CentralPlatformInterface.instance;
+  SplendidBleCentral({CentralPlatformInterface? platform})
+      : _platform = platform ?? CentralPlatformInterface.instance;
 
   /// Asks the platform to check the current status of the Bluetooth adapter.
   ///
@@ -52,7 +53,9 @@ class SplendidBleCentral {
   }
 
   /// Returns a list of BLE device identifiers that are currently connected to the host device.
-  Future<List<ConnectedBleDevice>> getConnectedDevices(List<String> serviceUUIDs) async {
+  Future<List<ConnectedBleDevice>> getConnectedDevices(
+    List<String> serviceUUIDs,
+  ) async {
     return _platform.getConnectedDevices(serviceUUIDs);
   }
 
@@ -66,7 +69,8 @@ class SplendidBleCentral {
   /// Emits the current Bluetooth permission status whenever it changes.
   ///
   /// Returns a [Stream] of [BluetoothPermissionStatus].
-  Future<Stream<BluetoothPermissionStatus>> emitCurrentPermissionStatus() async {
+  Future<Stream<BluetoothPermissionStatus>>
+      emitCurrentPermissionStatus() async {
     return _platform.emitCurrentPermissionStatus();
   }
 
@@ -91,14 +95,18 @@ class SplendidBleCentral {
   /// Asks the platform to connect to a Bluetooth device by its address.
   ///
   /// Returns a [Stream] of [BleConnectionState].
-  Future<Stream<BleConnectionState>> connect({required String deviceAddress}) async {
+  Future<Stream<BleConnectionState>> connect({
+    required String deviceAddress,
+  }) async {
     return _platform.connect(deviceAddress: deviceAddress);
   }
 
   /// Asks the platform to discover available services for a connected device by its address.
   ///
   /// Returns a [Stream] of [BleService].
-  Future<Stream<List<BleService>>> discoverServices(String deviceAddress) async {
+  Future<Stream<List<BleService>>> discoverServices(
+    String deviceAddress,
+  ) async {
     return _platform.discoverServices(deviceAddress);
   }
 

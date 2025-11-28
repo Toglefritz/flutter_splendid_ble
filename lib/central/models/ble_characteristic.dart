@@ -7,10 +7,10 @@ import 'ble_characteristic_value.dart';
 
 /// Represents a Bluetooth Low Energy (BLE) characteristic.
 ///
-/// Each characteristic in BLE has a universally unique identifier (UUID), properties that define how the value of
-/// the characteristic can be accessed, and permissions that set the security requirements for accessing the value.
-/// This class encapsulates these details and provides utility methods to decode properties and permissions for
-/// easier understanding and interaction.
+/// Each characteristic in BLE has a universally unique identifier (UUID), properties that define how the value of the
+/// characteristic can be accessed, and permissions that set the security requirements for accessing the value. This
+/// class encapsulates these details and provides utility methods to decode properties and permissions for easier
+/// understanding and interaction.
 class BleCharacteristic {
   /// The Bluetooth address of the Bluetooth peripheral containing a service with this characteristic.
   final String address;
@@ -38,8 +38,7 @@ class BleCharacteristic {
 
   /// Constructs a [BleCharacteristic] from a map.
   ///
-  /// The map must contain keys 'uuid', 'properties', and 'permissions' with
-  /// appropriate values.
+  /// The map must contain keys 'uuid', 'properties', and 'permissions' with appropriate values.
   factory BleCharacteristic.fromMap(Map<String, dynamic> map) {
     return BleCharacteristic(
       address: map['address'] as String,
@@ -53,8 +52,8 @@ class BleCharacteristic {
 
   /// Writes data to a specified characteristic.
   ///
-  /// `value` - The string value to be written.
-  /// `writeType` - Optional write type, defaulting to `BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT`.
+  /// `value` - The string value to be written. `writeType` - Optional write type, defaulting to
+  /// `BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT`.
   Future<void> writeValue({
     required String value,
     int? writeType,
@@ -68,8 +67,8 @@ class BleCharacteristic {
 
   /// Asynchronously retrieves the value of the characteristic.
   ///
-  /// This method provides a flexible way to read the characteristic's value from a BLE device
-  /// and interpret it as either a raw byte list (`List<int>`) or as a UTF-8 decoded string (`String`).
+  /// This method provides a flexible way to read the characteristic's value from a BLE device and interpret it as
+  /// either a raw byte list (`List<int>`) or as a UTF-8 decoded string (`String`).
   ///
   /// Generics are employed to allow the caller to specify the desired return type, either `String` or `List<int>`.
   ///
@@ -108,8 +107,8 @@ class BleCharacteristic {
 
   /// Subscribes to a Bluetooth characteristic to listen for updates.
   ///
-  /// A caller to this function will receive a [Stream] of [BleCharacteristicValue] objects. A caller should listen
-  /// to this stream and establish a callback function invoked each time a new value is emitted to the stream. Once
+  /// A caller to this function will receive a [Stream] of [BleCharacteristicValue] objects. A caller should listen to
+  /// this stream and establish a callback function invoked each time a new value is emitted to the stream. Once
   /// subscribed, any updates to the characteristic value will be sent as a stream of [BleCharacteristicValue] objects.
   Future<Stream<BleCharacteristicValue>> subscribe() async {
     return CentralPlatformInterface.instance.subscribeToCharacteristic(this);

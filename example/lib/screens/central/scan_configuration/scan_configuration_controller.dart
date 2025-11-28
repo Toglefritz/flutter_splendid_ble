@@ -8,8 +8,8 @@ import 'scan_configuration_view.dart';
 
 /// A controller for the [ScanConfigurationRoute] that manages the state and owns all business logic.
 class ScanConfigurationController extends State<ScanConfigurationRoute> {
-  /// Determines the behavior of the Bluetooth scanning process with respect to how aggressively the Android
-  /// operating system will surface Bluetooth devices detected by the scanning process.
+  /// Determines the behavior of the Bluetooth scanning process with respect to how aggressively the Android operating
+  /// system will surface Bluetooth devices detected by the scanning process.
   ScanMode? scanMode;
 
   /// A delay in reporting devices detected by the scan.
@@ -27,10 +27,10 @@ class ScanConfigurationController extends State<ScanConfigurationRoute> {
   /// displaying only devices from a particular device vendor.
   int? manufacturerId;
 
-  /// A list of Bluetooth primary service UUID values used to filter the Bluetooth scan to show only devices with
-  /// one of the listed UUID values as their primary services. Since the primary service UUIDs are specified in the
-  /// firmware of a Bluetooth device, this is another method of filtering to show only devices for a particular product
-  /// line or from a particular manufacturer.
+  /// A list of Bluetooth primary service UUID values used to filter the Bluetooth scan to show only devices with one of
+  /// the listed UUID values as their primary services. Since the primary service UUIDs are specified in the firmware of
+  /// a Bluetooth device, this is another method of filtering to show only devices for a particular product line or from
+  /// a particular manufacturer.
   List<String>? serviceUuids;
 
   /// Handles changes on the dropdown menu used to select a [ScanMode].
@@ -77,8 +77,8 @@ class ScanConfigurationController extends State<ScanConfigurationRoute> {
 
   /// Handles taps on the "Done" CTA button.
   ///
-  /// When the form used to configure scan filters and settings is submitted, the app navigates back to the
-  /// [ScanRoute] and provides the information to be used for the next scan.
+  /// When the form used to configure scan filters and settings is submitted, the app navigates back to the [ScanRoute]
+  /// and provides the information to be used for the next scan.
   void onDone() {
     // Create a ScanSettings instance based on the inputs into the form
     final ScanSettings settings = ScanSettings(

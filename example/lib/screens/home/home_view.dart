@@ -9,8 +9,7 @@ import 'home_controller.dart';
 import 'home_route.dart';
 import 'models/home_menu_items.dart';
 
-/// View for the [HomeRoute]. The view is dumb, and purely declarative. References values
-/// on the controller and widget.
+/// View for the [HomeRoute]. The view is dumb, and purely declarative. References values on the controller and widget.
 class HomeView extends StatelessWidget {
   /// A reference to the controller for the [HomeRoute].
   final HomeController state;

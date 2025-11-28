@@ -10,8 +10,8 @@ void main() {
   final CentralMethodChannel methodChannelFlutterBle = CentralMethodChannel();
 
   setUp(() {
-    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(channel,
-        (MethodCall methodCall) async {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(channel, (MethodCall methodCall) async {
       // Mock your native function if needed
       if (methodCall.method == 'discoverServices') {
         return 'success';
@@ -21,7 +21,8 @@ void main() {
   });
 
   test('Test discoverServices method', () async {
-    final Stream<List<BleService>> serviceStream = await methodChannelFlutterBle.discoverServices('00:00:00:00:00:01');
+    final Stream<List<BleService>> serviceStream =
+        await methodChannelFlutterBle.discoverServices('00:00:00:00:00:01');
     final List<List<BleService>> emittedServices = [];
 
     // Listen to the emitted services
@@ -59,7 +60,8 @@ void main() {
       ],
     };
 
-    await TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.handlePlatformMessage(
+    await TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .handlePlatformMessage(
       channel.name,
       channel.codec.encodeMethodCall(
         MethodCall('bleServicesDiscovered_00:00:00:00:00:01', fakeServices),
@@ -72,6 +74,7 @@ void main() {
   });
 
   tearDown(() {
-    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(channel, null);
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(channel, null);
   });
 }

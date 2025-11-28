@@ -45,7 +45,8 @@ void main() {
   });
 
   /// This test verifies that the [DeviceDetailsRoute] correctly reflects changes in the BLE connection state.
-  testWidgets('DeviceDetailsRoute reflects connection state changes', (WidgetTester tester) async {
+  testWidgets('DeviceDetailsRoute reflects connection state changes',
+      (WidgetTester tester) async {
     final device = BleDevice(
       name: 'Test Device',
       address: 'AA:BB:CC:DD:EE:FF',
@@ -55,7 +56,10 @@ void main() {
     );
 
     // Simulate the device as disconnected initially
-    fakeCentral.setConnectionState(device.address, BleConnectionState.disconnected);
+    fakeCentral.setConnectionState(
+      device.address,
+      BleConnectionState.disconnected,
+    );
 
     await tester.pumpWidget(
       SplendidBleExampleMaterialApp(
@@ -76,18 +80,25 @@ void main() {
     await tester.tap(find.widgetWithText(TableButton, 'CONNECT'));
 
     // Simulate a connection state change to connected
-    fakeCentral.simulateConnectionStateUpdate(device.address, BleConnectionState.connected);
+    fakeCentral.simulateConnectionStateUpdate(
+      device.address,
+      BleConnectionState.connected,
+    );
 
     await tester.pumpAndSettle();
 
     // The view should now reflect the connected state with a "DISCOVER SERVICES" button
     expect(find.widgetWithText(TableButton, 'CONNECT'), findsNothing);
-    expect(find.widgetWithText(TableButton, 'DISCOVER SERVICES'), findsOneWidget);
+    expect(
+      find.widgetWithText(TableButton, 'DISCOVER SERVICES'),
+      findsOneWidget,
+    );
   });
 
-  /// This test verifies that the [DeviceDetailsRoute] correctly performs service discovery and updates the view to
-  /// show service UUIDs.
-  testWidgets('DeviceDetailsRoute handles service discovery correctly', (WidgetTester tester) async {
+  /// This test verifies that the [DeviceDetailsRoute] correctly performs service discovery and updates the view to show
+  /// service UUIDs.
+  testWidgets('DeviceDetailsRoute handles service discovery correctly',
+      (WidgetTester tester) async {
     // Create a fake BLE device with a specific service and characteristic
     final BleDevice device = BleDevice(
       name: 'Test Device',
@@ -135,7 +146,10 @@ void main() {
     await tester.pumpAndSettle();
 
     // Should initially show the "DISCOVER SERVICES" button
-    expect(find.widgetWithText(TableButton, 'DISCOVER SERVICES'), findsOneWidget);
+    expect(
+      find.widgetWithText(TableButton, 'DISCOVER SERVICES'),
+      findsOneWidget,
+    );
 
     // Tap the "DISCOVER SERVICES" button
     await tester.tap(find.widgetWithText(TableButton, 'DISCOVER SERVICES'));

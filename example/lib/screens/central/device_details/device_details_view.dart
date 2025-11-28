@@ -8,8 +8,8 @@ import 'components/services_info.dart';
 import 'device_details_controller.dart';
 import 'device_details_route.dart';
 
-/// View for the [DeviceDetailsRoute]. The view is dumb, and purely declarative. References values
-/// on the controller and widget.
+/// View for the [DeviceDetailsRoute]. The view is dumb, and purely declarative. References values on the controller and
+/// widget.
 class DeviceDetailsView extends StatelessWidget {
   /// A reference to the controller for the [DeviceDetailsRoute].
   final DeviceDetailsController state;
@@ -58,8 +58,9 @@ class DeviceDetailsView extends StatelessWidget {
                       bottomRight:
                           Radius.circular(state.isConnected ? 12.0 : 0.0),
                     ),
-                    color:
-                        Theme.of(context).primaryColorLight.withValues(alpha: 0.15),
+                    color: Theme.of(context)
+                        .primaryColorLight
+                        .withValues(alpha: 0.15),
                     border: Border.all(
                       color: Theme.of(context).primaryColorLight,
                       width: 2.0,

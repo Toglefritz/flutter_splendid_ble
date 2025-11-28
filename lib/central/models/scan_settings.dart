@@ -21,14 +21,12 @@ class ScanSettings {
 
   /// Whether to report only unique advertisements or to include duplicates.
   ///
-  /// If `true`, each advertisement is reported only once. If `false`, advertisements
-  /// might be reported multiple times.
+  /// If `true`, each advertisement is reported only once. If `false`, advertisements might be reported multiple times.
   final bool? allowDuplicates;
 
   /// Constructs a [ScanSettings] instance with the specified scan settings.
   ///
-  /// [scanMode] determines the mode used for scanning.
-  /// [reportDelayMillis] determines the delay for reporting results.
+  /// [scanMode] determines the mode used for scanning. [reportDelayMillis] determines the delay for reporting results.
   /// [allowDuplicates] specifies whether to include duplicate advertisements.
   ScanSettings({
     this.scanMode,
@@ -50,11 +48,11 @@ class ScanSettings {
 
 /// Enumeration of BLE scan modes.
 ///
-/// The values correspond to the scan modes provided by Android's BluetoothLeScanner.
-/// You can choose from three predefined scan modes:
-///   * `lowPower` (0): Balanced scanning, balancing power and latency.
-///   * `balanced` (1): Low power scanning to conserve battery.
-///   * `lowLatency` (2): Scan with highest duty cycle to discover devices faster.
+/// The values correspond to the scan modes provided by Android's BluetoothLeScanner. You can choose from three
+/// predefined scan modes:
+/// * `lowPower` (0): Balanced scanning, balancing power and latency.
+/// * `balanced` (1): Low power scanning to conserve battery.
+/// * `lowLatency` (2): Scan with highest duty cycle to discover devices faster.
 enum ScanMode {
   /// Balanced scanning, balancing power and latency.
   lowPower(0),

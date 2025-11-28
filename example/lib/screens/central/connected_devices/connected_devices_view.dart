@@ -7,8 +7,8 @@ import 'components/connected_device_tile.dart';
 import 'connected_devices_controller.dart';
 import 'connected_devices_route.dart';
 
-/// View for the [ConnectedDevicesRoute]. The view is dumb, and purely declarative. References values
-/// on the controller and widget.
+/// View for the [ConnectedDevicesRoute]. The view is dumb, and purely declarative. References values on the controller
+/// and widget.
 class ConnectedDevicesView extends StatelessWidget {
   /// A reference to the controller for the [ConnectedDevicesRoute].
   final ConnectedDevicesController state;
@@ -49,7 +49,8 @@ class ConnectedDevicesView extends StatelessWidget {
                   state.connectedDevices!.length,
                   (index) => ConnectedDeviceTile(
                     device: state.connectedDevices![index],
-                    onTap: () => state.onResultTap(state.connectedDevices![index]),
+                    onTap: () =>
+                        state.onResultTap(state.connectedDevices![index]),
                   ),
                 ),
               ],

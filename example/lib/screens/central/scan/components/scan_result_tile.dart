@@ -6,8 +6,8 @@ import '../../../../l10n/app_localizations.dart';
 /// Displays information about a Bluetooth device detected by the Bluetooth scan.
 ///
 /// Each [BleDevice] detected by the Bluetooth scan is displayed in a [ListTile], provided the device has a non-null
-/// value for its name. The tile also includes the Bluetooth address for the Bluetooth device. Finally, the RSSI
-/// of the device is represented as a
+/// value for its name. The tile also includes the Bluetooth address for the Bluetooth device. Finally, the RSSI of the
+/// device is represented as a
 class ScanResultTile extends StatelessWidget {
   /// Creates an instance of [ScanResultTile].
   const ScanResultTile({

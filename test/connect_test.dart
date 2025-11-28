@@ -13,8 +13,8 @@ void main() {
 
   setUp(() {
     // Set up a default method channel mock
-    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(channel,
-        (MethodCall methodCall) async {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(channel, (MethodCall methodCall) async {
       if (methodCall.method == 'connect') {
         return 'success';
       }
@@ -24,7 +24,9 @@ void main() {
 
   test('Test connect method', () async {
     final Stream<BleConnectionState> connectionStream =
-        await methodChannelFlutterBle.connect(deviceAddress: '00:00:00:00:00:01');
+        await methodChannelFlutterBle.connect(
+      deviceAddress: '00:00:00:00:00:01',
+    );
 
     final List<BleConnectionState> emittedStates = [];
 
@@ -32,7 +34,8 @@ void main() {
     connectionStream.listen(emittedStates.add);
 
     // Simulate a connection state change emitted from the platform side
-    await TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.handlePlatformMessage(
+    await TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .handlePlatformMessage(
       channel.name,
       channel.codec.encodeMethodCall(
         const MethodCall(
@@ -48,7 +51,8 @@ void main() {
   });
 
   tearDown(() {
-    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(
       channel,
       null,
     );

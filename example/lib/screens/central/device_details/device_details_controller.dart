@@ -28,7 +28,8 @@ class DeviceDetailsController extends State<DeviceDetailsRoute> {
   BleConnectionState get currentConnectionState => _currentConnectionState;
 
   /// A utility for checking if the device is connected.
-  bool get isConnected => currentConnectionState == BleConnectionState.connected;
+  bool get isConnected =>
+      currentConnectionState == BleConnectionState.connected;
 
   /// Determines if a connection attempt is currently in progress.
   bool _connecting = false;
@@ -102,15 +103,16 @@ class DeviceDetailsController extends State<DeviceDetailsRoute> {
     );
   }
 
-  /// Handles taps on the "Connect" button, which starts the process of establishing a connection with the
-  /// provided [BleDevice].
+  /// Handles taps on the "Connect" button, which starts the process of establishing a connection with the provided
+  /// [BleDevice].
   Future<void> onConnectTap() async {
     setState(() {
       _connecting = true;
     });
 
     try {
-      final Stream<BleConnectionState> connectionStateStream = await _ble.connect(deviceAddress: widget.device.address);
+      final Stream<BleConnectionState> connectionStateStream =
+          await _ble.connect(deviceAddress: widget.device.address);
       // ignore: inference_failure_on_untyped_parameter
 
       _connectionStateStream = connectionStateStream.listen(
@@ -145,14 +147,14 @@ class DeviceDetailsController extends State<DeviceDetailsRoute> {
     ScaffoldMessenger.of(context).showSnackBar(snackBar);
   }
 
-  /// Handles taps on the "Discover Services" button, which starts the BLE service and characteristic discovery
-  /// process.
+  /// Handles taps on the "Discover Services" button, which starts the BLE service and characteristic discovery process.
   Future<void> onDiscoverServicesTap() async {
     setState(() {
       _discoveringServices = true;
     });
 
-    final Stream<List<BleService>> servicesDiscoveredStream = await _ble.discoverServices(widget.device.address);
+    final Stream<List<BleService>> servicesDiscoveredStream =
+        await _ble.discoverServices(widget.device.address);
 
     _servicesDiscoveredStream = servicesDiscoveredStream.listen(
       _onServiceDiscovered,
@@ -182,9 +184,9 @@ class DeviceDetailsController extends State<DeviceDetailsRoute> {
     });
   }
 
-  /// Handles taps on a Bluetooth characteristic by navigating to the [CharacteristicInteractionRoute], allowing
-  /// for values to be written to or read from the selected Bluetooth characteristic, depending upon the
-  /// properties of that characteristic.
+  /// Handles taps on a Bluetooth characteristic by navigating to the [CharacteristicInteractionRoute], allowing for
+  /// values to be written to or read from the selected Bluetooth characteristic, depending upon the properties of that
+  /// characteristic.
   Future<void> characteristicOnTap(BleCharacteristic characteristic) async {
     await Navigator.push(
       context,

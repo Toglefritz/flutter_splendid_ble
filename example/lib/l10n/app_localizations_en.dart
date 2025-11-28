@@ -90,7 +90,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get or => 'or';
 
   @override
-  String get permissionsError => 'The request for Bluetooth permissions was denied. Without those permissions, none of this will work.';
+  String get permissionsError =>
+      'The request for Bluetooth permissions was denied. Without those permissions, none of this will work.';
 
   @override
   String get peripheralName => 'Peripheral name';

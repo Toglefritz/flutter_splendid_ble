@@ -49,7 +49,9 @@ abstract class CentralPlatformInterface extends PlatformInterface {
   }
 
   /// Returns a list of BLE device identifiers that are currently connected to the host device.
-  Future<List<ConnectedBleDevice>> getConnectedDevices(List<String> serviceUUIDs) async {
+  Future<List<ConnectedBleDevice>> getConnectedDevices(
+    List<String> serviceUUIDs,
+  ) async {
     throw UnimplementedError(
       'getConnectedDevices() has not been implemented.',
     );
@@ -63,16 +65,17 @@ abstract class CentralPlatformInterface extends PlatformInterface {
   }
 
   /// Emits the current Bluetooth permission status whenever it changes.
-  Future<Stream<BluetoothPermissionStatus>> emitCurrentPermissionStatus() async {
+  Future<Stream<BluetoothPermissionStatus>>
+      emitCurrentPermissionStatus() async {
     throw UnimplementedError(
       'emitCurrentPermissionStatus() has not been implemented.',
     );
   }
 
-  /// Starts a scan for nearby BLE devices and returns a [Stream] of [BleDevice] instances representing the BLE
-  /// devices that were discovered. On the Flutter side, listeners can be added to this stream so they can
-  /// respond to Bluetooth devices being discovered, for example by presenting the list in the user interface
-  /// or enabling controllers to find and connect to specific devices.
+  /// Starts a scan for nearby BLE devices and returns a [Stream] of [BleDevice] instances representing the BLE devices
+  /// that were discovered. On the Flutter side, listeners can be added to this stream so they can respond to Bluetooth
+  /// devices being discovered, for example by presenting the list in the user interface or enabling controllers to find
+  /// and connect to specific devices.
   Future<Stream<BleDevice>> startScan({
     List<ScanFilter>? filters,
     ScanSettings? settings,
@@ -86,17 +89,21 @@ abstract class CentralPlatformInterface extends PlatformInterface {
   }
 
   /// Initiates a connection to a BLE peripheral and returns a Stream representing the connection state.
-  Future<Stream<BleConnectionState>> connect({required String deviceAddress}) async {
+  Future<Stream<BleConnectionState>> connect({
+    required String deviceAddress,
+  }) async {
     throw UnimplementedError('connect() has not been implemented.');
   }
 
   /// Triggers the service discovery process manually.
-  Future<Stream<List<BleService>>> discoverServices(String deviceAddress) async {
+  Future<Stream<List<BleService>>> discoverServices(
+    String deviceAddress,
+  ) async {
     throw UnimplementedError('discoverServices() has not been implemented.');
   }
 
-  /// Terminates the connection to a BLE peripheral. Initiates a connection to a BLE peripheral and returns a
-  /// [Stream] representing the connection state.
+  /// Terminates the connection to a BLE peripheral. Initiates a connection to a BLE peripheral and returns a [Stream]
+  /// representing the connection state.
   Future<void> disconnect(String deviceAddress) async {
     throw UnimplementedError('disconnect() has not been implemented.');
   }

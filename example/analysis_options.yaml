@@ -9,3 +9,6 @@ linter:
       avoid_escaping_inner_quotes: false
       sort_constructors_first: false
       prefer_int_literals: false
+
+formatter:
+  trailing_commas: preserve

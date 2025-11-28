@@ -12,7 +12,8 @@ class ConnectedBleDevice extends BleDevice {
     required super.advertisedServiceUuids,
   }) : super(
           rssi: 0, // The RSSI value is not needed for connected devices.
-          manufacturerData: null, // The manufacturer data is not needed for connected devices.
+          manufacturerData:
+              null, // The manufacturer data is not needed for connected devices.
         );
 
   /// Converts a Map to a [ConnectedBleDevice] object.

@@ -29,7 +29,8 @@ class ConnectedDevicesController extends State<ConnectedDevicesRoute> {
   // TODO(Toglefritz): replace the service UUID with a value from your own system
   Future<void> _getConnectedDevices() async {
     try {
-      final List<ConnectedBleDevice> devices = await _ble.getConnectedDevices(['abcd1234-1234-1234-1234-1234567890aa']);
+      final List<ConnectedBleDevice> devices = await _ble
+          .getConnectedDevices(['abcd1234-1234-1234-1234-1234567890aa']);
 
       debugPrint('Connected devices: $connectedDevices');
 

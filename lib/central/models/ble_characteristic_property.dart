@@ -1,7 +1,7 @@
 /// An enumeration representing the bitwise properties of a `BluetoothGattCharacteristic`.
 ///
-/// Each property is represented by a specific bit in an integer bitmask. These properties define the capabilities
-/// and behaviors of a characteristic, such as whether a characteristic can be read, written, or notified of changes.
+/// Each property is represented by a specific bit in an integer bitmask. These properties define the capabilities and
+/// behaviors of a characteristic, such as whether a characteristic can be read, written, or notified of changes.
 enum BleCharacteristicProperty {
   /// Indicates that the characteristic value can be broadcast using Server Characteristic Configuration Descriptor.
   broadcast,

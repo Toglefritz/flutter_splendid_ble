@@ -42,17 +42,20 @@ class ScanController extends State<ScanRoute> {
   /// Starts a scan for nearby Bluetooth devices and adds a listener to the stream of devices detected by the scan.
   ///
   /// The scan is handled by the *flutter_ble* plugin. Regardless of operating system, the scan works by providing a
-  /// callback function (in this case [_onDeviceDetected]) that is called whenever a device is detected by the scan.
-  /// The `startScan` stream delivers an instance of [BleDevice] to the callback which contains information about
-  /// the Bluetooth device.
+  /// callback function (in this case [_onDeviceDetected]) that is called whenever a device is detected by the scan. The
+  /// `startScan` stream delivers an instance of [BleDevice] to the callback which contains information about the
+  /// Bluetooth device.
   ///
-  /// Various filters can be applied to the scanning process to limit the selection of devices returned by the scan.
-  /// See the [ScanFilter] class for full information about the available filters. But the most common filtering
-  /// option is typically filtering by the UUID of the primary service of the BLE devices detected by the scan. This
-  /// allows manufacturers of Bluetooth devices to ensure that only their devices are returned by the Bluetooth scan,
-  /// which is obviously useful for building a companion mobile app for these devices.
+  /// Various filters can be applied to the scanning process to limit the selection of devices returned by the scan. See
+  /// the [ScanFilter] class for full information about the available filters. But the most common filtering option is
+  /// typically filtering by the UUID of the primary service of the BLE devices detected by the scan. This allows
+  /// manufacturers of Bluetooth devices to ensure that only their devices are returned by the Bluetooth scan, which is
+  /// obviously useful for building a companion mobile app for these devices.
   Future<void> _startBluetoothScan() async {
-    final Stream<BleDevice> scanStream = await _ble.startScan(filters: widget.filters, settings: widget.settings);
+    final Stream<BleDevice> scanStream = await _ble.startScan(
+      filters: widget.filters,
+      settings: widget.settings,
+    );
 
     _scanStream = scanStream.listen(
       _onDeviceDetected,
@@ -98,7 +101,9 @@ class ScanController extends State<ScanRoute> {
     debugPrint('Discovered BLE device: ${device.name}');
 
     // Add the newly discovered device to the list only if it not already in the list
-    if (discoveredDevices.where((discoveredDevice) => discoveredDevice.address == device.address).isEmpty) {
+    if (discoveredDevices
+        .where((discoveredDevice) => discoveredDevice.address == device.address)
+        .isEmpty) {
       setState(() {
         discoveredDevices.add(device);
       });
@@ -107,8 +112,8 @@ class ScanController extends State<ScanRoute> {
 
   /// Handles taps on the "filter" button in the [AppBar].
   ///
-  /// When this button is pressed, the app navigates to the [ScanConfigurationRoute], which allows for the
-  /// [ScanFilter]s and [ScanSettings]s to be set up.
+  /// When this button is pressed, the app navigates to the [ScanConfigurationRoute], which allows for the [ScanFilter]s
+  /// and [ScanSettings]s to be set up.
   void onFiltersPressed() {
     Navigator.pushReplacement<void, void>(
       context,
@@ -121,8 +126,8 @@ class ScanController extends State<ScanRoute> {
   /// Handles taps on the action button in the [AppBar].
   ///
   /// This button is used to start or stop the Bluetooth scan. If a scan is in progress, as determined by the
-  /// [_scanInProgress] boolean value, the function stops the scan. If, on the other hand, there is not a scan
-  /// in progress, a scan is started.
+  /// [_scanInProgress] boolean value, the function stops the scan. If, on the other hand, there is not a scan in
+  /// progress, a scan is started.
   void onActionButtonPressed() {
     if (_scanInProgress) {
       _ble.stopScan();

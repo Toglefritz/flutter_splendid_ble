@@ -7,8 +7,7 @@ import 'components/scan_result_tile.dart';
 import 'scan_controller.dart';
 import 'scan_route.dart';
 
-/// View for the [ScanRoute]. The view is dumb, and purely declarative. References values
-/// on the controller and widget.
+/// View for the [ScanRoute]. The view is dumb, and purely declarative. References values on the controller and widget.
 class ScanView extends StatelessWidget {
   /// A reference to the controller for the [ScanRoute].
   final ScanController state;

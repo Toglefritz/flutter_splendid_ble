@@ -13,8 +13,8 @@ void main() {
   _testEmitCurrentPermissionStatus(channel);
 }
 
-/// Tests that the `emitCurrentPermissionStatus` method correctly emits permission status updates
-/// from the platform side to the Dart side.
+/// Tests that the `emitCurrentPermissionStatus` method correctly emits permission status updates from the platform side
+/// to the Dart side.
 void _testEmitCurrentPermissionStatus(MethodChannel channel) {
   for (final BluetoothPermissionStatus status
       in BluetoothPermissionStatus.values) {
@@ -31,8 +31,9 @@ void _testEmitCurrentPermissionStatus(MethodChannel channel) {
         (MethodCall methodCall) async {
           if (methodCall.method == 'emitCurrentPermissionStatus') {
             // Simulate the platform side emitting a permission status update
-            Future.delayed(const Duration(milliseconds: 100), () {
-              TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            Future.delayed(const Duration(milliseconds: 100), () async {
+              await TestDefaultBinaryMessengerBinding
+                  .instance.defaultBinaryMessenger
                   .handlePlatformMessage(
                 channel.name,
                 channel.codec.encodeMethodCall(

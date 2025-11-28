@@ -8,8 +8,8 @@ class LoadingIndicator extends StatelessWidget {
     this.size,
   });
 
-  /// The width and height of the [SizedBox] surrounding the [CircularProgressIndicator], which determines the
-  /// size of the [CircularProgressIndicator]. If null, the size defaults to 48 x 48.
+  /// The width and height of the [SizedBox] surrounding the [CircularProgressIndicator], which determines the size of
+  /// the [CircularProgressIndicator]. If null, the size defaults to 48 x 48.
   final double? size;
 
   @override

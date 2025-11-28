@@ -26,7 +26,7 @@ import 'models/connected_ble_device.dart';
 ///
 /// ```dart
 /// setUp(() {
-///   CentralPlatformInterface.instance = FakeCentralMethodChannel();
+/// CentralPlatformInterface.instance = FakeCentralMethodChannel();
 /// });
 /// ```
 ///
@@ -41,12 +41,12 @@ import 'models/connected_ble_device.dart';
 ///
 /// // Set fake services for the fake device
 /// fake.setServices('00:11:22:33:44:55', [
-///   BleService(
-///     serviceUuid: '180D',
-///     characteristics: [
-///       BleCharacteristic(uuid: '2A37', address: '00:11:22:33:44:55'),
-///     ],
-///   ),
+/// BleService(
+/// serviceUuid: '180D',
+/// characteristics: [
+/// BleCharacteristic(uuid: '2A37', address: '00:11:22:33:44:55'),
+/// ],
+/// ),
 /// ]);
 ///
 /// // Set a mock read value for a specific characteristic
@@ -54,32 +54,38 @@ import 'models/connected_ble_device.dart';
 /// ```
 class FakeCentralMethodChannel extends CentralPlatformInterface {
   /// A stream controller used to emit the current Bluetooth adapter status to listeners.
-  final StreamController<BluetoothStatus> _bluetoothStatusController = StreamController<BluetoothStatus>.broadcast();
+  final StreamController<BluetoothStatus> _bluetoothStatusController =
+      StreamController<BluetoothStatus>.broadcast();
 
   /// A stream controller used to emit the current Bluetooth permission status to listeners.
-  final StreamController<BluetoothPermissionStatus> _permissionStatusController =
+  final StreamController<BluetoothPermissionStatus>
+      _permissionStatusController =
       StreamController<BluetoothPermissionStatus>.broadcast();
 
   /// A stream controller that emits fake BLE devices found during scanning.
-  final StreamController<BleDevice> _scanResultsController = StreamController<BleDevice>.broadcast();
+  final StreamController<BleDevice> _scanResultsController =
+      StreamController<BleDevice>.broadcast();
 
-  /// A map of device addresses to their associated BLE connection state stream controllers.
-  /// Used to simulate and emit connection state updates for individual devices.
-  final Map<String, StreamController<BleConnectionState>> _connectionControllers = {};
+  /// A map of device addresses to their associated BLE connection state stream controllers. Used to simulate and emit
+  /// connection state updates for individual devices.
+  final Map<String, StreamController<BleConnectionState>>
+      _connectionControllers = {};
 
-  /// A map of device addresses to their associated BLE services stream controllers.
-  /// Used to simulate the result of service discovery.
-  final Map<String, StreamController<List<BleService>>> _serviceControllers = {};
+  /// A map of device addresses to their associated BLE services stream controllers. Used to simulate the result of
+  /// service discovery.
+  final Map<String, StreamController<List<BleService>>> _serviceControllers =
+      {};
 
-  /// A map of characteristic UUIDs to their associated stream controllers for subscribed values.
-  /// Used to simulate characteristic notifications and indications.
-  final Map<String, StreamController<BleCharacteristicValue>> _characteristicStreams = {};
+  /// A map of characteristic UUIDs to their associated stream controllers for subscribed values. Used to simulate
+  /// characteristic notifications and indications.
+  final Map<String, StreamController<BleCharacteristicValue>>
+      _characteristicStreams = {};
 
   /// A list of fake BLE devices that will be returned during scanning or queries for connected devices.
   final List<BleDevice> _fakeDevices = [];
 
-  /// A map of device addresses to a list of their simulated BLE services.
-  /// Used to simulate the service discovery response.
+  /// A map of device addresses to a list of their simulated BLE services. Used to simulate the service discovery
+  /// response.
   final Map<String, List<BleService>> _servicesByDevice = {};
 
   /// A map of device addresses to their current simulated BLE connection states.
@@ -101,8 +107,8 @@ class FakeCentralMethodChannel extends CentralPlatformInterface {
   /// Sets the simulated connection state for a given BLE device.
   ///
   /// This method allows tests to control the connection state of a device directly, without waiting for asynchronous
-  /// connection streams to emit values. It is useful for simulating connection and disconnection events in tests
-  /// that depend on the device's current state.
+  /// connection streams to emit values. It is useful for simulating connection and disconnection events in tests that
+  /// depend on the device's current state.
   void setConnectionState(String deviceAddress, BleConnectionState state) {
     _connectionStates[deviceAddress] = state;
     _connectionControllers[deviceAddress]?.add(state);
@@ -110,14 +116,17 @@ class FakeCentralMethodChannel extends CentralPlatformInterface {
 
   /// Simulates a connection state update by emitting a new value on the connection stream.
   ///
-  /// This method can be used in tests to simulate real-time changes in connection state after
-  /// a device has been connected or disconnected.
+  /// This method can be used in tests to simulate real-time changes in connection state after a device has been
+  /// connected or disconnected.
   ///
   /// Example usage:
   /// ```dart
   /// fakeCentral.simulateConnectionStateUpdate('00:11:22:33:44:55', BleConnectionState.disconnected);
   /// ```
-  void simulateConnectionStateUpdate(String deviceAddress, BleConnectionState state) {
+  void simulateConnectionStateUpdate(
+    String deviceAddress,
+    BleConnectionState state,
+  ) {
     _connectionStates[deviceAddress] = state;
     _connectionControllers[deviceAddress]?.add(state);
   }
@@ -143,12 +152,15 @@ class FakeCentralMethodChannel extends CentralPlatformInterface {
   }
 
   @override
-  Future<Stream<BluetoothPermissionStatus>> emitCurrentPermissionStatus() async {
+  Future<Stream<BluetoothPermissionStatus>>
+      emitCurrentPermissionStatus() async {
     return _permissionStatusController.stream;
   }
 
   @override
-  Future<List<ConnectedBleDevice>> getConnectedDevices(List<String> serviceUUIDs) async {
+  Future<List<ConnectedBleDevice>> getConnectedDevices(
+    List<String> serviceUUIDs,
+  ) async {
     final List<ConnectedBleDevice> fakeConnectedDevices = _fakeDevices
         .map(
           (BleDevice device) => ConnectedBleDevice(
@@ -163,7 +175,10 @@ class FakeCentralMethodChannel extends CentralPlatformInterface {
   }
 
   @override
-  Future<Stream<BleDevice>> startScan({List<ScanFilter>? filters, ScanSettings? settings}) async {
+  Future<Stream<BleDevice>> startScan({
+    List<ScanFilter>? filters,
+    ScanSettings? settings,
+  }) async {
     // Simulate a scan by adding fake devices after a short delay.
     Future.delayed(const Duration(milliseconds: 100), () {
       for (final BleDevice device in _fakeDevices) {
@@ -186,12 +201,16 @@ class FakeCentralMethodChannel extends CentralPlatformInterface {
   }
 
   @override
-  Future<Stream<BleConnectionState>> connect({required String deviceAddress}) async {
-    final StreamController<BleConnectionState> controller = StreamController<BleConnectionState>.broadcast();
+  Future<Stream<BleConnectionState>> connect({
+    required String deviceAddress,
+  }) async {
+    final StreamController<BleConnectionState> controller =
+        StreamController<BleConnectionState>.broadcast();
     _connectionControllers[deviceAddress] = controller;
 
     // Add the initial connection state, or default to disconnected if not set.
-    final BleConnectionState initialState = _connectionStates[deviceAddress] ?? BleConnectionState.disconnected;
+    final BleConnectionState initialState =
+        _connectionStates[deviceAddress] ?? BleConnectionState.disconnected;
     controller.add(initialState);
 
     return controller.stream;
@@ -204,13 +223,18 @@ class FakeCentralMethodChannel extends CentralPlatformInterface {
   }
 
   @override
-  Future<BleConnectionState> getCurrentConnectionState(String deviceAddress) async {
+  Future<BleConnectionState> getCurrentConnectionState(
+    String deviceAddress,
+  ) async {
     return _connectionStates[deviceAddress] ?? BleConnectionState.disconnected;
   }
 
   @override
-  Future<Stream<List<BleService>>> discoverServices(String deviceAddress) async {
-    final StreamController<List<BleService>> controller = StreamController<List<BleService>>.broadcast();
+  Future<Stream<List<BleService>>> discoverServices(
+    String deviceAddress,
+  ) async {
+    final StreamController<List<BleService>> controller =
+        StreamController<List<BleService>>.broadcast();
     _serviceControllers[deviceAddress] = controller;
 
     Future.delayed(const Duration(milliseconds: 30), () {
@@ -234,7 +258,8 @@ class FakeCentralMethodChannel extends CentralPlatformInterface {
     required BleCharacteristic characteristic,
     required Duration timeout,
   }) async {
-    final List<int> value = _mockReadValues[characteristic.uuid] ?? utf8.encode('mock_value');
+    final List<int> value =
+        _mockReadValues[characteristic.uuid] ?? utf8.encode('mock_value');
 
     return BleCharacteristicValue(
       deviceAddress: characteristic.address,
@@ -244,7 +269,9 @@ class FakeCentralMethodChannel extends CentralPlatformInterface {
   }
 
   @override
-  Future<Stream<BleCharacteristicValue>> subscribeToCharacteristic(BleCharacteristic characteristic) async {
+  Future<Stream<BleCharacteristicValue>> subscribeToCharacteristic(
+    BleCharacteristic characteristic,
+  ) async {
     final controller = StreamController<BleCharacteristicValue>.broadcast();
     _characteristicStreams[characteristic.uuid] = controller;
 
@@ -252,7 +279,9 @@ class FakeCentralMethodChannel extends CentralPlatformInterface {
   }
 
   @override
-  Future<void> unsubscribeFromCharacteristic(BleCharacteristic characteristic) async {
+  Future<void> unsubscribeFromCharacteristic(
+    BleCharacteristic characteristic,
+  ) async {
     await _characteristicStreams[characteristic.uuid]?.close();
     _characteristicStreams.remove(characteristic.uuid);
   }

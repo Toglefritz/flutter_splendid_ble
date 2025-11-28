@@ -47,9 +47,11 @@ class BleDevice {
     }
 
     // Get the advertised service UUIDs, which is a list of strings.
-    final List<dynamic>? advertisedServiceUuidsDynamic = map['advertisedServiceUuids'] as List<dynamic>?;
-    final List<String>? advertisedServiceUuids =
-        advertisedServiceUuidsDynamic?.map((dynamic uuid) => uuid as String).toList();
+    final List<dynamic>? advertisedServiceUuidsDynamic =
+        map['advertisedServiceUuids'] as List<dynamic>?;
+    final List<String>? advertisedServiceUuids = advertisedServiceUuidsDynamic
+        ?.map((dynamic uuid) => uuid as String)
+        .toList();
 
     return BleDevice(
       name: map['name'] as String?,

@@ -6,8 +6,8 @@ import '../../components/main_app_bar.dart';
 import 'scan_configuration_controller.dart';
 import 'scan_configuration_route.dart';
 
-/// View for the [ScanConfigurationRoute]. The view is dumb, and purely declarative. References values
-/// on the controller and widget.
+/// View for the [ScanConfigurationRoute]. The view is dumb, and purely declarative. References values on the controller
+/// and widget.
 class ScanConfigurationView extends StatelessWidget {
   /// A reference to the controller for the [ScanConfigurationRoute].
   final ScanConfigurationController state;

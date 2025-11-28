@@ -33,24 +33,25 @@ import 'models/connected_ble_device.dart';
 class CentralMethodChannel extends CentralPlatformInterface {
   /// The method channel used to interact with the native platform.
   @visibleForTesting
-  final MethodChannel channel = const MethodChannel('flutter_splendid_ble_central');
+  final MethodChannel channel =
+      const MethodChannel('flutter_splendid_ble_central');
 
   /// Checks the status of the Bluetooth adapter on the device.
   ///
-  /// This method communicates with the native Android code to obtain the current status of the Bluetooth adapter,
-  /// and returns one of the values from the [BluetoothStatus] enumeration.
+  /// This method communicates with the native Android code to obtain the current status of the Bluetooth adapter, and
+  /// returns one of the values from the [BluetoothStatus] enumeration.
   ///
   /// * `BluetoothStatus.ENABLED`: Bluetooth is enabled and ready for connections.
   /// * `BluetoothStatus.DISABLED`: Bluetooth is disabled and not available for use.
   /// * `BluetoothStatus.NOT_AVAILABLE`: Bluetooth is not available on the device.
   ///
-  /// Returns a Future containing the [BluetoothStatus] representing the current status of the Bluetooth adapter on
-  /// the device.
+  /// Returns a Future containing the [BluetoothStatus] representing the current status of the Bluetooth adapter on the
+  /// device.
   ///
-  /// It can be useful to check on the status of the Bluetooth adapter prior to attempting Bluetooth operations as
-  /// a way of improving the user experience. Checking on the state of the Bluetooth adapter allows the user to be
-  /// notified and prompted for action if they attempt to use an applications for which Bluetooth plays a critical
-  /// role while the Bluetooth capabilities of the host device are disabled.
+  /// It can be useful to check on the status of the Bluetooth adapter prior to attempting Bluetooth operations as a way
+  /// of improving the user experience. Checking on the state of the Bluetooth adapter allows the user to be notified
+  /// and prompted for action if they attempt to use an applications for which Bluetooth plays a critical role while the
+  /// Bluetooth capabilities of the host device are disabled.
   @override
   Future<BluetoothStatus> checkBluetoothAdapterStatus() async {
     return BleCommonUtilities.checkBluetoothAdapterStatus(channel);
@@ -58,8 +59,8 @@ class CentralMethodChannel extends CentralPlatformInterface {
 
   /// Emits the current Bluetooth adapter status to the Dart side.
   ///
-  /// This method communicates with the native Android code to obtain the current status of the Bluetooth adapter
-  /// and emits it to any listeners on the Dart side.
+  /// This method communicates with the native Android code to obtain the current status of the Bluetooth adapter and
+  /// emits it to any listeners on the Dart side.
   ///
   /// Listeners on the Dart side will receive one of the following enum values from [BluetoothStatus]:
   ///
@@ -67,19 +68,20 @@ class CentralMethodChannel extends CentralPlatformInterface {
   /// * `BluetoothStatus.disabled`: Indicates that Bluetooth is disabled and not available for use.
   /// * `BluetoothStatus.notAvailable`: Indicates that Bluetooth is not available on the device.
   ///
-  /// Returns a [Future] containing a [Stream] of [BluetoothStatus] values representing the current status
-  /// of the Bluetooth adapter on the device.
+  /// Returns a [Future] containing a [Stream] of [BluetoothStatus] values representing the current status of the
+  /// Bluetooth adapter on the device.
   @override
   Future<Stream<BluetoothStatus>> emitCurrentBluetoothStatus() async {
-    final Stream<BluetoothStatus> bluetoothStatusStream = await BleCommonUtilities.emitCurrentBluetoothStatus(channel);
+    final Stream<BluetoothStatus> bluetoothStatusStream =
+        await BleCommonUtilities.emitCurrentBluetoothStatus(channel);
 
     return bluetoothStatusStream;
   }
 
   /// Requests Bluetooth permissions from the user.
   ///
-  /// This method communicates with the native platform code to request Bluetooth permissions.
-  /// It returns one of the values from the [BluetoothPermissionStatus] enumeration.
+  /// This method communicates with the native platform code to request Bluetooth permissions. It returns one of the
+  /// values from the [BluetoothPermissionStatus] enumeration.
   ///
   /// * `BluetoothPermissionStatus.GRANTED`: Permission is granted.
   /// * `BluetoothPermissionStatus.DENIED`: Permission is denied.
@@ -92,16 +94,19 @@ class CentralMethodChannel extends CentralPlatformInterface {
 
   /// Emits the current Bluetooth permission status to the Dart side.
   ///
-  /// This method communicates with the native platform code to obtain the current Bluetooth permission status and emits it to any listeners on the Dart side.
+  /// This method communicates with the native platform code to obtain the current Bluetooth permission status and emits
+  /// it to any listeners on the Dart side.
   ///
   /// Listeners on the Dart side will receive one of the following enum values from [BluetoothPermissionStatus]:
   ///
   /// * `BluetoothPermissionStatus.GRANTED`: Indicates that Bluetooth permission is granted.
   /// * `BluetoothPermissionStatus.DENIED`: Indicates that Bluetooth permission is denied.
   ///
-  /// Returns a [Stream] of [BluetoothPermissionStatus] values representing the current Bluetooth permission status on the device.
+  /// Returns a [Stream] of [BluetoothPermissionStatus] values representing the current Bluetooth permission status on
+  /// the device.
   @override
-  Future<Stream<BluetoothPermissionStatus>> emitCurrentPermissionStatus() async {
+  Future<Stream<BluetoothPermissionStatus>>
+      emitCurrentPermissionStatus() async {
     final Stream<BluetoothPermissionStatus> permissionStatusStream =
         await BleCommonUtilities.emitCurrentPermissionStatus(channel);
 
@@ -110,8 +115,8 @@ class CentralMethodChannel extends CentralPlatformInterface {
 
   /// Gets a list of identifiers for all connected devices.
   ///
-  /// This method communicates with the native platform code to obtain a list of all connected devices.
-  /// It returns a list of device identifiers as strings.
+  /// This method communicates with the native platform code to obtain a list of all connected devices. It returns a
+  /// list of device identifiers as strings.
   ///
   /// On iOS, the identifiers returned by this method are the UUIDs of the connected peripherals. This means that the
   /// identifiers are specific to the iOS device on which this method is called. The same Bluetooth device will be
@@ -124,7 +129,9 @@ class CentralMethodChannel extends CentralPlatformInterface {
   ///
   /// Returns a [Future] containing a list of [ConnectedBleDevice] objects representing Bluetooth devices.
   @override
-  Future<List<ConnectedBleDevice>> getConnectedDevices(List<String> serviceUUIDs) async {
+  Future<List<ConnectedBleDevice>> getConnectedDevices(
+    List<String> serviceUUIDs,
+  ) async {
     try {
       // Prepare the arguments with the list of UUIDs
       final Map<String, dynamic> arguments = {
@@ -132,11 +139,14 @@ class CentralMethodChannel extends CentralPlatformInterface {
       };
 
       // Call the platform-specific code via Method Channel
-      final List<dynamic> connectedDevices =
-          await channel.invokeMethod('getConnectedDevices', arguments) as List<dynamic>;
+      final List<dynamic> connectedDevices = await channel.invokeMethod(
+        'getConnectedDevices',
+        arguments,
+      ) as List<dynamic>;
 
       // Convert the dynamic list to a strongly-typed list of maps
-      final List<ConnectedBleDevice> devices = connectedDevices.map((dynamic device) {
+      final List<ConnectedBleDevice> devices =
+          connectedDevices.map((dynamic device) {
         final Map<dynamic, dynamic> deviceMap = device as Map<dynamic, dynamic>;
         return ConnectedBleDevice.fromMap(deviceMap);
       }).toList();
@@ -149,23 +159,24 @@ class CentralMethodChannel extends CentralPlatformInterface {
 
   /// Starts a scan for nearby Bluetooth Low Energy (BLE) devices and returns a stream of discovered devices.
   ///
-  /// Scanning for BLE devices is a crucial step in establishing a BLE connection. It allows the mobile app to
-  /// discover nearby BLE devices and gather essential information like device name, MAC address, and more. This
-  /// method starts the scanning operation on the platform side and listens for discovered devices.
+  /// Scanning for BLE devices is a crucial step in establishing a BLE connection. It allows the mobile app to discover
+  /// nearby BLE devices and gather essential information like device name, MAC address, and more. This method starts
+  /// the scanning operation on the platform side and listens for discovered devices.
   ///
-  /// The function takes optional `filters` and `settings` parameters that allow for more targeted device scanning.
-  /// For example, you could specify a filter to only discover devices that are advertising a specific service.
-  /// Similarly, `settings` allows you to adjust aspects like scan mode, report delay, and more.
+  /// The function takes optional `filters` and `settings` parameters that allow for more targeted device scanning. For
+  /// example, you could specify a filter to only discover devices that are advertising a specific service. Similarly,
+  /// `settings` allows you to adjust aspects like scan mode, report delay, and more.
   ///
   /// The method uses a [StreamController] to handle the asynchronous nature of BLE scanning. Every time a device is
-  /// discovered by the native platform, the 'bleDeviceScanned' method is invoked, and the device information is
-  /// parsed and added to the stream.
+  /// discovered by the native platform, the 'bleDeviceScanned' method is invoked, and the device information is parsed
+  /// and added to the stream.
   @override
   Future<Stream<BleDevice>> startScan({
     List<ScanFilter>? filters,
     ScanSettings? settings,
   }) async {
-    final StreamController<BleDevice> streamController = StreamController<BleDevice>.broadcast();
+    final StreamController<BleDevice> streamController =
+        StreamController<BleDevice>.broadcast();
 
     // Listen to the platform side for scanned devices.
     channel.setMethodCallHandler((MethodCall call) async {
@@ -176,11 +187,12 @@ class CentralMethodChannel extends CentralPlatformInterface {
             // Different operating systems will send the arguments in different formats. So, normalize the arguments
             // as a Map<dynamic, dynamic> for use in the BleDevice.fromMap factory constructor.
             if (call.arguments is String) {
-              final Map<dynamic, dynamic> argumentsParsed =
-                  json.decode(call.arguments as String) as Map<dynamic, dynamic>;
+              final Map<dynamic, dynamic> argumentsParsed = json
+                  .decode(call.arguments as String) as Map<dynamic, dynamic>;
               device = BleDevice.fromMap(argumentsParsed);
             } else {
-              device = BleDevice.fromMap(call.arguments as Map<dynamic, dynamic>);
+              device =
+                  BleDevice.fromMap(call.arguments as Map<dynamic, dynamic>);
             }
 
             // Apply additional filtering on Dart side. Filtering is also done on the native side, but this allows for
@@ -200,7 +212,8 @@ class CentralMethodChannel extends CentralPlatformInterface {
     });
 
     // Convert filters and settings into map representations if provided.
-    final List<Map<String, dynamic>>? filtersMap = filters?.map((filter) => filter.toMap()).toList();
+    final List<Map<String, dynamic>>? filtersMap =
+        filters?.map((filter) => filter.toMap()).toList();
     final Map<String, dynamic>? settingsMap = settings?.toMap();
 
     // Begin the scan on the platform side, including the filters and settings in the method call if provided.
@@ -237,12 +250,14 @@ class CentralMethodChannel extends CentralPlatformInterface {
   /// This method calls the 'connect' method on the native Android implementation via a method channel, and returns a
   /// [Stream] that emits [ConnectionState] enum values representing the status of the connection. Because an app could
   /// attempt to establish a connection to multiple different peripherals at once, the platform side differentiates
-  /// connection status updates for each peripheral by appending the peripherals' Bluetooth addresses to the
-  /// method channel names. For example, the connection states for a particular module with address, *10:91:A8:32:8C:BA*
-  /// would be communicated with the method channel name, "bleConnectionState_10:91:A8:32:8C:BA". In this way, a
-  /// different [Stream] of [BleConnectionState] values is established for each Bluetooth peripheral.
+  /// connection status updates for each peripheral by appending the peripherals' Bluetooth addresses to the method
+  /// channel names. For example, the connection states for a particular module with address, *10:91:A8:32:8C:BA* would
+  /// be communicated with the method channel name, "bleConnectionState_10:91:A8:32:8C:BA". In this way, a different
+  /// [Stream] of [BleConnectionState] values is established for each Bluetooth peripheral.
   @override
-  Future<Stream<BleConnectionState>> connect({required String deviceAddress}) async {
+  Future<Stream<BleConnectionState>> connect({
+    required String deviceAddress,
+  }) async {
     /// A [StreamController] emitting values from the [ConnectionState] enum, which represent the connection state
     /// between the host mobile device and a Bluetooth peripheral.
     final StreamController<BleConnectionState> connectionStateStreamController =
@@ -258,7 +273,8 @@ class CentralMethodChannel extends CentralPlatformInterface {
         );
         connectionStateStreamController.add(state);
       } else if (call.method == 'error') {
-        connectionStateStreamController.addError(BluetoothConnectionException(call.arguments as String));
+        connectionStateStreamController
+            .addError(BluetoothConnectionException(call.arguments as String));
       }
     });
 
@@ -267,17 +283,17 @@ class CentralMethodChannel extends CentralPlatformInterface {
     return connectionStateStreamController.stream;
   }
 
-  /// Initiates the service discovery process for a connected Bluetooth Low Energy (BLE) device and returns a
-  /// [Stream] of discovered services and their characteristics.
+  /// Initiates the service discovery process for a connected Bluetooth Low Energy (BLE) device and returns a [Stream]
+  /// of discovered services and their characteristics.
   ///
   /// The service discovery process is a crucial step after establishing a BLE connection. It involves querying the
   /// connected peripheral to enumerate the services it offers along with their associated characteristics and
   /// descriptors. These services can represent various functionalities provided by the device, such as heart rate
   /// monitoring, temperature sensing, etc.
   ///
-  /// The method uses a [StreamController] to handle the asynchronous nature of service discovery. The native
-  /// platform code Android sends updates when new services and characteristics are discovered, which are then parsed
-  /// and added to the stream.
+  /// The method uses a [StreamController] to handle the asynchronous nature of service discovery. The native platform
+  /// code Android sends updates when new services and characteristics are discovered, which are then parsed and added
+  /// to the stream.
   ///
   /// ## How Service Discovery Works
   ///
@@ -285,9 +301,11 @@ class CentralMethodChannel extends CentralPlatformInterface {
   /// 2. The native code kicks off the service discovery process.
   /// 3. As services and their characteristics are discovered, they are sent back to the Flutter app.
   /// 4. These updates are received in the `_handleBleServicesDiscovered` method (not shown here), which then
-  ///    notifies all listeners to the stream.
+  /// notifies all listeners to the stream.
   @override
-  Future<Stream<List<BleService>>> discoverServices(String deviceAddress) async {
+  Future<Stream<List<BleService>>> discoverServices(
+    String deviceAddress,
+  ) async {
     final StreamController<List<BleService>> servicesDiscoveredController =
         StreamController<List<BleService>>.broadcast();
 
@@ -302,18 +320,18 @@ class CentralMethodChannel extends CentralPlatformInterface {
 
   /// Sets a handler for processing the discovered BLE services and characteristics for a specific peripheral device.
   ///
-  /// Service and characteristic discovery is a fundamental step in BLE communication.
-  /// Once a connection with a BLE peripheral is established, the central device (in this case, our Flutter app)
-  /// must discover the services offered by the peripheral to understand how to communicate with it effectively.
-  /// Each service can have multiple characteristics, which are like "channels" of communication.
-  /// By understanding these services and characteristics, our Flutter app can read from or write to
-  /// these channels to facilitate meaningful exchanges of data.
+  /// Service and characteristic discovery is a fundamental step in BLE communication. Once a connection with a BLE
+  /// peripheral is established, the central device (in this case, our Flutter app) must discover the services offered
+  /// by the peripheral to understand how to communicate with it effectively. Each service can have multiple
+  /// characteristics, which are like "channels" of communication. By understanding these services and characteristics,
+  /// our Flutter app can read from or write to these channels to facilitate meaningful exchanges of data.
   ///
   /// The purpose of this method is to convert the raw service and characteristic data received from the method channel
-  /// into a structured format (a list of [BleService] objects) for Dart, and then pass them through the provided stream controller.
+  /// into a structured format (a list of [BleService] objects) for Dart, and then pass them through the provided stream
+  /// controller.
   ///
-  /// [deviceAddress] is the MAC address of the target BLE device.
-  /// [servicesDiscoveredController] is the stream controller through which the discovered services will be emitted to listeners.
+  /// [deviceAddress] is the MAC address of the target BLE device. [servicesDiscoveredController] is the stream
+  /// controller through which the discovered services will be emitted to listeners.
   void _handleBleServicesDiscovered(
     String deviceAddress,
     StreamController<List<BleService>> servicesDiscoveredController,
@@ -326,15 +344,18 @@ class CentralMethodChannel extends CentralPlatformInterface {
         final List<BleService> services = rawServicesMap.entries
             .map((entry) {
               if (entry.key is String && entry.value is List) {
-                final List<Map<dynamic, dynamic>> rawCharacteristics = List<Map<dynamic, dynamic>>.from(
+                final List<Map<dynamic, dynamic>> rawCharacteristics =
+                    List<Map<dynamic, dynamic>>.from(
                   entry.value as List<dynamic>,
                 );
 
                 try {
                   // Convert the raw characteristic maps to BleCharacteristic objects.
-                  final List<BleCharacteristic> characteristics = rawCharacteristics.map((charMap) {
+                  final List<BleCharacteristic> characteristics =
+                      rawCharacteristics.map((charMap) {
                     // Manually convert the map to the desired type
-                    final Map<String, dynamic> typedMap = Map<dynamic, dynamic>.from(charMap).map(
+                    final Map<String, dynamic> typedMap =
+                        Map<dynamic, dynamic>.from(charMap).map(
                       (key, value) => MapEntry(key as String, value),
                     );
                     return BleCharacteristic.fromMap(typedMap);
@@ -360,15 +381,17 @@ class CentralMethodChannel extends CentralPlatformInterface {
 
         servicesDiscoveredController.add(services);
       } else if (call.method == 'error') {
-        servicesDiscoveredController.addError(ServiceDiscoveryException(call.arguments as String));
+        servicesDiscoveredController
+            .addError(ServiceDiscoveryException(call.arguments as String));
       }
     });
   }
 
-  /// Asynchronously terminates the connection between the host mobile device and a Bluetooth Low Energy (BLE) peripheral.
+  /// Asynchronously terminates the connection between the host mobile device and a Bluetooth Low Energy (BLE)
+  /// peripheral.
   ///
-  /// Disconnecting from a BLE device is an important part of BLE best practices. Proper disconnection ensures
-  /// that resources like memory and battery are optimized on both the mobile device and the peripheral.
+  /// Disconnecting from a BLE device is an important part of BLE best practices. Proper disconnection ensures that
+  /// resources like memory and battery are optimized on both the mobile device and the peripheral.
   ///
   /// ## Importance of Disconnecting
   ///
@@ -385,24 +408,26 @@ class CentralMethodChannel extends CentralPlatformInterface {
   ///
   /// The [deviceAddress] parameter specifies the MAC address of the target device.
   ///
-  /// This method calls the 'getCurrentConnectionState' method on the native Android implementation
-  /// via a method channel. It then returns a [Future] that resolves to the [ConnectionState] enum,
-  /// which represents the current connection state of the device.
+  /// This method calls the 'getCurrentConnectionState' method on the native Android implementation via a method
+  /// channel. It then returns a [Future] that resolves to the [ConnectionState] enum, which represents the current
+  /// connection state of the device.
   ///
-  /// Returns a [Future] containing the [ConnectionState] representing the current connection state
-  /// of the BLE device with the specified address.
+  /// Returns a [Future] containing the [ConnectionState] representing the current connection state of the BLE device
+  /// with the specified address.
   @override
   Future<BleConnectionState> getCurrentConnectionState(
     String deviceAddress,
   ) async {
     try {
       // Invoke the method channel to fetch the current connection state for the BLE device.
-      final String connectionStateString = await channel.invokeMethod('getCurrentConnectionState', {
+      final String connectionStateString =
+          await channel.invokeMethod('getCurrentConnectionState', {
         'address': deviceAddress,
       }) as String;
 
       // Convert the string received from Kotlin to the Dart enum value.
-      return BleConnectionState.values.firstWhere((e) => e.identifier == connectionStateString);
+      return BleConnectionState.values
+          .firstWhere((e) => e.identifier == connectionStateString);
     } on PlatformException catch (e) {
       // Handle different error types accordingly.
       if (e.message?.contains('permissions') ?? false) {
@@ -420,9 +445,9 @@ class CentralMethodChannel extends CentralPlatformInterface {
   /// ## BLE Communication Overview
   ///
   /// In the BLE protocol, devices communicate by reading and writing to 'characteristics' exposed by each other's
-  /// services. Characteristics are essentially data variables that a peripheral device exposes to other devices.
-  /// When writing data to a characteristic, the information is generally treated as a list of hexadecimal numbers,
-  /// mapping to bytes at a relatively low level in the Bluetooth communication stack.
+  /// services. Characteristics are essentially data variables that a peripheral device exposes to other devices. When
+  /// writing data to a characteristic, the information is generally treated as a list of hexadecimal numbers, mapping
+  /// to bytes at a relatively low level in the Bluetooth communication stack.
   ///
   /// ## Encrypted Write Operations
   ///
@@ -433,12 +458,12 @@ class CentralMethodChannel extends CentralPlatformInterface {
   /// ## Parameters
   ///
   /// - [characteristic]: The BLE characteristic to which the data will be written. This should include both the device
-  ///   address and the UUID of the characteristic.
+  /// address and the UUID of the characteristic.
   /// - [value]: The data to be written to the characteristic, generally a string that will be converted into
-  ///   bytes/hexadecimals.
+  /// bytes/hexadecimals.
   /// - [writeType]: Optional parameter to specify the type of write operation. Defaults to
-  ///   `BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT`. Different write types have different transmission and
-  ///   confirmation behaviors.
+  /// `BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT`. Different write types have different transmission and
+  /// confirmation behaviors.
   @override
   Future<void> writeCharacteristic({
     required BleCharacteristic characteristic,
@@ -466,39 +491,37 @@ class CentralMethodChannel extends CentralPlatformInterface {
 
   /// Reads the value of a specified Bluetooth characteristic.
   ///
-  /// This method asynchronously fetches the value of a specified Bluetooth characteristic from a connected device
-  /// and returns it as a [BleCharacteristicValue] instance.
+  /// This method asynchronously fetches the value of a specified Bluetooth characteristic from a connected device and
+  /// returns it as a [BleCharacteristicValue] instance.
   ///
-  /// The method will throw a [TimeoutException] if it does not receive a response within the specified [timeout].
-  /// This safeguards against situations where the asynchronous operation hangs indefinitely.
+  /// The method will throw a [TimeoutException] if it does not receive a response within the specified [timeout]. This
+  /// safeguards against situations where the asynchronous operation hangs indefinitely.
   ///
-  /// Note: A [TimeoutException] does not necessarily indicate a failure in reading the characteristic, but rather
-  /// that a response was not received in the given timeframe. Ensure that the timeout value is appropriate for the
-  /// expected device response times and consider retrying the operation if necessary.
+  /// Note: A [TimeoutException] does not necessarily indicate a failure in reading the characteristic, but rather that
+  /// a response was not received in the given timeframe. Ensure that the timeout value is appropriate for the expected
+  /// device response times and consider retrying the operation if necessary.
   ///
   /// - `address`: The MAC address of the Bluetooth device. This uniquely identifies
-  ///   the device and is used to fetch the associated BluetoothGatt instance.
+  /// the device and is used to fetch the associated BluetoothGatt instance.
   /// - `characteristicUuid`: The UUID of the characteristic whose value is to be read.
-  ///   This UUID should match one of the characteristics available on the connected
-  ///   Bluetooth device.
+  /// This UUID should match one of the characteristics available on the connected Bluetooth device.
   /// - `timeout`: The maximum amount of time this function will wait for a response from
-  ///   the platform side. If this duration is exceeded without receiving a response,
-  ///   a [TimeoutException] will be thrown. Ensure that this duration accounts for
-  ///   potential delays in device communication.
+  /// the platform side. If this duration is exceeded without receiving a response, a [TimeoutException] will be thrown.
+  /// Ensure that this duration accounts for potential delays in device communication.
   ///
   /// Returns a `Future<BleCharacteristicValue>` that completes with the characteristic value once it has been read.
   ///
   /// Example usage:
   /// ```dart
   /// try {
-  ///   BleCharacteristicValue characteristicValue = await readCharacteristic(
-  ///     address: '00:1A:7D:DA:71:13',
-  ///     characteristicUuid: '00002a00-0000-1000-8000-00805f9b34fb',
-  ///     timeout: Duration(seconds: 10),
-  ///   );
-  ///   print(characteristicValue.value);
+  /// BleCharacteristicValue characteristicValue = await readCharacteristic(
+  /// address: '00:1A:7D:DA:71:13',
+  /// characteristicUuid: '00002a00-0000-1000-8000-00805f9b34fb',
+  /// timeout: Duration(seconds: 10),
+  /// );
+  /// print(characteristicValue.value);
   /// } catch (e) {
-  ///   print('Failed to read characteristic: $e');
+  /// print('Failed to read characteristic: $e');
   /// }
   /// ```
   @override
@@ -512,7 +535,9 @@ class CentralMethodChannel extends CentralPlatformInterface {
       if (call.method == 'onCharacteristicRead') {
         final BleCharacteristicValue response;
         try {
-          response = BleCharacteristicValue.fromMap(call.arguments as Map<dynamic, dynamic>);
+          response = BleCharacteristicValue.fromMap(
+            call.arguments as Map<dynamic, dynamic>,
+          );
         } catch (e) {
           rethrow;
         }
@@ -556,8 +581,8 @@ class CentralMethodChannel extends CentralPlatformInterface {
 
   /// Subscribes to a Bluetooth characteristic to listen for updates.
   ///
-  /// A caller to this function will receive a [Stream] of [BleCharacteristicValue] objects. A caller should listen
-  /// to this stream and establish a callback function invoked each time a new value is emitted to the stream. Once
+  /// A caller to this function will receive a [Stream] of [BleCharacteristicValue] objects. A caller should listen to
+  /// this stream and establish a callback function invoked each time a new value is emitted to the stream. Once
   /// subscribed, any updates to the characteristic value will be sent as a stream of [BleCharacteristicValue] objects.
   @override
   Future<Stream<BleCharacteristicValue>> subscribeToCharacteristic(
@@ -571,9 +596,12 @@ class CentralMethodChannel extends CentralPlatformInterface {
       if (call.method == 'onCharacteristicChanged') {
         final BleCharacteristicValue value;
         try {
-          value = BleCharacteristicValue.fromMap(call.arguments as Map<dynamic, dynamic>);
+          value = BleCharacteristicValue.fromMap(
+            call.arguments as Map<dynamic, dynamic>,
+          );
         } catch (e) {
-          streamController.addError(Exception('Failed to parse characteristic value: $e'));
+          streamController
+              .addError(Exception('Failed to parse characteristic value: $e'));
           return;
         }
         streamController.add(value);
@@ -612,7 +640,9 @@ class CentralMethodChannel extends CentralPlatformInterface {
   ///
   /// This method stops listening for updates for a given characteristic on a specified device.
   @override
-  Future<void> unsubscribeFromCharacteristic(BleCharacteristic characteristic) async {
+  Future<void> unsubscribeFromCharacteristic(
+    BleCharacteristic characteristic,
+  ) async {
     try {
       await channel.invokeMethod('unsubscribeFromCharacteristic', {
         'address': characteristic.address,

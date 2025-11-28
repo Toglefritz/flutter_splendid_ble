@@ -26,8 +26,8 @@ class HomeController extends State<HomeRoute> {
   /// Determines if Bluetooth permissions have been granted.
   bool? get permissionsGranted => _permissionsGranted;
 
-  /// A [Stream] used to listen for changes in the status of the Bluetooth adapter on the host device and set the
-  /// value of [_bluetoothStatus].
+  /// A [Stream] used to listen for changes in the status of the Bluetooth adapter on the host device and set the value
+  /// of [_bluetoothStatus].
   StreamSubscription<BluetoothStatus>? _bluetoothStatusStream;
 
   /// A [Stream] used to listen for changes in the status of the Bluetooth permissions required for the app to operate
@@ -55,7 +55,8 @@ class HomeController extends State<HomeRoute> {
   Future<void> _requestBluetoothPermissions() async {
     // Set up the permission status listener before requesting permissions. This ensures we don't miss the initial
     // status emission.
-    final Stream<BluetoothPermissionStatus> bluetoothPermissionsStream = await _ble.emitCurrentPermissionStatus();
+    final Stream<BluetoothPermissionStatus> bluetoothPermissionsStream =
+        await _ble.emitCurrentPermissionStatus();
 
     // Set up the listener IMMEDIATELY after getting the stream. The microtask in emitCurrentPermissionStatus ensures
     // we have time to attach this listener.
@@ -106,13 +107,15 @@ class HomeController extends State<HomeRoute> {
   /// Checks the status of the Bluetooth adapter on the host device (assuming one is present).
   ///
   /// Before the Bluetooth scan can be started or any other Bluetooth operations can be performed, the Bluetooth
-  /// capabilities of the host device must be available. This method establishes a listener on the current state
-  /// of the host device's Bluetooth adapter, which is represented by the enum, [BluetoothStatus].
+  /// capabilities of the host device must be available. This method establishes a listener on the current state of the
+  /// host device's Bluetooth adapter, which is represented by the enum, [BluetoothStatus].
   Future<void> _checkAdapterStatus() async {
     try {
-      final Stream<BluetoothStatus> bluetoothStatusStream = await _ble.emitCurrentBluetoothStatus();
+      final Stream<BluetoothStatus> bluetoothStatusStream =
+          await _ble.emitCurrentBluetoothStatus();
 
-      _bluetoothStatusStream = bluetoothStatusStream.listen((BluetoothStatus status) {
+      _bluetoothStatusStream =
+          bluetoothStatusStream.listen((BluetoothStatus status) {
         setState(() {
           _bluetoothStatus = status;
         });
@@ -128,11 +131,12 @@ class HomeController extends State<HomeRoute> {
 
   /// Handles taps on the "start scan" button.
   ///
-  /// If Bluetooth scanning permissions have been granted or if the app is running on an iOS device (in which case
-  /// the boolean indicating if permissions have been granted is true by default), navigate to the [ScanRoute].
-  /// Otherwise, show a [SnackBar] to indicate that permissions have not been granted yet.
+  /// If Bluetooth scanning permissions have been granted or if the app is running on an iOS device (in which case the
+  /// boolean indicating if permissions have been granted is true by default), navigate to the [ScanRoute]. Otherwise,
+  /// show a [SnackBar] to indicate that permissions have not been granted yet.
   void onStartScanTap() {
-    if ((_permissionsGranted ?? false) && _bluetoothStatus == BluetoothStatus.enabled) {
+    if ((_permissionsGranted ?? false) &&
+        _bluetoothStatus == BluetoothStatus.enabled) {
       Navigator.pushReplacement<void, void>(
         context,
         MaterialPageRoute<void>(
@@ -146,10 +150,11 @@ class HomeController extends State<HomeRoute> {
 
   /// Handles long presses on the "start scan" button.
   ///
-  /// Long-pressing on the start scan button navigates directly to the [ScanConfigurationRoute], allowing the scan
-  /// to be configured before it starts
+  /// Long-pressing on the start scan button navigates directly to the [ScanConfigurationRoute], allowing the scan to be
+  /// configured before it starts
   void onStartScanLongPress() {
-    if ((_permissionsGranted ?? false) && _bluetoothStatus == BluetoothStatus.enabled) {
+    if ((_permissionsGranted ?? false) &&
+        _bluetoothStatus == BluetoothStatus.enabled) {
       Navigator.pushReplacement<void, void>(
         context,
         MaterialPageRoute<void>(
