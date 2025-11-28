@@ -4,6 +4,8 @@ import android.bluetooth.BluetoothDevice
 import androidx.annotation.NonNull
 
 import io.flutter.embedding.engine.plugins.FlutterPlugin
+import io.flutter.embedding.engine.plugins.activity.ActivityAware
+import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
 import io.flutter.plugin.common.EventChannel
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
@@ -14,12 +16,13 @@ import android.bluetooth.BluetoothGattCharacteristic
 import android.bluetooth.BluetoothManager
 import com.splendidendeavors.flutter_splendid_ble.adapter.BluetoothAdapterHandler
 import com.splendidendeavors.flutter_splendid_ble.`interface`.BleDeviceInterface
+import com.splendidendeavors.flutter_splendid_ble.permissions.BluetoothPermissionsHandler
 import com.splendidendeavors.flutter_splendid_ble.scanner.BleScannerHandler
 
 import java.util.UUID
 
 /** FlutterSplendidBlePlugin */
-class FlutterSplendidBlePlugin : FlutterPlugin, MethodCallHandler {
+class FlutterSplendidBlePlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
     /// The MethodChannel that will the communication between Flutter and native Android
     ///
     /// This local reference serves to register the plugin with the Flutter Engine and unregister it
@@ -49,6 +52,10 @@ class FlutterSplendidBlePlugin : FlutterPlugin, MethodCallHandler {
     /// subscriptions to the Bluetooth characteristics of a connected Bluetooth peripheral.
     private lateinit var bleDeviceInterface: BleDeviceInterface
 
+    /// The BluetoothPermissionsHandler handles all methods related to requesting and checking
+    /// Bluetooth permissions on Android.
+    private lateinit var bluetoothPermissionsHandler: BluetoothPermissionsHandler
+
     override fun onAttachedToEngine(flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
         channel = MethodChannel(flutterPluginBinding.binaryMessenger, "flutter_splendid_ble_central")
         channel.setMethodCallHandler(this)
@@ -66,6 +73,9 @@ class FlutterSplendidBlePlugin : FlutterPlugin, MethodCallHandler {
 
         // Initialize the BleDeviceInterface
         bleDeviceInterface = BleDeviceInterface(channel, flutterPluginBinding.applicationContext)
+
+        // Initialize the BluetoothPermissionsHandler
+        bluetoothPermissionsHandler = BluetoothPermissionsHandler(channel, flutterPluginBinding.applicationContext)
     }
 
     override fun onMethodCall(call: MethodCall, result: Result) {
@@ -77,6 +87,15 @@ class FlutterSplendidBlePlugin : FlutterPlugin, MethodCallHandler {
 
             "emitCurrentBluetoothStatus" -> {
                 bluetoothAdapterHandler.emitCurrentBluetoothStatus()
+                result.success(null)
+            }
+
+            "requestBluetoothPermissions" -> {
+                bluetoothPermissionsHandler.requestBluetoothPermissions(result)
+            }
+
+            "emitCurrentPermissionStatus" -> {
+                bluetoothPermissionsHandler.emitCurrentPermissionStatus()
                 result.success(null)
             }
 
@@ -270,5 +289,24 @@ class FlutterSplendidBlePlugin : FlutterPlugin, MethodCallHandler {
 
     override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
         channel.setMethodCallHandler(null)
+    }
+
+    // ActivityAware interface methods
+    override fun onAttachedToActivity(binding: ActivityPluginBinding) {
+        bluetoothPermissionsHandler.setActivity(binding.activity)
+        binding.addRequestPermissionsResultListener(bluetoothPermissionsHandler)
+    }
+
+    override fun onDetachedFromActivityForConfigChanges() {
+        bluetoothPermissionsHandler.setActivity(null)
+    }
+
+    override fun onReattachedToActivityForConfigChanges(binding: ActivityPluginBinding) {
+        bluetoothPermissionsHandler.setActivity(binding.activity)
+        binding.addRequestPermissionsResultListener(bluetoothPermissionsHandler)
+    }
+
+    override fun onDetachedFromActivity() {
+        bluetoothPermissionsHandler.setActivity(null)
     }
 }

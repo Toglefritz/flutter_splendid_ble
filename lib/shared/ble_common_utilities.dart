@@ -26,9 +26,11 @@ class BleCommonUtilities {
   static Future<BluetoothStatus> checkBluetoothAdapterStatus(
     MethodChannel channel,
   ) async {
-    final String statusString = await channel.invokeMethod('checkBluetoothAdapterStatus') as String;
+    final String statusString =
+        await channel.invokeMethod('checkBluetoothAdapterStatus') as String;
 
-    return BluetoothStatus.values.firstWhere((e) => e.identifier == statusString);
+    return BluetoothStatus.values
+        .firstWhere((e) => e.identifier == statusString);
   }
 
   /// Emits the current Bluetooth adapter status to the Dart side.
@@ -47,7 +49,8 @@ class BleCommonUtilities {
   static Future<Stream<BluetoothStatus>> emitCurrentBluetoothStatus(
     MethodChannel channel,
   ) async {
-    final StreamController<BluetoothStatus> streamController = StreamController<BluetoothStatus>.broadcast();
+    final StreamController<BluetoothStatus> streamController =
+        StreamController<BluetoothStatus>.broadcast();
 
     // Listen to the platform side for Bluetooth adapter status updates.
     channel.setMethodCallHandler((MethodCall call) async {
@@ -64,8 +67,11 @@ class BleCommonUtilities {
       }
     });
 
-    // Begin emitting Bluetooth adapter status updates from the platform side.
-    await channel.invokeMethod('emitCurrentBluetoothStatus');
+    // Use a microtask to ensure the stream is returned before the native method is invoked
+    // This gives the caller a chance to set up their listener before the first value is emitted
+    unawaited(Future.microtask(() async {
+      await channel.invokeMethod('emitCurrentBluetoothStatus');
+    }));
 
     return streamController.stream;
   }
@@ -82,8 +88,10 @@ class BleCommonUtilities {
   static Future<BluetoothPermissionStatus> requestBluetoothPermissions(
     MethodChannel channel,
   ) async {
-    final String permissionStatusString = await channel.invokeMethod('requestBluetoothPermissions') as String;
-    return BluetoothPermissionStatus.values.firstWhere((status) => status.identifier == permissionStatusString);
+    final String permissionStatusString =
+        await channel.invokeMethod('requestBluetoothPermissions') as String;
+    return BluetoothPermissionStatus.values
+        .firstWhere((status) => status.identifier == permissionStatusString);
   }
 
   /// Emits the current Bluetooth permission status to the Dart side.
@@ -96,6 +104,9 @@ class BleCommonUtilities {
   /// * `BluetoothPermissionStatus.DENIED`: Indicates that Bluetooth permission is denied.
   ///
   /// Returns a [Stream] of [BluetoothPermissionStatus] values representing the current Bluetooth permission status on the device.
+  ///
+  /// **Important**: The stream is a broadcast stream, but you should set up your listener immediately after
+  /// calling this method to ensure you receive the initial status emission.
   static Future<Stream<BluetoothPermissionStatus>> emitCurrentPermissionStatus(
     MethodChannel channel,
   ) async {
@@ -107,7 +118,8 @@ class BleCommonUtilities {
         final String permissionStatusString = call.arguments as String;
 
         // Convert the string status to its corresponding enum value
-        final BluetoothPermissionStatus status = BluetoothPermissionStatus.values.firstWhere(
+        final BluetoothPermissionStatus status =
+            BluetoothPermissionStatus.values.firstWhere(
           (status) => status.identifier == permissionStatusString,
         );
 
@@ -115,8 +127,11 @@ class BleCommonUtilities {
       }
     });
 
-    // Begin emitting Bluetooth permission status updates from the platform side.
-    await channel.invokeMethod('emitCurrentPermissionStatus');
+    // Use a microtask to ensure the stream is returned before the native method is invoked
+    // This gives the caller a chance to set up their listener before the first value is emitted
+    unawaited(Future.microtask(() async {
+      await channel.invokeMethod('emitCurrentPermissionStatus');
+    }));
 
     return streamController.stream;
   }
