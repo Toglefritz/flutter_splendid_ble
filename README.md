@@ -157,8 +157,7 @@ Writing data to a characteristic (e.g., sending a command to a device):
 ```dart
 /// Write a value to a BLE characteristic.
 Future<void> writeCharacteristic(BleCharacteristic characteristic, String value) async {
-  await bleCentral.writeCharacteristic(
-    characteristic: characteristic,
+  await characteristic.writeValue(
     value: value,
   );
   print('Wrote: $value');
@@ -172,8 +171,7 @@ Reading data from a characteristic (e.g., retrieving sensor data):
 ```dart
 /// Read a value from a BLE characteristic.
 Future<void> readCharacteristic(BleCharacteristic characteristic) async {
-  BleCharacteristicValue value = await bleCentral.readCharacteristic(
-    characteristic: characteristic,
+  BleCharacteristicValue value = await characteristic.readValue(
     timeout: Duration(seconds: 10),
   );
   String result = String.fromCharCodes(value.value); // Convert bytes to string
@@ -1019,8 +1017,7 @@ import 'dart:convert';
 Future<void> writeStringToCharacteristic(String value, BleCharacteristic characteristic) async {
   try {
     // Write the string value to the characteristic using the central method
-    await _ble.writeCharacteristic(
-      characteristic: characteristic,
+    await characteristic.writeValue(
       value: value,
     );
 
@@ -1081,8 +1078,7 @@ import 'dart:convert';
 Future<void> readCharacteristicValue(BleCharacteristic characteristic) async {
   try {
     // Read the characteristic value.
-    BleCharacteristicValue characteristicValue = await _ble.readCharacteristic(
-      characteristic: characteristic,
+    BleCharacteristicValue characteristicValue = await characteristic.readValue(
       timeout: Duration(seconds: 10),
     );
 
