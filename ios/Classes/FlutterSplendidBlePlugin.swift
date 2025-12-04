@@ -334,10 +334,14 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
         
         // If the device does not indicate that more advertisement data is forthcoming, return the scan discovery information to the Dart side
         if(!isScannable) {
+            // Get a list of service UUIDs as strings, to be sent to the Dart side.
+            let advertisedServiceUuids = (advertisementData[CBAdvertisementDataServiceUUIDsKey] as? [CBUUID])?.map { $0.uuidString }
+
             // Create a dictionary with device details
             var deviceMap: [String: Any?] = [
                 "name": peripheral.name,
                 "address": peripheral.identifier.uuidString,
+                "advertisedServiceUuids": advertisedServiceUuids,
                 "rssi": RSSI.intValue,
             ]
             
@@ -380,14 +384,6 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
     public func centralManager(_ central: CBCentralManager, didConnect peripheral: CBPeripheral) {
         channel.invokeMethod("bleConnectionState_\(peripheral.identifier.uuidString)", arguments: "CONNECTED")
     }
-    
-    /// Called by the system when the central manager fails to create a connection with the peripheral.
-    /// This delegate method is crucial for error handling and informing the user of a failed connection attempt.
-    /// The method also communicates this failure back to the Flutter side so it can respond accordingly.
-    /// - Parameters:
-    ///   - central: The `CBCentralManager` that attempted the connection.
-    ///   - peripheral: The `CBPeripheral` that the manager failed to connect to.
-    ///   - error: An optional `Error` providing more details about the reason for the failure.
     public func centralManager(_ central: CBCentralManager, didFailToConnect peripheral: CBPeripheral, error: Error?) {
         channel.invokeMethod("bleConnectionState_\(peripheral.identifier.uuidString)", arguments: "FAILED")
     }
