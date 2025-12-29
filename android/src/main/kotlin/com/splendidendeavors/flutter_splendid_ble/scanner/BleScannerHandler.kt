@@ -115,7 +115,8 @@ class BleScannerHandler(private val channel: MethodChannel, activity: Context) {
                             "name" to it.device.name,
                             "address" to it.device.address,
                             "rssi" to it.rssi,
-                            "manufacturerData" to manufacturerData
+                            "manufacturerData" to manufacturerData,
+                            "advertisedServiceUuids" to (it.scanRecord?.serviceUuids?.map { parcelUuid -> parcelUuid.toString() } ?: emptyList()),
                             // ... add other details as needed
                         )
 
