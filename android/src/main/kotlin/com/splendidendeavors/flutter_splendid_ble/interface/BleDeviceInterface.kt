@@ -82,14 +82,6 @@ import java.util.UUID
  *
  * This class thus encapsulates all the necessary BLE operations in a comprehensive manner.
  */
-/**
- * Represents a pending write operation that is waiting for confirmation.
- */
-private data class PendingWrite(
-    val deviceAddress: String,
-    val characteristicUuid: UUID,
-    val result: MethodChannel.Result
-)
 
 class BleDeviceInterface(
     private val channel: MethodChannel,
