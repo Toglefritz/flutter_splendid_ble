@@ -510,6 +510,37 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
         }
     }
     
+    /// Invoked when a write operation on a characteristic completes.
+    /// This delegate method is called after a write to a characteristic has been performed,
+    /// indicating whether the write was successful or if an error occurred.
+    ///
+    /// - Parameters:
+    ///   - peripheral: The `CBPeripheral` that completed the write operation.
+    ///   - characteristic: The `CBCharacteristic` that was written to.
+    ///   - error: An optional `Error` detailing what went wrong during the write operation, if anything.
+    public func peripheral(_ peripheral: CBPeripheral, didWriteValueFor characteristic: CBCharacteristic, error: Error?) {
+        let deviceAddress = peripheral.identifier.uuidString
+
+        if let error = error {
+            // Write failed - notify Flutter with error details
+            let errorMap: [String: Any] = [
+                "deviceAddress": deviceAddress,
+                "characteristicUuid": characteristic.uuid.uuidString,
+                "success": false,
+                "error": "Failed to write characteristic: \(error.localizedDescription)"
+            ]
+            channel.invokeMethod("onCharacteristicWrite", arguments: errorMap)
+        } else {
+            // Write succeeded - notify Flutter
+            let successMap: [String: Any] = [
+                "deviceAddress": deviceAddress,
+                "characteristicUuid": characteristic.uuid.uuidString,
+                "success": true
+            ]
+            channel.invokeMethod("onCharacteristicWrite", arguments: successMap)
+        }
+    }
+
     // MARK: Bluetooth Permissions Helper Methods
     
     /// The methods in this section manage Bluetooth permissions on an iOS device and communicate statuses to the Dart side of a Flutter app.

@@ -82,6 +82,7 @@ import java.util.UUID
  *
  * This class thus encapsulates all the necessary BLE operations in a comprehensive manner.
  */
+
 class BleDeviceInterface(
     private val channel: MethodChannel,
     private val context: Context,
@@ -95,6 +96,12 @@ class BleDeviceInterface(
      * instance must be used for all interactions.
      */
     private val bluetoothGattMap: MutableMap<String, BluetoothGatt> = mutableMapOf()
+
+    /**
+     * Tracks the currently pending write operation per device.
+     * Only one write can be in progress at a time per device per BLE specification.
+     */
+    private val pendingWrites: MutableMap<String, PendingWrite> = mutableMapOf()
 
     /**
      * Get the BluetoothGatt instance for a specific device address.
@@ -127,16 +134,22 @@ class BleDeviceInterface(
      * @param newState The new state, can be one of BluetoothProfile.STATE_* constants.
      */
     override fun onConnectionStateChange(gatt: BluetoothGatt, status: Int, newState: Int) {
+        val deviceAddress = gatt.device.address
+
         mainHandler.post {
             val state = when (newState) {
                 BluetoothProfile.STATE_CONNECTED -> ConnectionState.CONNECTED
-                BluetoothProfile.STATE_DISCONNECTED -> ConnectionState.DISCONNECTED
+                BluetoothProfile.STATE_DISCONNECTED -> {
+                    // Clean up pending writes when disconnected
+                    pendingWrites.remove(deviceAddress)
+                    ConnectionState.DISCONNECTED
+                }
                 BluetoothProfile.STATE_CONNECTING -> ConnectionState.CONNECTING
                 BluetoothProfile.STATE_DISCONNECTING -> ConnectionState.DISCONNECTING
                 else -> ConnectionState.UNKNOWN
             }
 
-            channel.invokeMethod("bleConnectionState_${gatt.device.address}", state.name)
+            channel.invokeMethod("bleConnectionState_$deviceAddress", state.name)
         }
     }
 
@@ -228,6 +241,9 @@ class BleDeviceInterface(
         try {
             bluetoothGattMap[deviceAddress]?.disconnect()
             bluetoothGattMap.remove(deviceAddress)
+
+            // Clean up pending writes for this device
+            pendingWrites.remove(deviceAddress)
         } catch (e: SecurityException) {
             channel.invokeMethod(
                 "error",
@@ -325,45 +341,101 @@ class BleDeviceInterface(
     /**
      * Write data to a specific BluetoothGattCharacteristic.
      *
-     * @param characteristicUuid The UUID of the characteristic to be written.
-     * @param value The data to be written to the characteristic.
+     * This method initiates a write operation and stores the result callback to complete later
+     * when the onCharacteristicWrite callback is received. This ensures the Dart await properly
+     * waits for the actual BLE write to complete.
+     *
+     * The BLE specification requires that only one write can be in progress at a time per device.
+     * If a write is already pending, this method returns an error.
+     *
+     * @param deviceAddress The address of the device to write to
+     * @param characteristicUuid The UUID of the characteristic to be written
+     * @param value The data to be written to the characteristic
+     * @param writeType The type of write operation (default, no response, signed)
+     * @param result The MethodChannel.Result to complete when the write finishes
      */
     fun writeCharacteristic(
         deviceAddress: String,
         characteristicUuid: UUID,
         value: ByteArray,
-        writeType: Int = BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT
+        writeType: Int = BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT,
+        result: MethodChannel.Result
     ) {
-        // Fetch the BluetoothGatt instance for the given device address.
-        //val gatt = bleConnectionHandler.getBluetoothGatt(deviceAddress)
-        val gatt = getBluetoothGatt(deviceAddress)
-        if (gatt == null) {
-            channel.invokeMethod(
-                "error",
-                "No BluetoothGatt instance found for device address: $deviceAddress"
+        // Check if a write is already pending for this device
+        if (pendingWrites.containsKey(deviceAddress)) {
+            result.error(
+                "WRITE_IN_PROGRESS",
+                "A write operation is already in progress for device $deviceAddress. Please wait for it to complete.",
+                null
             )
             return
         }
 
-        val service =
-            gatt.services.find { it.characteristics.any { char -> char.uuid == characteristicUuid } }
+        val gatt = getBluetoothGatt(deviceAddress)
+        if (gatt == null) {
+            result.error(
+                "DEVICE_NOT_FOUND",
+                "No BluetoothGatt instance found for device address: $deviceAddress",
+                null
+            )
+            return
+        }
+
+        val service = gatt.services.find {
+            it.characteristics.any { char -> char.uuid == characteristicUuid }
+        }
         val characteristic = service?.getCharacteristic(characteristicUuid)
 
-        if (characteristic != null) {
-            try {
-                if (android.os.Build.VERSION.SDK_INT >= 33) {
-                    // New method introduced in API 33
-                    gatt.writeCharacteristic(characteristic, value, writeType)
-                } else {
-                    // Old method for API levels below 33
-                    gatt.writeCharacteristic(characteristic)
-                }
-            } catch (e: SecurityException) {
-                channel.invokeMethod(
-                    "error",
-                    "Required Bluetooth permissions are missing: ${e.message}"
+        if (characteristic == null) {
+            result.error(
+                "CHARACTERISTIC_NOT_FOUND",
+                "Characteristic with UUID $characteristicUuid not found.",
+                null
+            )
+            return
+        }
+
+        // Store the pending write before initiating it
+        pendingWrites[deviceAddress] = PendingWrite(deviceAddress, characteristicUuid, result)
+
+        try {
+            val writeSuccess: Boolean = if (android.os.Build.VERSION.SDK_INT >= 33) {
+                // New method introduced in API 33
+                val writeResult = gatt.writeCharacteristic(characteristic, value, writeType)
+                writeResult == BluetoothGatt.GATT_SUCCESS
+            } else {
+                // Old method for API levels below 33
+                @Suppress("DEPRECATION")
+                characteristic.value = value
+                characteristic.writeType = writeType
+                @Suppress("DEPRECATION")
+                gatt.writeCharacteristic(characteristic)
+            }
+
+            if (!writeSuccess) {
+                // Write initiation failed
+                pendingWrites.remove(deviceAddress)
+                result.error(
+                    "WRITE_FAILED",
+                    "Failed to initiate write operation",
+                    null
                 )
             }
+            // If write initiated successfully, result will be completed in onCharacteristicWrite callback
+        } catch (e: SecurityException) {
+            pendingWrites.remove(deviceAddress)
+            result.error(
+                "PERMISSION_ERROR",
+                "Required Bluetooth permissions are missing: ${e.message}",
+                null
+            )
+        } catch (e: Exception) {
+            pendingWrites.remove(deviceAddress)
+            result.error(
+                "WRITE_ERROR",
+                "Failed to write characteristic: ${e.message}",
+                null
+            )
         }
     }
 
@@ -412,21 +484,87 @@ class BleDeviceInterface(
     }
 
     /**
+     * Callback triggered as a result of a characteristic write operation.
+     *
+     * This callback completes the pending write operation by calling the stored MethodChannel.Result.
+     * This ensures the Dart await properly waits for the actual BLE write to complete.
+     *
+     * @param gatt GATT client that performed the write operation
+     * @param characteristic Characteristic that was written to the remote device
+     * @param status GATT operation status (BluetoothGatt.GATT_SUCCESS if successful)
+     */
+    override fun onCharacteristicWrite(
+        gatt: BluetoothGatt,
+        characteristic: BluetoothGattCharacteristic,
+        status: Int
+    ) {
+        super.onCharacteristicWrite(gatt, characteristic, status)
+
+        val deviceAddress = gatt.device.address
+
+        mainHandler.post {
+            // Get and remove the pending write
+            val pendingWrite = pendingWrites.remove(deviceAddress)
+
+            if (pendingWrite != null) {
+                if (status == BluetoothGatt.GATT_SUCCESS) {
+                    // Complete the result successfully
+                    pendingWrite.result.success(null)
+                } else {
+                    // Complete the result with an error
+                    pendingWrite.result.error(
+                        "WRITE_FAILED",
+                        "Failed to write characteristic: GATT status $status",
+                        null
+                    )
+                }
+            }
+
+            // Also send onCharacteristicWrite event for listeners
+            if (status == BluetoothGatt.GATT_SUCCESS) {
+                channel.invokeMethod(
+                    "onCharacteristicWrite",
+                    mapOf(
+                        "deviceAddress" to deviceAddress,
+                        "characteristicUuid" to characteristic.uuid.toString(),
+                        "success" to true
+                    )
+                )
+            } else {
+                channel.invokeMethod(
+                    "onCharacteristicWrite",
+                    mapOf(
+                        "deviceAddress" to deviceAddress,
+                        "characteristicUuid" to characteristic.uuid.toString(),
+                        "success" to false,
+                        "error" to "Failed to write characteristic: GATT status $status"
+                    )
+                )
+            }
+        }
+    }
+
+    /**
      * Callback triggered as a result of a characteristic read operation.
      *
+     * This callback is invoked when a read operation completes. The value must be read
+     * from the characteristic object using the deprecated .value property for API < 33,
+     * or it's provided directly in the newer callback for API 33+.
+     *
      * @param gatt GATT client invoked readCharacteristic
-     * @param characteristic Characteristic that was read from the associated remote device.
-     * @param status GATT operation status.
+     * @param characteristic Characteristic that was read from the associated remote device
+     * @param status GATT operation status
      */
     override fun onCharacteristicRead(
         gatt: BluetoothGatt,
         characteristic: BluetoothGattCharacteristic,
-        value: ByteArray,
         status: Int
     ) {
-        super.onCharacteristicRead(gatt, characteristic, value, status)
+        super.onCharacteristicRead(gatt, characteristic, status)
 
         if (status == BluetoothGatt.GATT_SUCCESS) {
+            @Suppress("DEPRECATION")
+            val value = characteristic.value ?: byteArrayOf()
             val valueList = value.map { byte -> byte.toInt() }
             // The invokeMethod call must be done on the main thread
             mainHandler.post {
@@ -447,7 +585,6 @@ class BleDeviceInterface(
                 )
             }
         }
-
     }
 
     /**
@@ -477,7 +614,6 @@ class BleDeviceInterface(
      * @see BluetoothGattCharacteristic
      * @see BluetoothGattDescriptor
      */
-    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     fun subscribeToCharacteristic(
         deviceAddress: String,
         characteristicUuid: UUID,
@@ -508,6 +644,14 @@ class BleDeviceInterface(
                     UUID.fromString("00002902-0000-1000-8000-00805f9b34fb")
                 )
 
+                if (descriptor == null) {
+                    channel.invokeMethod(
+                        "error",
+                        "CCCD descriptor not found for characteristic $characteristicUuid"
+                    )
+                    return
+                }
+
                 // Set the descriptor value to enable or disable notifications
                 val descriptorValue = if (enable) {
                     BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
@@ -516,7 +660,15 @@ class BleDeviceInterface(
                 }
 
                 // Write the value to the descriptor to enable/disable notifications on the device
-                gatt.writeDescriptor(descriptor, descriptorValue)
+                // Use the appropriate API based on Android version
+                if (android.os.Build.VERSION.SDK_INT >= 33) {
+                    gatt.writeDescriptor(descriptor, descriptorValue)
+                } else {
+                    @Suppress("DEPRECATION")
+                    descriptor.value = descriptorValue
+                    @Suppress("DEPRECATION")
+                    gatt.writeDescriptor(descriptor)
+                }
             } catch (e: SecurityException) {
                 channel.invokeMethod(
                     "error",
@@ -532,21 +684,56 @@ class BleDeviceInterface(
     }
 
     /**
+     * Callback triggered as a result of a descriptor write operation.
+     *
+     * This callback is particularly important for notification subscriptions, as enabling/disabling
+     * notifications requires writing to the Client Characteristic Configuration Descriptor (CCCD).
+     *
+     * Note: The callback signature is the same across all API levels. What changed in API 33+
+     * is the writeDescriptor method signature, not the callback signature.
+     *
+     * @param gatt GATT client that performed the descriptor write operation
+     * @param descriptor Descriptor that was written to the remote device
+     * @param status GATT operation status (BluetoothGatt.GATT_SUCCESS if successful)
+     */
+    override fun onDescriptorWrite(
+        gatt: BluetoothGatt,
+        descriptor: BluetoothGattDescriptor,
+        status: Int
+    ) {
+        super.onDescriptorWrite(gatt, descriptor, status)
+
+        mainHandler.post {
+            if (status != BluetoothGatt.GATT_SUCCESS) {
+                channel.invokeMethod(
+                    "error",
+                    "Failed to write descriptor ${descriptor.uuid}: GATT status $status"
+                )
+            }
+        }
+    }
+
+    /**
      * This callback is invoked when the value of a BluetoothGattCharacteristic changes.
+     *
      * It is triggered by a call to setCharacteristicNotification() for the characteristic
-     * which changes you want to be notified about.
+     * which changes you want to be notified about. The value must be read from the
+     * characteristic object using the deprecated .value property.
+     *
+     * Note: The callback signature is the same across all API levels. What changed in API 33+
+     * is how you access the value (directly vs. from characteristic.value).
      *
      * @param gatt The GATT client that connects to the GATT server on the Bluetooth device.
      * @param characteristic The characteristic whose value has changed.
-     * @param value The new value of the characteristic, as a byte array.
      */
     override fun onCharacteristicChanged(
         gatt: BluetoothGatt,
         characteristic: BluetoothGattCharacteristic,
-        value: ByteArray,
     ) {
-        super.onCharacteristicChanged(gatt, characteristic, value)
+        super.onCharacteristicChanged(gatt, characteristic)
 
+        @Suppress("DEPRECATION")
+        val value = characteristic.value ?: byteArrayOf()
         val valueList = value.map { byte -> byte.toInt() }
         val deviceAddress = gatt.device?.address
 

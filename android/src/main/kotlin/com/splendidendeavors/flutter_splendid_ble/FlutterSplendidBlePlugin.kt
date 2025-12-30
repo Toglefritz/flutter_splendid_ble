@@ -21,41 +21,165 @@ import com.splendidendeavors.flutter_splendid_ble.scanner.BleScannerHandler
 
 import java.util.UUID
 
-/** FlutterSplendidBlePlugin */
+/**
+ * FlutterSplendidBlePlugin is the main entry point for the Flutter Splendid BLE plugin on Android.
+ *
+ * This plugin provides a bridge between Flutter/Dart code and Android's native Bluetooth Low Energy
+ * (BLE) functionality. It implements the FlutterPlugin interface to integrate with the Flutter engine,
+ * MethodCallHandler to handle method calls from Dart, and ActivityAware to manage Android activity
+ * lifecycle events.
+ *
+ * ## Architecture
+ *
+ * The plugin delegates specific BLE functionality to specialized handler classes:
+ * - [BluetoothAdapterHandler]: Manages Bluetooth adapter status and state changes
+ * - [BleScannerHandler]: Handles BLE device scanning operations
+ * - [BleDeviceInterface]: Manages connections, service discovery, and characteristic operations
+ * - [BluetoothPermissionsHandler]: Handles runtime Bluetooth permission requests
+ *
+ * ## Communication Channels
+ *
+ * The plugin uses two types of channels to communicate with Flutter:
+ * - **MethodChannel** (`flutter_splendid_ble_central`): For bi-directional method calls
+ * - **EventChannel** (`flutter_ble_events`): For streaming adapter status updates
+ *
+ * ## Lifecycle
+ *
+ * 1. [onAttachedToEngine]: Plugin initialization, handler creation, channel setup
+ * 2. [onAttachedToActivity]: Activity binding, permission handler setup
+ * 3. [onMethodCall]: Handles all method calls from Flutter
+ * 4. [onDetachedFromActivity]: Activity cleanup
+ * 5. [onDetachedFromEngine]: Plugin teardown, channel cleanup
+ *
+ * ## Method Handling
+ *
+ * All BLE operations from Flutter are routed through [onMethodCall], which delegates to the
+ * appropriate handler based on the method name. The plugin supports:
+ * - Adapter status checking and monitoring
+ * - Permission requests and status checks
+ * - Device scanning with filters and settings
+ * - Device connection and disconnection
+ * - Service discovery
+ * - Characteristic read, write, and subscribe operations
+ *
+ * ## Error Handling
+ *
+ * All operations include proper error handling with descriptive error codes and messages that
+ * are returned to the Flutter layer through MethodChannel.Result callbacks.
+ *
+ * ## Threading
+ *
+ * BLE operations are performed on the main thread when required by the Android BLE stack.
+ * The handlers manage threading internally using Handler and Looper mechanisms.
+ *
+ * @see FlutterPlugin
+ * @see MethodCallHandler
+ * @see ActivityAware
+ */
 class FlutterSplendidBlePlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
-    /// The MethodChannel that will the communication between Flutter and native Android
-    ///
-    /// This local reference serves to register the plugin with the Flutter Engine and unregister it
-    /// when the Flutter Engine is detached from the Activity
+    /**
+     * The MethodChannel that facilitates communication between Flutter and native Android.
+     *
+     * This channel is used for bi-directional method calls between Dart and Kotlin code.
+     * All BLE operations initiated from Flutter are received through this channel, and
+     * responses (including errors) are sent back through it.
+     *
+     * The channel is registered with the Flutter engine during plugin attachment and
+     * cleaned up during detachment.
+     *
+     * @see onAttachedToEngine
+     * @see onDetachedFromEngine
+     */
     private lateinit var channel: MethodChannel
 
-    // The EventChannel that facilitates real-time communication between Flutter and native Android.
-    //
-    // This channel is used to send Bluetooth adapter status updates from native Android to Flutter,
-    // allowing the Dart side to listen to a stream of status updates. This stream can then be used
-    // in the business logic to respond to changes in the Bluetooth adapter status.
-    //
-    // The EventChannel is registered with the Flutter Engine during the plugin attachment process
-    // in the `onAttachedToEngine` method.
+    /**
+     * The EventChannel that facilitates real-time streaming from native Android to Flutter.
+     *
+     * This channel is used to send Bluetooth adapter status updates as a stream of events
+     * from native Android to Flutter. The Dart side can listen to this stream to react to
+     * changes in the Bluetooth adapter status (e.g., when Bluetooth is turned on or off).
+     *
+     * The EventChannel is registered with the Flutter Engine during the plugin attachment
+     * process in [onAttachedToEngine].
+     *
+     * @see BluetoothAdapterHandler
+     */
     private lateinit var eventChannel: EventChannel
 
-    // The BluetoothAdapterHandler checks the status of the Bluetooth adapter on the device.
+    /**
+     * Handler for Bluetooth adapter operations.
+     *
+     * This handler is responsible for:
+     * - Checking the current status of the device's Bluetooth adapter
+     * - Monitoring adapter state changes (powered on/off, etc.)
+     * - Emitting adapter status updates through the EventChannel
+     *
+     * @see BluetoothAdapterHandler
+     */
     private lateinit var bluetoothAdapterHandler: BluetoothAdapterHandler
 
-    /// The BleScannerHandler handles all methods related to scanning for nearby Bluetooth device.
+    /**
+     * Handler for BLE scanning operations.
+     *
+     * This handler manages:
+     * - Starting and stopping BLE device scans
+     * - Applying scan filters (by name, service UUID, etc.)
+     * - Configuring scan settings (scan mode, callback type, match mode)
+     * - Reporting discovered devices to Flutter
+     *
+     * @see BleScannerHandler
+     */
     private lateinit var bleScannerHandler: BleScannerHandler
 
-    /// The BleConnectorHandler handles all methods related to Bluetooth device connections.
-    //private lateinit var bleConnectionHandler: BleConnectionHandler
-
-    /// The BleDeviceInterface handles all methods related to writing to, reading from, and handling
-    /// subscriptions to the Bluetooth characteristics of a connected Bluetooth peripheral.
+    /**
+     * Interface for BLE device operations.
+     *
+     * This class handles all operations related to connected BLE devices:
+     * - Establishing and terminating connections
+     * - Discovering GATT services and characteristics
+     * - Reading from and writing to characteristics
+     * - Subscribing to and unsubscribing from characteristic notifications
+     * - Managing the GATT connection lifecycle
+     *
+     * Critically, this class now implements proper write serialization to ensure that
+     * only one write operation is in progress at a time per device, as required by the
+     * BLE specification. Write operations are truly asynchronous - they complete when
+     * the BLE stack confirms the write, not when the method returns.
+     *
+     * @see BleDeviceInterface
+     */
     private lateinit var bleDeviceInterface: BleDeviceInterface
 
-    /// The BluetoothPermissionsHandler handles all methods related to requesting and checking
-    /// Bluetooth permissions on Android.
+    /**
+     * Handler for Bluetooth permission operations.
+     *
+     * This handler manages:
+     * - Requesting runtime Bluetooth permissions on Android 12+ (BLUETOOTH_SCAN, BLUETOOTH_CONNECT)
+     * - Checking current permission status
+     * - Handling permission request results
+     * - Managing Activity references needed for permission requests
+     *
+     * On Android 12 (API 31) and above, Bluetooth operations require runtime permissions.
+     * This handler abstracts the permission request flow and reports results back to Flutter.
+     *
+     * @see BluetoothPermissionsHandler
+     */
     private lateinit var bluetoothPermissionsHandler: BluetoothPermissionsHandler
 
+    /**
+     * Called when the plugin is attached to the Flutter engine.
+     *
+     * This method is invoked during plugin initialization and is responsible for:
+     * 1. Creating and registering the MethodChannel for bi-directional communication
+     * 2. Creating and registering the EventChannel for status updates
+     * 3. Initializing all handler classes with necessary Android context
+     * 4. Setting up the method call handler
+     *
+     * All handlers are initialized with references to the MethodChannel and application context
+     * so they can communicate with Flutter and access Android system services.
+     *
+     * @param flutterPluginBinding Provides access to the binary messenger and application context
+     */
     override fun onAttachedToEngine(flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
         channel = MethodChannel(flutterPluginBinding.binaryMessenger, "flutter_splendid_ble_central")
         channel.setMethodCallHandler(this)
@@ -78,6 +202,52 @@ class FlutterSplendidBlePlugin : FlutterPlugin, MethodCallHandler, ActivityAware
         bluetoothPermissionsHandler = BluetoothPermissionsHandler(channel, flutterPluginBinding.applicationContext)
     }
 
+    /**
+     * Handles method calls from Flutter/Dart code.
+     *
+     * This method acts as a router, dispatching method calls to the appropriate handler based on
+     * the method name. All BLE operations initiated from Flutter pass through this method.
+     *
+     * ## Supported Methods
+     *
+     * **Adapter Operations:**
+     * - `checkBluetoothAdapterStatus`: Returns current adapter status
+     * - `emitCurrentBluetoothStatus`: Emits current status through EventChannel
+     *
+     * **Permission Operations:**
+     * - `requestBluetoothPermissions`: Requests runtime Bluetooth permissions
+     * - `emitCurrentPermissionStatus`: Emits current permission status
+     *
+     * **Scanning Operations:**
+     * - `startScan`: Initiates BLE device scanning with optional filters and settings
+     * - `stopScan`: Stops ongoing BLE device scan
+     *
+     * **Connection Operations:**
+     * - `connect`: Establishes connection to a BLE device
+     * - `disconnect`: Terminates connection to a BLE device
+     * - `getCurrentConnectionState`: Returns current connection state for a device
+     *
+     * **GATT Operations:**
+     * - `discoverServices`: Discovers GATT services on a connected device
+     * - `readCharacteristic`: Reads value from a characteristic
+     * - `writeCharacteristic`: Writes value to a characteristic (asynchronous)
+     * - `subscribeToCharacteristic`: Enables notifications for a characteristic
+     * - `unsubscribeFromCharacteristic`: Disables notifications for a characteristic
+     *
+     * ## Error Handling
+     *
+     * All methods include proper error handling. Errors are returned through the Result callback
+     * with descriptive error codes and messages.
+     *
+     * ## Write Operation Special Behavior
+     *
+     * The `writeCharacteristic` method is unique in that it does NOT call result.success()
+     * immediately. Instead, the Result is passed to BleDeviceInterface and completed later when
+     * the actual BLE write operation finishes. This ensures proper async/await behavior in Dart.
+     *
+     * @param call The method call from Flutter, containing method name and arguments
+     * @param result The result callback to complete with success or error
+     */
     override fun onMethodCall(call: MethodCall, result: Result) {
         when (call.method) {
             "checkBluetoothAdapterStatus" -> {
@@ -174,9 +344,10 @@ class FlutterSplendidBlePlugin : FlutterPlugin, MethodCallHandler, ActivityAware
                             deviceAddress,
                             characteristicUuid,
                             byteValue,
-                            writeType
+                            writeType,
+                            result // Pass result to complete later
                         )
-                        result.success(null)
+                        // Don't call result.success here - it will be called in onCharacteristicWrite callback
                     } catch (e: Exception) {
                         result.error(
                             "WRITE_ERROR",
@@ -287,25 +458,58 @@ class FlutterSplendidBlePlugin : FlutterPlugin, MethodCallHandler, ActivityAware
         }
     }
 
+    /**
+     * Called when the plugin is detached from the Flutter engine.
+     *
+     * This method performs cleanup by removing the method call handler from the channel.
+     * This prevents memory leaks and ensures the plugin can be properly garbage collected.
+     *
+     * @param binding The plugin binding being detached
+     */
     override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
         channel.setMethodCallHandler(null)
     }
 
-    // ActivityAware interface methods
+    /**
+     * Called when the plugin is attached to an Android Activity.
+     *
+     * This sets up the activity reference needed for permission requests and registers
+     * the permission result listener.
+     *
+     * @param binding The activity plugin binding
+     */
     override fun onAttachedToActivity(binding: ActivityPluginBinding) {
         bluetoothPermissionsHandler.setActivity(binding.activity)
         binding.addRequestPermissionsResultListener(bluetoothPermissionsHandler)
     }
 
+    /**
+     * Called when the plugin is detached from its Activity due to configuration changes.
+     *
+     * Temporarily clears the activity reference. The activity will be reattached after
+     * the configuration change completes.
+     */
     override fun onDetachedFromActivityForConfigChanges() {
         bluetoothPermissionsHandler.setActivity(null)
     }
 
+    /**
+     * Called when the plugin is reattached to its Activity after configuration changes.
+     *
+     * Restores the activity reference and re-registers the permission result listener.
+     *
+     * @param binding The activity plugin binding
+     */
     override fun onReattachedToActivityForConfigChanges(binding: ActivityPluginBinding) {
         bluetoothPermissionsHandler.setActivity(binding.activity)
         binding.addRequestPermissionsResultListener(bluetoothPermissionsHandler)
     }
 
+    /**
+     * Called when the plugin is permanently detached from its Activity.
+     *
+     * Clears the activity reference to prevent memory leaks.
+     */
     override fun onDetachedFromActivity() {
         bluetoothPermissionsHandler.setActivity(null)
     }
