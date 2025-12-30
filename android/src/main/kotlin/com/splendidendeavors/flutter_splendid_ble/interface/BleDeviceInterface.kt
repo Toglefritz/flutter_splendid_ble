@@ -570,20 +570,6 @@ class BleDeviceInterface(
             processWriteQueue(deviceAddress)
         }
     }
-                )
-            } else {
-                channel.invokeMethod(
-                    "onCharacteristicWrite",
-                    mapOf(
-                        "deviceAddress" to gatt.device.address,
-                        "characteristicUuid" to characteristic.uuid.toString(),
-                        "success" to false,
-                        "error" to "Failed to write characteristic: GATT status $status"
-                    )
-                )
-            }
-        }
-    }
 
     /**
      * Callback triggered as a result of a characteristic read operation.
