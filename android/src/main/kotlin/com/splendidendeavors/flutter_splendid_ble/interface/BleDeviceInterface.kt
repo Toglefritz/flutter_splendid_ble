@@ -83,13 +83,12 @@ import java.util.UUID
  * This class thus encapsulates all the necessary BLE operations in a comprehensive manner.
  */
 /**
- * Represents a pending write operation in the queue.
+ * Represents a pending write operation that is waiting for confirmation.
  */
-private data class WriteOperation(
+private data class PendingWrite(
     val deviceAddress: String,
     val characteristicUuid: UUID,
-    val value: ByteArray,
-    val writeType: Int
+    val result: MethodChannel.Result
 )
 
 class BleDeviceInterface(
@@ -107,17 +106,10 @@ class BleDeviceInterface(
     private val bluetoothGattMap: MutableMap<String, BluetoothGatt> = mutableMapOf()
 
     /**
-     * Write queue per device to ensure sequential BLE write operations.
-     *
-     * The BLE specification requires that only one write operation can be in progress
-     * at a time per device. This queue ensures writes are properly serialized.
+     * Tracks the currently pending write operation per device.
+     * Only one write can be in progress at a time per device per BLE specification.
      */
-    private val writeQueues: MutableMap<String, MutableList<WriteOperation>> = mutableMapOf()
-
-    /**
-     * Tracks whether a write is currently in progress for each device.
-     */
-    private val writeInProgress: MutableMap<String, Boolean> = mutableMapOf()
+    private val pendingWrites: MutableMap<String, PendingWrite> = mutableMapOf()
 
     /**
      * Get the BluetoothGatt instance for a specific device address.
@@ -156,9 +148,8 @@ class BleDeviceInterface(
             val state = when (newState) {
                 BluetoothProfile.STATE_CONNECTED -> ConnectionState.CONNECTED
                 BluetoothProfile.STATE_DISCONNECTED -> {
-                    // Clean up write queue when disconnected
-                    writeQueues.remove(deviceAddress)
-                    writeInProgress.remove(deviceAddress)
+                    // Clean up pending writes when disconnected
+                    pendingWrites.remove(deviceAddress)
                     ConnectionState.DISCONNECTED
                 }
                 BluetoothProfile.STATE_CONNECTING -> ConnectionState.CONNECTING
@@ -259,9 +250,8 @@ class BleDeviceInterface(
             bluetoothGattMap[deviceAddress]?.disconnect()
             bluetoothGattMap.remove(deviceAddress)
 
-            // Clean up write queue for this device
-            writeQueues.remove(deviceAddress)
-            writeInProgress.remove(deviceAddress)
+            // Clean up pending writes for this device
+            pendingWrites.remove(deviceAddress)
         } catch (e: SecurityException) {
             channel.invokeMethod(
                 "error",
@@ -359,117 +349,101 @@ class BleDeviceInterface(
     /**
      * Write data to a specific BluetoothGattCharacteristic.
      *
-     * This method queues write operations to ensure they are executed sequentially.
-     * The BLE specification requires that only one write can be in progress at a time.
+     * This method initiates a write operation and stores the result callback to complete later
+     * when the onCharacteristicWrite callback is received. This ensures the Dart await properly
+     * waits for the actual BLE write to complete.
+     *
+     * The BLE specification requires that only one write can be in progress at a time per device.
+     * If a write is already pending, this method returns an error.
      *
      * @param deviceAddress The address of the device to write to
-     * @param characteristicUuid The UUID of the characteristic to be written.
-     * @param value The data to be written to the characteristic.
+     * @param characteristicUuid The UUID of the characteristic to be written
+     * @param value The data to be written to the characteristic
      * @param writeType The type of write operation (default, no response, signed)
+     * @param result The MethodChannel.Result to complete when the write finishes
      */
     fun writeCharacteristic(
         deviceAddress: String,
         characteristicUuid: UUID,
         value: ByteArray,
-        writeType: Int = BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT
+        writeType: Int = BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT,
+        result: MethodChannel.Result
     ) {
-        // Create write operation
-        val operation = WriteOperation(deviceAddress, characteristicUuid, value, writeType)
-
-        // Initialize queue for this device if needed
-        if (!writeQueues.containsKey(deviceAddress)) {
-            writeQueues[deviceAddress] = mutableListOf()
-            writeInProgress[deviceAddress] = false
-        }
-
-        // Add to queue
-        writeQueues[deviceAddress]?.add(operation)
-
-        // Process queue if no write is currently in progress
-        processWriteQueue(deviceAddress)
-    }
-
-    /**
-     * Process the next write operation in the queue for a specific device.
-     *
-     * This is called after adding a new write to the queue, or after a write completes.
-     */
-    private fun processWriteQueue(deviceAddress: String) {
-        // Check if a write is already in progress
-        if (writeInProgress[deviceAddress] == true) {
-            return
-        }
-
-        // Get the queue for this device
-        val queue = writeQueues[deviceAddress] ?: return
-
-        // Check if queue is empty
-        if (queue.isEmpty()) {
-            return
-        }
-
-        // Mark write as in progress
-        writeInProgress[deviceAddress] = true
-
-        // Get next operation
-        val operation = queue.removeAt(0)
-
-        // Execute the write
-        executeWrite(operation)
-    }
-
-    /**
-     * Execute a single write operation.
-     */
-    private fun executeWrite(operation: WriteOperation) {
-        val gatt = getBluetoothGatt(operation.deviceAddress)
-        if (gatt == null) {
-            channel.invokeMethod(
-                "error",
-                "No BluetoothGatt instance found for device address: ${operation.deviceAddress}"
+        // Check if a write is already pending for this device
+        if (pendingWrites.containsKey(deviceAddress)) {
+            result.error(
+                "WRITE_IN_PROGRESS",
+                "A write operation is already in progress for device $deviceAddress. Please wait for it to complete.",
+                null
             )
-            // Mark write as complete and process next in queue
-            writeInProgress[operation.deviceAddress] = false
-            processWriteQueue(operation.deviceAddress)
+            return
+        }
+
+        val gatt = getBluetoothGatt(deviceAddress)
+        if (gatt == null) {
+            result.error(
+                "DEVICE_NOT_FOUND",
+                "No BluetoothGatt instance found for device address: $deviceAddress",
+                null
+            )
             return
         }
 
         val service = gatt.services.find {
-            it.characteristics.any { char -> char.uuid == operation.characteristicUuid }
+            it.characteristics.any { char -> char.uuid == characteristicUuid }
         }
-        val characteristic = service?.getCharacteristic(operation.characteristicUuid)
+        val characteristic = service?.getCharacteristic(characteristicUuid)
 
-        if (characteristic != null) {
-            try {
-                if (android.os.Build.VERSION.SDK_INT >= 33) {
-                    // New method introduced in API 33
-                    gatt.writeCharacteristic(characteristic, operation.value, operation.writeType)
-                } else {
-                    // Old method for API levels below 33
-                    // Must set the value and write type on the characteristic before writing
-                    @Suppress("DEPRECATION")
-                    characteristic.value = operation.value
-                    characteristic.writeType = operation.writeType
-                    @Suppress("DEPRECATION")
-                    gatt.writeCharacteristic(characteristic)
-                }
-            } catch (e: SecurityException) {
-                channel.invokeMethod(
-                    "error",
-                    "Required Bluetooth permissions are missing: ${e.message}"
-                )
-                // Mark write as complete and process next in queue
-                writeInProgress[operation.deviceAddress] = false
-                processWriteQueue(operation.deviceAddress)
-            }
-        } else {
-            channel.invokeMethod(
-                "error",
-                "Characteristic with UUID ${operation.characteristicUuid} not found."
+        if (characteristic == null) {
+            result.error(
+                "CHARACTERISTIC_NOT_FOUND",
+                "Characteristic with UUID $characteristicUuid not found.",
+                null
             )
-            // Mark write as complete and process next in queue
-            writeInProgress[operation.deviceAddress] = false
-            processWriteQueue(operation.deviceAddress)
+            return
+        }
+
+        // Store the pending write before initiating it
+        pendingWrites[deviceAddress] = PendingWrite(deviceAddress, characteristicUuid, result)
+
+        try {
+            val writeSuccess: Boolean = if (android.os.Build.VERSION.SDK_INT >= 33) {
+                // New method introduced in API 33
+                val writeResult = gatt.writeCharacteristic(characteristic, value, writeType)
+                writeResult == BluetoothGatt.GATT_SUCCESS
+            } else {
+                // Old method for API levels below 33
+                @Suppress("DEPRECATION")
+                characteristic.value = value
+                characteristic.writeType = writeType
+                @Suppress("DEPRECATION")
+                gatt.writeCharacteristic(characteristic)
+            }
+
+            if (!writeSuccess) {
+                // Write initiation failed
+                pendingWrites.remove(deviceAddress)
+                result.error(
+                    "WRITE_FAILED",
+                    "Failed to initiate write operation",
+                    null
+                )
+            }
+            // If write initiated successfully, result will be completed in onCharacteristicWrite callback
+        } catch (e: SecurityException) {
+            pendingWrites.remove(deviceAddress)
+            result.error(
+                "PERMISSION_ERROR",
+                "Required Bluetooth permissions are missing: ${e.message}",
+                null
+            )
+        } catch (e: Exception) {
+            pendingWrites.remove(deviceAddress)
+            result.error(
+                "WRITE_ERROR",
+                "Failed to write characteristic: ${e.message}",
+                null
+            )
         }
     }
 
@@ -520,15 +494,8 @@ class BleDeviceInterface(
     /**
      * Callback triggered as a result of a characteristic write operation.
      *
-     * This callback is invoked when a write operation completes, providing confirmation
-     * that the write was successful or indicating an error. This is particularly important
-     * for WRITE_TYPE_DEFAULT operations which require a response from the peripheral.
-     *
-     * After processing this callback, the next queued write operation (if any) is initiated.
-     * This ensures writes are properly serialized according to BLE specification requirements.
-     *
-     * Note: The callback signature is the same across all API levels. What changed in API 33+
-     * is the write method signature, not the callback signature.
+     * This callback completes the pending write operation by calling the stored MethodChannel.Result.
+     * This ensures the Dart await properly waits for the actual BLE write to complete.
      *
      * @param gatt GATT client that performed the write operation
      * @param characteristic Characteristic that was written to the remote device
@@ -544,6 +511,24 @@ class BleDeviceInterface(
         val deviceAddress = gatt.device.address
 
         mainHandler.post {
+            // Get and remove the pending write
+            val pendingWrite = pendingWrites.remove(deviceAddress)
+
+            if (pendingWrite != null) {
+                if (status == BluetoothGatt.GATT_SUCCESS) {
+                    // Complete the result successfully
+                    pendingWrite.result.success(null)
+                } else {
+                    // Complete the result with an error
+                    pendingWrite.result.error(
+                        "WRITE_FAILED",
+                        "Failed to write characteristic: GATT status $status",
+                        null
+                    )
+                }
+            }
+
+            // Also send onCharacteristicWrite event for listeners
             if (status == BluetoothGatt.GATT_SUCCESS) {
                 channel.invokeMethod(
                     "onCharacteristicWrite",
@@ -564,10 +549,6 @@ class BleDeviceInterface(
                     )
                 )
             }
-
-            // Mark write as complete and process next queued write
-            writeInProgress[deviceAddress] = false
-            processWriteQueue(deviceAddress)
         }
     }
 

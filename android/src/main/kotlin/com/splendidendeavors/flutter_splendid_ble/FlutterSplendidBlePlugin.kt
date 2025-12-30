@@ -174,9 +174,10 @@ class FlutterSplendidBlePlugin : FlutterPlugin, MethodCallHandler, ActivityAware
                             deviceAddress,
                             characteristicUuid,
                             byteValue,
-                            writeType
+                            writeType,
+                            result // Pass result to complete later
                         )
-                        result.success(null)
+                        // Don't call result.success here - it will be called in onCharacteristicWrite callback
                     } catch (e: Exception) {
                         result.error(
                             "WRITE_ERROR",
