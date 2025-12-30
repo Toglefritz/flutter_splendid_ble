@@ -104,6 +104,14 @@ class BleDeviceInterface(
     private val pendingWrites: MutableMap<String, PendingWrite> = mutableMapOf()
 
     /**
+     * Tracks pending subscription operations awaiting confirmation via onDescriptorWrite.
+     *
+     * Key format: "deviceAddress:characteristicUuid"
+     * Value: PendingSubscription containing operation details and Result to complete
+     */
+    private val pendingSubscriptions: MutableMap<String, PendingSubscription> = mutableMapOf()
+
+    /**
      * Get the BluetoothGatt instance for a specific device address.
      *
      * @param deviceAddress The MAC address of the Bluetooth device.
@@ -111,6 +119,20 @@ class BleDeviceInterface(
      */
     private fun getBluetoothGatt(deviceAddress: String): BluetoothGatt? {
         return bluetoothGattMap[deviceAddress]
+    }
+
+    /**
+     * Generates a unique key for tracking pending subscription operations.
+     *
+     * This key combines the device address and characteristic UUID to uniquely identify
+     * a subscription operation that is awaiting confirmation from the BLE stack.
+     *
+     * @param deviceAddress The MAC address of the Bluetooth device
+     * @param characteristicUuid The UUID of the characteristic being subscribed to
+     * @return A combined key string for map lookup: "deviceAddress:characteristicUuid"
+     */
+    private fun getSubscriptionKey(deviceAddress: String, characteristicUuid: UUID): String {
+        return "$deviceAddress:$characteristicUuid"
     }
 
     /**
@@ -142,6 +164,10 @@ class BleDeviceInterface(
                 BluetoothProfile.STATE_DISCONNECTED -> {
                     // Clean up pending writes when disconnected
                     pendingWrites.remove(deviceAddress)
+
+                    // Clean up pending subscriptions when disconnected
+                    pendingSubscriptions.keys.removeAll { key -> key.startsWith("$deviceAddress:") }
+
                     ConnectionState.DISCONNECTED
                 }
                 BluetoothProfile.STATE_CONNECTING -> ConnectionState.CONNECTING
@@ -244,6 +270,9 @@ class BleDeviceInterface(
 
             // Clean up pending writes for this device
             pendingWrites.remove(deviceAddress)
+
+            // Clean up pending subscriptions for this device
+            pendingSubscriptions.keys.removeAll { key -> key.startsWith("$deviceAddress:") }
         } catch (e: SecurityException) {
             channel.invokeMethod(
                 "error",
@@ -594,12 +623,18 @@ class BleDeviceInterface(
      * Enabling notifications allows a client application to listen for changes in the value of the characteristic,
      * while disabling notifications stops the client from receiving such updates.
      *
+     * **Important: This method is asynchronous**. The Result is NOT completed immediately. Instead, it is stored
+     * in the pendingSubscriptions map and will be completed later when the onDescriptorWrite callback confirms
+     * that the subscription was successfully established (or failed). This ensures proper async/await behavior
+     * on the Dart/Flutter side.
+     *
      * The method achieves this by doing the following:
      * 1. Retrieves the BluetoothGatt object associated with the device address.
      * 2. Locates the service that contains the characteristic, based on its UUID.
      * 3. Activates or deactivates notifications at the Android OS level by calling `setCharacteristicNotification`.
      * 4. Locates the Client Characteristic Configuration Descriptor (CCCD) associated with the characteristic.
      * 5. Writes the appropriate value (ENABLE_NOTIFICATION_VALUE/DISABLE_NOTIFICATION_VALUE) to the descriptor.
+     * 6. Stores the Result in pendingSubscriptions to be completed when onDescriptorWrite is invoked.
      *
      * Enabling notifications results in the `onCharacteristicChanged()` callback being invoked whenever the characteristic's value changes.
      * This provides a way for applications to react to real-time updates from the BLE device.
@@ -607,24 +642,28 @@ class BleDeviceInterface(
      * @param deviceAddress The MAC address of the target BLE device.
      * @param characteristicUuid The UUID identifying the characteristic for which to toggle notifications.
      * @param enable A boolean indicating whether to enable (true) or disable (false) notifications.
+     * @param result The MethodChannel.Result to complete when the subscription is confirmed (asynchronous)
      *
      * @throws SecurityException if required Bluetooth permissions are missing.
      *
      * @see BluetoothGatt
      * @see BluetoothGattCharacteristic
      * @see BluetoothGattDescriptor
+     * @see onDescriptorWrite
      */
     fun subscribeToCharacteristic(
         deviceAddress: String,
         characteristicUuid: UUID,
-        enable: Boolean
+        enable: Boolean,
+        result: MethodChannel.Result
     ) {
         //val gatt = bleConnectionHandler.getBluetoothGatt(deviceAddress)
         val gatt = getBluetoothGatt(deviceAddress)
         if (gatt == null) {
-            channel.invokeMethod(
-                "error",
-                "No BluetoothGatt instance found for device address: $deviceAddress"
+            result.error(
+                "NO_GATT",
+                "No BluetoothGatt instance found for device address: $deviceAddress",
+                null
             )
             return
         }
@@ -633,52 +672,80 @@ class BleDeviceInterface(
             gatt.services.find { it.characteristics.any { char -> char.uuid == characteristicUuid } }
         val characteristic = service?.getCharacteristic(characteristicUuid)
 
-        if (characteristic != null) {
-            try {
-                // This call sets locally enables notifications from the characteristic
-                // within the Android operating system
-                gatt.setCharacteristicNotification(characteristic, enable)
+        if (characteristic == null) {
+            result.error(
+                "CHARACTERISTIC_NOT_FOUND",
+                "Characteristic with UUID $characteristicUuid not found.",
+                null
+            )
+            return
+        }
 
-                // Find the CCCD (Client Characteristic Configuration Descriptor) based on its UUID
-                val descriptor = characteristic.getDescriptor(
-                    UUID.fromString("00002902-0000-1000-8000-00805f9b34fb")
+        try {
+            // This call sets locally enables notifications from the characteristic
+            // within the Android operating system
+            gatt.setCharacteristicNotification(characteristic, enable)
+
+            // Find the CCCD (Client Characteristic Configuration Descriptor) based on its UUID
+            val descriptor = characteristic.getDescriptor(
+                UUID.fromString("00002902-0000-1000-8000-00805f9b34fb")
+            )
+
+            if (descriptor == null) {
+                result.error(
+                    "CCCD_NOT_FOUND",
+                    "CCCD descriptor not found for characteristic $characteristicUuid",
+                    null
                 )
+                return
+            }
 
-                if (descriptor == null) {
-                    channel.invokeMethod(
-                        "error",
-                        "CCCD descriptor not found for characteristic $characteristicUuid"
-                    )
-                    return
-                }
+            // Store the pending subscription before initiating the descriptor write
+            val subscriptionKey = getSubscriptionKey(deviceAddress, characteristicUuid)
+            pendingSubscriptions[subscriptionKey] = PendingSubscription(
+                deviceAddress,
+                characteristicUuid,
+                enable,
+                result
+            )
 
-                // Set the descriptor value to enable or disable notifications
-                val descriptorValue = if (enable) {
-                    BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
-                } else {
-                    BluetoothGattDescriptor.DISABLE_NOTIFICATION_VALUE
-                }
+            // Set the descriptor value to enable or disable notifications
+            val descriptorValue = if (enable) {
+                BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
+            } else {
+                BluetoothGattDescriptor.DISABLE_NOTIFICATION_VALUE
+            }
 
-                // Write the value to the descriptor to enable/disable notifications on the device
-                // Use the appropriate API based on Android version
-                if (android.os.Build.VERSION.SDK_INT >= 33) {
-                    gatt.writeDescriptor(descriptor, descriptorValue)
-                } else {
-                    @Suppress("DEPRECATION")
-                    descriptor.value = descriptorValue
-                    @Suppress("DEPRECATION")
-                    gatt.writeDescriptor(descriptor)
-                }
-            } catch (e: SecurityException) {
-                channel.invokeMethod(
-                    "error",
-                    "Required Bluetooth permissions are missing: ${e.message}"
+            // Write the value to the descriptor to enable/disable notifications on the device
+            // Use the appropriate API based on Android version
+            val writeSuccess = if (android.os.Build.VERSION.SDK_INT >= 33) {
+                gatt.writeDescriptor(descriptor, descriptorValue) == BluetoothGatt.GATT_SUCCESS
+            } else {
+                @Suppress("DEPRECATION")
+                descriptor.value = descriptorValue
+                @Suppress("DEPRECATION")
+                gatt.writeDescriptor(descriptor)
+            }
+
+            // If the write failed immediately, complete the result with an error
+            if (!writeSuccess) {
+                pendingSubscriptions.remove(subscriptionKey)
+                result.error(
+                    "WRITE_FAILED",
+                    "Failed to initiate descriptor write for characteristic $characteristicUuid",
+                    null
                 )
             }
-        } else {
-            channel.invokeMethod(
-                "error",
-                "Characteristic with UUID $characteristicUuid not found."
+            // If writeSuccess is true, the result will be completed in onDescriptorWrite callback
+        } catch (e: SecurityException) {
+            // Clean up pending subscription on error
+            val subscriptionKey = getSubscriptionKey(deviceAddress, characteristicUuid)
+            pendingSubscriptions.remove(subscriptionKey)
+
+            result.error(
+                "PERMISSION_DENIED",
+                "Required Bluetooth permissions are missing: ${e.message}",
+                null
             )
         }
     }
@@ -688,6 +755,7 @@ class BleDeviceInterface(
      *
      * This callback is particularly important for notification subscriptions, as enabling/disabling
      * notifications requires writing to the Client Characteristic Configuration Descriptor (CCCD).
+     * This method completes any pending subscription operations by calling their stored Result callbacks.
      *
      * Note: The callback signature is the same across all API levels. What changed in API 33+
      * is the writeDescriptor method signature, not the callback signature.
@@ -703,12 +771,33 @@ class BleDeviceInterface(
     ) {
         super.onDescriptorWrite(gatt, descriptor, status)
 
+        val deviceAddress = gatt.device.address
+        val characteristicUuid = descriptor.characteristic.uuid
+        val subscriptionKey = getSubscriptionKey(deviceAddress, characteristicUuid)
+
+        // Check if this descriptor write is for a pending subscription
+        val pendingSubscription = pendingSubscriptions.remove(subscriptionKey)
+
         mainHandler.post {
-            if (status != BluetoothGatt.GATT_SUCCESS) {
-                channel.invokeMethod(
-                    "error",
-                    "Failed to write descriptor ${descriptor.uuid}: GATT status $status"
-                )
+            if (pendingSubscription != null) {
+                // This is a subscription operation - complete the Result
+                if (status == BluetoothGatt.GATT_SUCCESS) {
+                    pendingSubscription.result.success(null)
+                } else {
+                    pendingSubscription.result.error(
+                        "SUBSCRIPTION_FAILED",
+                        "Failed to ${if (pendingSubscription.enable) "enable" else "disable"} notifications for characteristic $characteristicUuid: GATT status $status",
+                        null
+                    )
+                }
+            } else {
+                // Not a tracked subscription operation, just log error if needed
+                if (status != BluetoothGatt.GATT_SUCCESS) {
+                    channel.invokeMethod(
+                        "error",
+                        "Failed to write descriptor ${descriptor.uuid}: GATT status $status"
+                    )
+                }
             }
         }
     }

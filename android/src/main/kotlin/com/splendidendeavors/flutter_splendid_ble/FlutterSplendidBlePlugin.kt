@@ -231,19 +231,21 @@ class FlutterSplendidBlePlugin : FlutterPlugin, MethodCallHandler, ActivityAware
      * - `discoverServices`: Discovers GATT services on a connected device
      * - `readCharacteristic`: Reads value from a characteristic
      * - `writeCharacteristic`: Writes value to a characteristic (asynchronous)
-     * - `subscribeToCharacteristic`: Enables notifications for a characteristic
-     * - `unsubscribeFromCharacteristic`: Disables notifications for a characteristic
+     * - `subscribeToCharacteristic`: Enables notifications for a characteristic (asynchronous)
+     * - `unsubscribeFromCharacteristic`: Disables notifications for a characteristic (asynchronous)
      *
      * ## Error Handling
      *
      * All methods include proper error handling. Errors are returned through the Result callback
      * with descriptive error codes and messages.
      *
-     * ## Write Operation Special Behavior
+     * ## Asynchronous Operation Special Behavior
      *
-     * The `writeCharacteristic` method is unique in that it does NOT call result.success()
-     * immediately. Instead, the Result is passed to BleDeviceInterface and completed later when
-     * the actual BLE write operation finishes. This ensures proper async/await behavior in Dart.
+     * The `writeCharacteristic`, `subscribeToCharacteristic`, and `unsubscribeFromCharacteristic`
+     * methods do NOT call result.success() immediately. Instead, the Result is passed to
+     * BleDeviceInterface and completed later when the actual BLE operation finishes. This ensures
+     * proper async/await behavior in Dart and prevents race conditions by ensuring operations
+     * complete in sequence.
      *
      * @param call The method call from Flutter, containing method name and arguments
      * @param result The result callback to complete with success or error
@@ -400,13 +402,13 @@ class FlutterSplendidBlePlugin : FlutterPlugin, MethodCallHandler, ActivityAware
                 if (deviceAddress != null && characteristicUuidStr != null) {
                     val characteristicUuid = UUID.fromString(characteristicUuidStr)
                     try {
-                        // The actual implementation logic for subscribing to the characteristic
                         bleDeviceInterface.subscribeToCharacteristic(
                             deviceAddress,
                             characteristicUuid,
-                            true
+                            true,
+                            result // Pass result to complete later
                         )
-                        result.success(null)
+                        // Don't call result.success here - it will be called in onDescriptorWrite callback
                     } catch (e: Exception) {
                         result.error(
                             "SUBSCRIBE_ERROR",
@@ -430,16 +432,16 @@ class FlutterSplendidBlePlugin : FlutterPlugin, MethodCallHandler, ActivityAware
                 if (deviceAddress != null && characteristicUuidStr != null) {
                     val characteristicUuid = UUID.fromString(characteristicUuidStr)
                     try {
-                        // The actual implementation logic for subscribing to the characteristic
                         bleDeviceInterface.subscribeToCharacteristic(
                             deviceAddress,
                             characteristicUuid,
-                            false
+                            false,
+                            result // Pass result to complete later
                         )
-                        result.success(null)
+                        // Don't call result.success here - it will be called in onDescriptorWrite callback
                     } catch (e: Exception) {
                         result.error(
-                            "SUBSCRIBE_ERROR",
+                            "UNSUBSCRIBE_ERROR",
                             "Failed to unsubscribe from characteristic: ${e.message}",
                             null
                         )
