@@ -422,51 +422,24 @@ class BleDeviceInterface(
     }
 
     /**
-     * Callback triggered as a result of a characteristic write operation (API 33+).
+     * Callback triggered as a result of a characteristic write operation.
      *
-     * This is the new callback signature introduced in Android API 33 (Tiramisu).
-     * It includes the value parameter that was written to the characteristic.
+     * This callback is invoked when a write operation completes, providing confirmation
+     * that the write was successful or indicating an error. This is particularly important
+     * for WRITE_TYPE_DEFAULT operations which require a response from the peripheral.
      *
-     * @param gatt GATT client that performed the write operation
-     * @param characteristic Characteristic that was written to the remote device
-     * @param value The value that was written to the characteristic
-     * @param status GATT operation status (BluetoothGatt.GATT_SUCCESS if successful)
-     */
-    override fun onCharacteristicWrite(
-        gatt: BluetoothGatt,
-        characteristic: BluetoothGattCharacteristic,
-        value: ByteArray,
-        status: Int
-    ) {
-        super.onCharacteristicWrite(gatt, characteristic, value, status)
-
-        mainHandler.post {
-            if (status != BluetoothGatt.GATT_SUCCESS) {
-                channel.invokeMethod(
-                    "error",
-                    "Failed to write characteristic with UUID ${characteristic.uuid}: GATT status $status"
-                )
-            }
-        }
-    }
-
-    /**
-     * Callback triggered as a result of a characteristic write operation (API < 33).
-     *
-     * This is the deprecated callback signature used in Android API levels below 33.
-     * We must override both signatures to support all API levels.
+     * Note: The callback signature is the same across all API levels. What changed in API 33+
+     * is the write method signature, not the callback signature.
      *
      * @param gatt GATT client that performed the write operation
      * @param characteristic Characteristic that was written to the remote device
      * @param status GATT operation status (BluetoothGatt.GATT_SUCCESS if successful)
      */
-    @Deprecated("Deprecated in API 33")
     override fun onCharacteristicWrite(
         gatt: BluetoothGatt,
         characteristic: BluetoothGattCharacteristic,
         status: Int
     ) {
-        @Suppress("DEPRECATION")
         super.onCharacteristicWrite(gatt, characteristic, status)
 
         mainHandler.post {
@@ -480,63 +453,21 @@ class BleDeviceInterface(
     }
 
     /**
-     * Callback triggered as a result of a characteristic read operation (API 33+).
+     * Callback triggered as a result of a characteristic read operation.
      *
-     * This is the new callback signature introduced in Android API 33 (Tiramisu).
-     *
-     * @param gatt GATT client invoked readCharacteristic
-     * @param characteristic Characteristic that was read from the associated remote device.
-     * @param value The value that was read from the characteristic
-     * @param status GATT operation status.
-     */
-    override fun onCharacteristicRead(
-        gatt: BluetoothGatt,
-        characteristic: BluetoothGattCharacteristic,
-        value: ByteArray,
-        status: Int
-    ) {
-        super.onCharacteristicRead(gatt, characteristic, value, status)
-
-        if (status == BluetoothGatt.GATT_SUCCESS) {
-            val valueList = value.map { byte -> byte.toInt() }
-            // The invokeMethod call must be done on the main thread
-            mainHandler.post {
-                channel.invokeMethod(
-                    "onCharacteristicRead", mapOf(
-                        "deviceAddress" to gatt.device?.address,
-                        "characteristicUuid" to characteristic.uuid.toString(),
-                        "value" to valueList
-                    )
-                )
-            }
-        } else {
-            // The invokeMethod call must be done on the main thread
-            mainHandler.post {
-                channel.invokeMethod(
-                    "error",
-                    "Failed to read characteristic with UUID ${characteristic.uuid}"
-                )
-            }
-        }
-    }
-
-    /**
-     * Callback triggered as a result of a characteristic read operation (API < 33).
-     *
-     * This is the deprecated callback signature used in Android API levels below 33.
-     * In this version, the value must be read from the characteristic object itself.
+     * This callback is invoked when a read operation completes. The value must be read
+     * from the characteristic object using the deprecated .value property for API < 33,
+     * or it's provided directly in the newer callback for API 33+.
      *
      * @param gatt GATT client invoked readCharacteristic
-     * @param characteristic Characteristic that was read from the associated remote device.
-     * @param status GATT operation status.
+     * @param characteristic Characteristic that was read from the associated remote device
+     * @param status GATT operation status
      */
-    @Deprecated("Deprecated in API 33")
     override fun onCharacteristicRead(
         gatt: BluetoothGatt,
         characteristic: BluetoothGattCharacteristic,
         status: Int
     ) {
-        @Suppress("DEPRECATION")
         super.onCharacteristicRead(gatt, characteristic, status)
 
         if (status == BluetoothGatt.GATT_SUCCESS) {
@@ -661,53 +592,23 @@ class BleDeviceInterface(
     }
 
     /**
-     * Callback triggered as a result of a descriptor write operation (API 33+).
+     * Callback triggered as a result of a descriptor write operation.
      *
-     * This is the new callback signature introduced in Android API 33 (Tiramisu).
      * This callback is particularly important for notification subscriptions, as enabling/disabling
      * notifications requires writing to the Client Characteristic Configuration Descriptor (CCCD).
      *
-     * @param gatt GATT client that performed the descriptor write operation
-     * @param descriptor Descriptor that was written to the remote device
-     * @param value The value that was written to the descriptor
-     * @param status GATT operation status (BluetoothGatt.GATT_SUCCESS if successful)
-     */
-    override fun onDescriptorWrite(
-        gatt: BluetoothGatt,
-        descriptor: BluetoothGattDescriptor,
-        value: ByteArray,
-        status: Int
-    ) {
-        super.onDescriptorWrite(gatt, descriptor, value, status)
-
-        mainHandler.post {
-            if (status != BluetoothGatt.GATT_SUCCESS) {
-                channel.invokeMethod(
-                    "error",
-                    "Failed to write descriptor ${descriptor.uuid}: GATT status $status"
-                )
-            }
-        }
-    }
-
-    /**
-     * Callback triggered as a result of a descriptor write operation (API < 33).
-     *
-     * This is the deprecated callback signature used in Android API levels below 33.
-     * This callback is particularly important for notification subscriptions, as enabling/disabling
-     * notifications requires writing to the Client Characteristic Configuration Descriptor (CCCD).
+     * Note: The callback signature is the same across all API levels. What changed in API 33+
+     * is the writeDescriptor method signature, not the callback signature.
      *
      * @param gatt GATT client that performed the descriptor write operation
      * @param descriptor Descriptor that was written to the remote device
      * @param status GATT operation status (BluetoothGatt.GATT_SUCCESS if successful)
      */
-    @Deprecated("Deprecated in API 33")
     override fun onDescriptorWrite(
         gatt: BluetoothGatt,
         descriptor: BluetoothGattDescriptor,
         status: Int
     ) {
-        @Suppress("DEPRECATION")
         super.onDescriptorWrite(gatt, descriptor, status)
 
         mainHandler.post {
@@ -721,56 +622,22 @@ class BleDeviceInterface(
     }
 
     /**
-     * This callback is invoked when the value of a BluetoothGattCharacteristic changes (API 33+).
+     * This callback is invoked when the value of a BluetoothGattCharacteristic changes.
      *
-     * This is the new callback signature introduced in Android API 33 (Tiramisu).
      * It is triggered by a call to setCharacteristicNotification() for the characteristic
-     * which changes you want to be notified about.
+     * which changes you want to be notified about. The value must be read from the
+     * characteristic object using the deprecated .value property.
      *
-     * @param gatt The GATT client that connects to the GATT server on the Bluetooth device.
-     * @param characteristic The characteristic whose value has changed.
-     * @param value The new value of the characteristic, as a byte array.
-     */
-    override fun onCharacteristicChanged(
-        gatt: BluetoothGatt,
-        characteristic: BluetoothGattCharacteristic,
-        value: ByteArray,
-    ) {
-        super.onCharacteristicChanged(gatt, characteristic, value)
-
-        val valueList = value.map { byte -> byte.toInt() }
-        val deviceAddress = gatt.device?.address
-
-        // Create a map with updated characteristic details
-        val characteristicMap = mapOf(
-            "deviceAddress" to deviceAddress,
-            "characteristicUuid" to characteristic.uuid.toString(),
-            "value" to valueList
-        )
-
-        // Invoke method on Flutter side
-        mainHandler.post {
-            channel.invokeMethod("onCharacteristicChanged", characteristicMap)
-        }
-    }
-
-    /**
-     * This callback is invoked when the value of a BluetoothGattCharacteristic changes (API < 33).
-     *
-     * This is the deprecated callback signature used in Android API levels below 33.
-     * It is triggered by a call to setCharacteristicNotification() for the characteristic
-     * which changes you want to be notified about. In this version, the value must be read
-     * from the characteristic object itself.
+     * Note: The callback signature is the same across all API levels. What changed in API 33+
+     * is how you access the value (directly vs. from characteristic.value).
      *
      * @param gatt The GATT client that connects to the GATT server on the Bluetooth device.
      * @param characteristic The characteristic whose value has changed.
      */
-    @Deprecated("Deprecated in API 33")
     override fun onCharacteristicChanged(
         gatt: BluetoothGatt,
         characteristic: BluetoothGattCharacteristic,
     ) {
-        @Suppress("DEPRECATION")
         super.onCharacteristicChanged(gatt, characteristic)
 
         @Suppress("DEPRECATION")
