@@ -428,6 +428,9 @@ class BleDeviceInterface(
      * that the write was successful or indicating an error. This is particularly important
      * for WRITE_TYPE_DEFAULT operations which require a response from the peripheral.
      *
+     * For chunked writes, it's critical that the Flutter/Dart layer waits for this callback
+     * before sending the next chunk. The BLE specification requires sequential writes.
+     *
      * Note: The callback signature is the same across all API levels. What changed in API 33+
      * is the write method signature, not the callback signature.
      *
@@ -443,10 +446,24 @@ class BleDeviceInterface(
         super.onCharacteristicWrite(gatt, characteristic, status)
 
         mainHandler.post {
-            if (status != BluetoothGatt.GATT_SUCCESS) {
+            if (status == BluetoothGatt.GATT_SUCCESS) {
                 channel.invokeMethod(
-                    "error",
-                    "Failed to write characteristic with UUID ${characteristic.uuid}: GATT status $status"
+                    "onCharacteristicWrite",
+                    mapOf(
+                        "deviceAddress" to gatt.device.address,
+                        "characteristicUuid" to characteristic.uuid.toString(),
+                        "success" to true
+                    )
+                )
+            } else {
+                channel.invokeMethod(
+                    "onCharacteristicWrite",
+                    mapOf(
+                        "deviceAddress" to gatt.device.address,
+                        "characteristicUuid" to characteristic.uuid.toString(),
+                        "success" to false,
+                        "error" to "Failed to write characteristic: GATT status $status"
+                    )
                 )
             }
         }
