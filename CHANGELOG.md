@@ -177,3 +177,15 @@ All notable changes to the `flutter_splendid_ble` plugin will be documented in t
 
 ### Breaking Changes
 - Android apps must now declare Bluetooth permissions in their AndroidManifest.xml (see documentation)
+
+## [0.20.0] 2025/12/30
+
+- Enhanced Android BLE write operations with improved reliability and asynchronous handling
+  - Implemented sequential write operation queue to prevent race conditions
+  - Added completion feedback for successful write operations
+  - Updated Method Channel to return results after write operations complete
+  - Improved error handling for Android API 33+
+- Fixed UUID filtering for BLE device scanning on Android
+- Fixed service UUID reporting accuracy on iOS
+- Code cleanup and optimization for better performance
+- Updated documentation for improved clarity
