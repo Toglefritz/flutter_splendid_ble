@@ -201,6 +201,9 @@ The firmware is implemented as a **PlatformIO project** and is configured by def
 **M5 Stack ATOM Matrix ESP32 Development Kit**, though it can be easily adapted for other ESP32 boards
 by modifying the `platformio.ini` configuration file.
 
+**Important**: The actual PlatformIO project is located at `firmware/esp32_bluetooth_tester/esp32_bluetooth_tester/`
+due to the git submodule structure. The build tools in the `tools/` directory handle this automatically.
+
 The ESP32 test firmware implements:
 
 - **Standard BLE Services**: Heart Rate, Battery, Device Information, and custom test services
@@ -217,6 +220,7 @@ The ESP32 test firmware implements:
 - ESP32 development board (by default configured for the M5 Stack ATOM Matrix ESP32 Development Kit)
 - USB cable for programming and power
 - PlatformIO IDE development environment
+- Git submodule initialized (the build tools can do this automatically)
 
 **Note**: While the firmware is configured for the M5 Stack ATOM Matrix by default, it can be adapted 
 for other ESP32 boards by modifying the `board` setting in `platformio.ini`. Common alternatives include:
@@ -244,9 +248,30 @@ for other ESP32 boards by modifying the `board` setting in `platformio.ini`. Com
 
 #### Building and Flashing the Firmware
 
+The repository includes convenient build tools in the `tools/` directory for easy firmware management.
+
+**Option 1: Using the Makefile (Linux/macOS)**
+```bash
+cd tools
+make flash  # Build, upload, and monitor (recommended)
+```
+
+**Option 2: Using the shell script (Linux/macOS)**
+```bash
+cd tools
+./flash_firmware.sh flash
+```
+
+**Option 3: Using PowerShell script (Windows)**
+```powershell
+cd tools
+.\flash_firmware.ps1 flash
+```
+
+**Option 4: Direct PlatformIO commands**
 1. **Navigate to the firmware directory**:
    ```bash
-   cd firmware/esp32_bluetooth_tester
+   cd firmware/esp32_bluetooth_tester/esp32_bluetooth_tester
    ```
 
 2. **Build and flash using PlatformIO** (recommended):
@@ -269,6 +294,8 @@ for other ESP32 boards by modifying the `board` setting in `platformio.ini`. Com
    idf.py build
    idf.py -p /dev/ttyUSB0 flash monitor
    ```
+
+For detailed information about the build tools, see `tools/README.md`.
 
 #### Verifying the Setup
 

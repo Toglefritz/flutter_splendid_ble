@@ -1,0 +1,6 @@
+# Build artifacts and temporary files
+*.log
+*.tmp
+backups/
+.DS_Store
+Thumbs.db
