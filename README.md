@@ -21,12 +21,34 @@ advanced use cases and configurations, refer to the full documentation on the
 
 ## Testing
 
-The Flutter Splendid BLE plugin includes robust testing capabilities to support reliable development
-workflows. It provides a `FakeCentralMethodChannel` implementation that allows developers to simulate
+The Flutter Splendid BLE plugin includes comprehensive testing capabilities to support reliable development 
+workflows across multiple testing levels:
+
+### Unit and Mock Testing
+The plugin provides a `FakeCentralMethodChannel` implementation that allows developers to simulate
 Bluetooth scanning, connection states, characteristic read/write operations, and more, entirely in a
 test environment without requiring physical BLE hardware. These tools are designed to make it easy
 to write both unit and integration tests that validate application logic under realistic BLE
-scenarios. For detailed instructions and examples, refer to the TESTING.md file in this repository.
+scenarios.
+
+### Hardware Integration Testing
+For end-to-end testing with real BLE hardware, this repository includes an ESP32 firmware submodule
+(`firmware/esp32_bluetooth_tester`) that provides a standardized BLE peripheral for testing plugin
+functionality. The ESP32 firmware implements a comprehensive set of BLE services and characteristics
+specifically designed to validate all aspects of the plugin's capabilities, including:
+
+- Device discovery and connection management
+- Service and characteristic discovery
+- Read, write, and notification operations
+- Error handling and edge cases
+- Performance and reliability testing
+
+The ESP32 test firmware ensures consistent, reproducible testing conditions across different
+development environment. This hardware-in-the-loop testing approach provides confidence that the 
+plugin works correctly with real BLE devices, not just mocked implementations.
+
+For detailed instructions on setting up the test hardware, building the firmware, and running
+integration tests, refer to the TESTING.md file in this repository.
 
 ### **Step 1**: Set Up Your Flutter Project
 
@@ -194,6 +216,7 @@ Future<void> readCharacteristic(BleCharacteristic characteristic) async {
 - [Main Goals](#main-goals)
 - [Documentation Site](#documentation-site)
 - [Installation](#installation)
+    - [Development Setup](#development-setup)
 - [Prerequisites](#prerequisites)
     - [iOS/macOS Prerequisites](#iosmacos-prerequisites)
     - [Android Prerequisites](#android-prerequisites)
@@ -285,6 +308,23 @@ In the files in which you wish to use the plugin, import it by adding:
 ```dart
 import 'package:flutter_splendid_ble/splendid_ble.dart';
 ```
+
+### Development Setup
+
+If you're contributing to this plugin or need to run integration tests with real hardware:
+
+1. **Clone with submodules** to get the ESP32 test firmware:
+   ```bash
+   git clone --recurse-submodules https://github.com/your-org/flutter_splendid_ble.git
+   ```
+
+2. **For existing clones**, initialize the submodule:
+   ```bash
+   git submodule update --init --recursive
+   ```
+
+The ESP32 firmware submodule provides standardized BLE peripheral functionality for comprehensive
+integration testing. See the TESTING.md file for complete setup instructions.
 
 ## Prerequisites
 

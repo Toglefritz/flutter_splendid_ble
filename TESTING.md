@@ -1,14 +1,24 @@
-# Flutter Splendid BLE Plugin – Mocking Bluetooth for Testing
+# Flutter Splendid BLE Plugin – Testing Guide
 
-The **Flutter Splendid BLE** plugin provides a flexible and developer-friendly Bluetooth Low
-Energy (BLE) API for Flutter applications. To support testing and simulator-based development, the
-plugin includes built-in tools for mocking BLE behavior, most notably the
-`FakeCentralMethodChannel`.
+The **Flutter Splendid BLE** plugin provides comprehensive testing capabilities to ensure reliable
+development workflows across multiple testing levels. This guide covers both mock-based testing
+for unit and integration tests, and hardware-based testing using real BLE devices.
 
-This guide explains how to simulate BLE interactions using `FakeCentralMethodChannel`, enabling
-integration tests and development on simulators or devices without real BLE hardware.
+## Testing Approaches
 
-## Why Mock BLE?
+The plugin supports two complementary testing strategies:
+
+1. **Mock Testing**: Using `FakeCentralMethodChannel` for unit tests, integration tests, and
+   simulator-based development without requiring physical BLE hardware.
+
+2. **Hardware Integration Testing**: Using the included ESP32 firmware submodule to test against
+   real BLE hardware with standardized, predictable behavior.
+
+Both approaches are essential for comprehensive validation of BLE functionality.
+
+## Part 1: Mock Testing with FakeCentralMethodChannel
+
+### Why Mock BLE?
 
 Flutter integration tests typically run on emulators and simulators that lack BLE capabilities.
 Additionally, during development, it’s often useful to simulate different device behaviors (e.g.
@@ -20,7 +30,7 @@ Mocking helps you:
 - Develop features that depend on BLE on platforms that don’t support it.
 - Validate filtering and connection logic without custom device firmware.
 
-## FakeCentralMethodChannel Overview
+### FakeCentralMethodChannel Overview
 
 `FakeCentralMethodChannel` is a fake implementation of the `CentralPlatformInterface` and can be
 injected into your app in place of the real platform channel.
@@ -33,9 +43,9 @@ It lets you:
 - Mock service discovery and characteristic reads.
 - Inject Bluetooth state and permission status.
 
-## Getting Started
+### Getting Started with Mock Testing
 
-### Injecting the Fake Central into Your App
+#### Injecting the Fake Central into Your App
 
 In tests, initialize `SplendidBleCentral` with `FakeCentralMethodChannel`:
 
@@ -49,7 +59,7 @@ setUp(() {
 });
 ```
 
-### Simulating BLE Scans
+#### Simulating BLE Scans
 
 Add fake BLE devices before launching your test widget:
 
@@ -79,7 +89,7 @@ await tester.pumpAndSettle();
 expect(find.text('Test Device'), findsOneWidget);
 ```
 
-### Device Filtering
+#### Device Filtering
 
 Filters can be applied in tests using the `ScanFilter` class:
 
@@ -113,7 +123,7 @@ ScanFilter(
 )
 ```
 
-### Simulating Connections
+#### Simulating Connections
 
 You can set and update connection states manually:
 
@@ -129,7 +139,7 @@ fakeCentral.simulateConnectionStateUpdate
 This enables validation of UI reactions to state transitions in widgets like `DeviceDetailsRoute`
 found in the example app.
 
-### Mocking Service Discovery
+#### Mocking Service Discovery
 
 Add mock services to simulate discovery results:
 
@@ -146,7 +156,7 @@ fakeCentral.setServices(device.address, [
 
 This is useful when testing navigation to service/characteristic details after connecting.
 
-## Where to See It in Action
+### Mock Testing Examples
 
 See _scan_route_test.dart_ in the _example/_ directory for a full examples using:
 
@@ -168,3 +178,120 @@ See _device_details_route_test.dart_ for testing connection state changes and se
 
 It’s a powerful tool built into the Flutter Splendid BLE plugin to ensure confidence and flexibility
 in your BLE app development workflow.
+
+## Part 2: Hardware Integration Testing with ESP32
+
+### Why Hardware Testing?
+
+While mock testing validates application logic, hardware integration testing ensures that the plugin
+works correctly with real BLE devices. This is essential for:
+
+- Validating actual BLE protocol implementation
+- Testing performance and reliability under real-world conditions
+- Ensuring compatibility across different BLE chipsets and implementations
+- Catching platform-specific issues that mocks cannot simulate
+- Verifying timing-sensitive operations like connection intervals and notifications
+
+### ESP32 Test Firmware Overview
+
+This repository includes an ESP32 firmware submodule (`firmware/esp32_bluetooth_tester`) that provides
+a standardized BLE peripheral specifically designed for testing the Flutter Splendid BLE plugin.
+
+The firmware is implemented as a **PlatformIO project** and is configured by default for the 
+**M5 Stack ATOM Matrix ESP32 Development Kit**, though it can be easily adapted for other ESP32 boards
+by modifying the `platformio.ini` configuration file.
+
+The ESP32 test firmware implements:
+
+- **Standard BLE Services**: Heart Rate, Battery, Device Information, and custom test services
+- **Comprehensive Characteristics**: Read, write, notify, and indicate characteristics with various properties
+- **Error Simulation**: Configurable error conditions for testing error handling
+- **Performance Testing**: High-frequency notifications and large data transfers
+- **Edge Cases**: Connection parameter negotiation, bonding, and security features
+- **Visual Feedback**: LED matrix display on M5 Stack ATOM Matrix for connection status and activity
+
+### Hardware Setup
+
+#### Prerequisites
+
+- ESP32 development board (by default configured for the M5 Stack ATOM Matrix ESP32 Development Kit)
+- USB cable for programming and power
+- PlatformIO IDE development environment
+
+**Note**: While the firmware is configured for the M5 Stack ATOM Matrix by default, it can be adapted 
+for other ESP32 boards by modifying the `board` setting in `platformio.ini`. Common alternatives include:
+- `esp32dev` (Generic ESP32 development board)
+- `esp32-s3-devkitc-1` (ESP32-S3 DevKitC)
+- `m5stack-core-esp32` (M5Stack Core)
+- `m5stick-c` (M5StickC)
+
+#### Setting Up the Development Environment
+
+1. **Install PlatformIO** (recommended approach):
+   ```bash
+   # Install PlatformIO Core CLI
+   pip install platformio
+   
+   # Or install PlatformIO IDE extension for VS Code
+   # Search for "PlatformIO IDE" in VS Code extensions
+   ```
+
+2. **Alternative: ESP-IDF Setup**:
+   ```bash
+   # Follow the official ESP-IDF installation guide
+   # https://docs.espressif.com/projects/esp-idf/en/latest/esp32/get-started/
+   ```
+
+#### Building and Flashing the Firmware
+
+1. **Navigate to the firmware directory**:
+   ```bash
+   cd firmware/esp32_bluetooth_tester
+   ```
+
+2. **Build and flash using PlatformIO** (recommended):
+   ```bash
+   # Build the project
+   pio run
+   
+   # Upload to connected device (auto-detects port)
+   pio run --target upload
+   
+   # Monitor serial output
+   pio device monitor
+   
+   # Or combine upload and monitor
+   pio run --target upload --target monitor
+   ```
+
+3. **Alternative: Build and flash using ESP-IDF**:
+   ```bash
+   idf.py build
+   idf.py -p /dev/ttyUSB0 flash monitor
+   ```
+
+#### Verifying the Setup
+
+After flashing, the ESP32 should:
+
+- Start advertising as "SplendidBLE-Tester"
+- Show status information via serial output
+- Be discoverable by BLE scanning applications
+- Display connection status on the LED matrix (M5 Stack ATOM Matrix only)
+
+#### Customizing for Different ESP32 Boards
+
+If you're using a different ESP32 board, modify the `platformio.ini` file in the firmware directory:
+
+```ini
+[env:your_board]
+platform = espressif32
+board = esp32dev  ; Change this to your board type
+framework = arduino
+monitor_speed = 115200
+
+; Add any board-specific build flags
+build_flags = 
+    -DCORE_DEBUG_LEVEL=3
+    -DBOARD_HAS_PSRAM
+```
