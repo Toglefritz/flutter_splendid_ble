@@ -1,6 +1,3 @@
-[submodule "firmware/esp32_ble_tester"]
-	path = firmware/esp32_ble_tester
-	url = https://github.com/Toglefritz/esp32_ble_tester
 [submodule "firmware/esp32_bluetooth_tester"]
 	path = firmware/esp32_bluetooth_tester
 	url = https://github.com/Toglefritz/esp32_ble_tester
