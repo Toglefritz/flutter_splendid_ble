@@ -248,33 +248,28 @@ for other ESP32 boards by modifying the `board` setting in `platformio.ini`. Com
 
 #### Building and Flashing the Firmware
 
-The repository includes convenient build tools in the `tools/` directory for easy firmware management.
-
-**Option 1: Using the Makefile (Linux/macOS)**
+**Option 1: Using the Makefile (Linux/macOS/Windows) - Recommended**
 ```bash
-cd tools
-make flash  # Build, upload, and monitor (recommended)
+cd firmware/esp32_ble_tester
+make flash  # Build, upload, and monitor in one command
 ```
 
-**Option 2: Using the shell script (Linux/macOS)**
-```bash
-cd tools
-./flash_firmware.sh flash
-```
+Available Makefile commands:
+- `make build` - Build the firmware only
+- `make upload` - Upload firmware to connected ESP32
+- `make monitor` - Start serial monitor
+- `make flash` - Build, upload, and monitor (recommended)
+- `make clean` - Clean build artifacts
+- `make devices` - List connected devices
+- `make help` - Show all available commands
 
-**Option 3: Using PowerShell script (Windows)**
-```powershell
-cd tools
-.\flash_firmware.ps1 flash
-```
-
-**Option 4: Direct PlatformIO commands**
+**Option 2: Direct PlatformIO commands**
 1. **Navigate to the firmware directory**:
    ```bash
    cd firmware/esp32_ble_tester
    ```
 
-2. **Build and flash using PlatformIO** (recommended):
+2. **Build and flash using PlatformIO**:
    ```bash
    # Build the project
    pio run
@@ -294,8 +289,6 @@ cd tools
    idf.py build
    idf.py -p /dev/ttyUSB0 flash monitor
    ```
-
-For detailed information about the build tools, see `tools/README.md`.
 
 #### Verifying the Setup
 
