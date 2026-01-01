@@ -194,14 +194,14 @@ works correctly with real BLE devices. This is essential for:
 
 ### ESP32 Test Firmware Overview
 
-This repository includes an ESP32 firmware submodule (`firmware/esp32_bluetooth_tester`) that provides
+This repository includes an ESP32 firmware submodule (`firmware/esp32_ble_tester`) that provides
 a standardized BLE peripheral specifically designed for testing the Flutter Splendid BLE plugin.
 
 The firmware is implemented as a **PlatformIO project** and is configured by default for the 
 **M5 Stack ATOM Matrix ESP32 Development Kit**, though it can be easily adapted for other ESP32 boards
 by modifying the `platformio.ini` configuration file.
 
-**Important**: The actual PlatformIO project is located at `firmware/esp32_bluetooth_tester/esp32_bluetooth_tester/`
+**Important**: The actual PlatformIO project is located at `firmware/esp32_ble_tester/`
 due to the git submodule structure. The build tools in the `tools/` directory handle this automatically.
 
 The ESP32 test firmware implements:
@@ -271,7 +271,7 @@ cd tools
 **Option 4: Direct PlatformIO commands**
 1. **Navigate to the firmware directory**:
    ```bash
-   cd firmware/esp32_bluetooth_tester/esp32_bluetooth_tester
+   cd firmware/esp32_ble_tester
    ```
 
 2. **Build and flash using PlatformIO** (recommended):
