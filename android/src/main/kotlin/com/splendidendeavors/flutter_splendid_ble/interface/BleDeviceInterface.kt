@@ -121,6 +121,29 @@ class BleDeviceInterface(
     private val devicesAwaitingMtu: MutableSet<String> = mutableSetOf()
 
     /**
+     * Tracks devices that have pending descriptor write operations in progress.
+     *
+     * The BLE specification requires that only one GATT operation can be in progress at a time
+     * per device. This includes:
+     * - Characteristic writes
+     * - Characteristic reads
+     * - Descriptor writes (e.g., enabling/disabling notifications)
+     * - Descriptor reads
+     *
+     * When enabling notifications via subscribeToCharacteristic(), a descriptor write operation
+     * is initiated. If a characteristic write is attempted before the descriptor write completes,
+     * it will fail with "Failed to initiate write operation".
+     *
+     * This set tracks which devices currently have descriptor writes in progress, allowing
+     * the writeCharacteristic() method to detect this condition and return an appropriate error
+     * instead of silently failing.
+     *
+     * The device address is added when a descriptor write begins and removed when
+     * onDescriptorWrite() callback fires.
+     */
+    private val devicesWithPendingDescriptorWrites: MutableSet<String> = mutableSetOf()
+
+    /**
      * Get the BluetoothGatt instance for a specific device address.
      *
      * @param deviceAddress The MAC address of the Bluetooth device.
@@ -195,9 +218,10 @@ class BleDeviceInterface(
                 }
 
                 BluetoothProfile.STATE_DISCONNECTED -> {
-                    // Clean up pending writes and MTU tracking when disconnected
+                    // Clean up all pending operations and tracking when disconnected
                     pendingWrites.remove(deviceAddress)
                     devicesAwaitingMtu.remove(deviceAddress)
+                    devicesWithPendingDescriptorWrites.remove(deviceAddress)
                     channel.invokeMethod("bleConnectionState_$deviceAddress", ConnectionState.DISCONNECTED.name)
                 }
 
@@ -363,8 +387,9 @@ class BleDeviceInterface(
             bluetoothGattMap[deviceAddress]?.disconnect()
             bluetoothGattMap.remove(deviceAddress)
 
-            // Clean up pending writes for this device
+            // Clean up all pending operations for this device
             pendingWrites.remove(deviceAddress)
+            devicesWithPendingDescriptorWrites.remove(deviceAddress)
         } catch (e: SecurityException) {
             channel.invokeMethod(
                 "error",
@@ -482,7 +507,19 @@ class BleDeviceInterface(
         writeType: Int = BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT,
         result: MethodChannel.Result
     ) {
-        // Check if a write is already pending for this device
+        // Check if a descriptor write is in progress for this device
+        // This commonly happens when trying to write immediately after enabling notifications
+        if (devicesWithPendingDescriptorWrites.contains(deviceAddress)) {
+            result.error(
+                "DESCRIPTOR_WRITE_IN_PROGRESS",
+                "A descriptor write operation (likely notification setup) is in progress for device $deviceAddress. " +
+                "Please wait for it to complete before writing. This typically takes 50-100ms.",
+                null
+            )
+            return
+        }
+
+        // Check if a characteristic write is already pending for this device
         if (pendingWrites.containsKey(deviceAddress)) {
             result.error(
                 "WRITE_IN_PROGRESS",
@@ -774,11 +811,15 @@ class BleDeviceInterface(
                 }
 
                 // Set the descriptor value to enable or disable notifications
-                val descriptorValue = if (enable) {
+                val descriptorValue: ByteArray = if (enable) {
                     BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
                 } else {
                     BluetoothGattDescriptor.DISABLE_NOTIFICATION_VALUE
                 }
+
+                // Mark this device as having a pending descriptor write
+                // This will be cleared in onDescriptorWrite callback
+                devicesWithPendingDescriptorWrites.add(deviceAddress)
 
                 // Write the value to the descriptor to enable/disable notifications on the device
                 // Use the appropriate API based on Android version
@@ -824,7 +865,12 @@ class BleDeviceInterface(
     ) {
         super.onDescriptorWrite(gatt, descriptor, status)
 
+        val deviceAddress: String = gatt.device.address
+
         mainHandler.post {
+            // Clear the pending descriptor write flag for this device
+            devicesWithPendingDescriptorWrites.remove(deviceAddress)
+
             if (status != BluetoothGatt.GATT_SUCCESS) {
                 channel.invokeMethod(
                     "error",
