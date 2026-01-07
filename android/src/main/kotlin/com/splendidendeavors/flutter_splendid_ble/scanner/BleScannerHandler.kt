@@ -47,6 +47,20 @@ class BleScannerHandler(private val channel: MethodChannel, activity: Context) {
     private val bluetoothLeScanner: BluetoothLeScanner
     private var scanCallback: ScanCallback? = null
 
+    /**
+     * Set of device addresses that have been discovered during the current scan session.
+     * This tracks which devices we've seen before to differentiate between initial advertisement
+     * and scan response packets.
+     */
+    private val discoveredDevices: MutableSet<String> = mutableSetOf()
+
+    /**
+     * Stores partial advertisement data for devices that support scan responses.
+     * The key is the device address, and the value contains the initial ScanResult.
+     * This data is merged with scan response data before being emitted to Flutter.
+     */
+    private val partialAdvertisementData: MutableMap<String, ScanResult> = mutableMapOf()
+
     init {
         val bluetoothManager =
             activity.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
@@ -74,14 +88,18 @@ class BleScannerHandler(private val channel: MethodChannel, activity: Context) {
      */
     fun startScan(scanFilters: List<ScanFilter>? = null, scanSettings: ScanSettings? = null) {
         try {
+            // Clear previous scan session data
+            discoveredDevices.clear()
+            partialAdvertisementData.clear()
+
             // Define a scan callback
             scanCallback = object : ScanCallback() {
                 override fun onScanResult(callbackType: Int, result: ScanResult?) {
                     result?.let {
-                        val resultServiceUuids = it.scanRecord?.serviceUuids?.map { parcelUuid -> parcelUuid.uuid }?.toSet() ?: emptySet()
-                        val filterServiceUuids = scanFilters?.mapNotNull { filter ->
+                        val resultServiceUuids: Set<UUID> = it.scanRecord?.serviceUuids?.map { parcelUuid -> parcelUuid.uuid }?.toSet() ?: emptySet()
+                        val filterServiceUuids: Set<UUID> = scanFilters?.mapNotNull { filter ->
                             try {
-                                val field = ScanFilter::class.java.getDeclaredField("mUuid")
+                                val field: java.lang.reflect.Field = ScanFilter::class.java.getDeclaredField("mUuid")
                                 field.isAccessible = true
                                 (field.get(filter) as? ParcelUuid)?.uuid
                             } catch (e: Exception) {
@@ -89,42 +107,47 @@ class BleScannerHandler(private val channel: MethodChannel, activity: Context) {
                             }
                         }?.toSet() ?: emptySet()
 
-                        val uuidFilterMatches = filterServiceUuids.isEmpty() || resultServiceUuids.any { uuid -> uuid in filterServiceUuids }
+                        val uuidFilterMatches: Boolean = filterServiceUuids.isEmpty() || resultServiceUuids.any { uuid -> uuid in filterServiceUuids }
 
                         if (!uuidFilterMatches) return
 
-                        // Extract the manufacturer data
-                        val manufacturerDataMap = it.scanRecord?.manufacturerSpecificData
-                        val manufacturerData = manufacturerDataMap?.let { dataMap ->
-                            val stringBuilder = StringBuilder()
-                            for (i in 0 until dataMap.size()) {
-                                val key = dataMap.keyAt(i)
-                                val value = dataMap[key]
-                                value?.joinToString(separator = "") { byte ->
-                                    "%02x".format(byte)
-                                }?.let { hexString ->
-                                    stringBuilder.append(hexString)
-                                }
+                        val deviceAddress: String = it.device.address
+                        val isFirstDiscovery: Boolean = !discoveredDevices.contains(deviceAddress)
+
+                        // Check if the device is connectable (may indicate scan response support)
+                        val isConnectable: Boolean = it.isConnectable
+
+                        if (isFirstDiscovery) {
+                            // Mark this device as discovered
+                            discoveredDevices.add(deviceAddress)
+
+                            // If the device is connectable, it might send a scan response. Store the initial data and wait.
+                            if (isConnectable) {
+                                partialAdvertisementData[deviceAddress] = it
+                                return // Don't emit yet - wait for potential scan response
                             }
-                            stringBuilder.toString()
+
+                            // Device is not connectable, so no scan response is expected. Emit immediately.
+                            emitDeviceDiscovery(it, scanFilters)
+                        } else {
+                            // This is a subsequent discovery - likely a scan response or duplicate advertisement
+
+                            // Check if we have stored partial data (meaning we're waiting for scan response)
+                            val partialData: ScanResult? = partialAdvertisementData[deviceAddress]
+                            if (partialData != null) {
+                                // This is the scan response. The ScanResult already contains merged data.
+                                // Android automatically merges advertisement + scan response data in the ScanResult.
+                                // Clean up the partial data storage
+                                partialAdvertisementData.remove(deviceAddress)
+
+                                // Emit the complete device information with merged data
+                                emitDeviceDiscovery(it, scanFilters)
+                            } else {
+                                // We've seen this device before but aren't waiting for scan response
+                                // This is a duplicate advertisement - emit it
+                                emitDeviceDiscovery(it, scanFilters)
+                            }
                         }
-
-
-                        // Create a map with device details
-                        val deviceMap = mapOf(
-                            "name" to it.device.name,
-                            "address" to it.device.address,
-                            "rssi" to it.rssi,
-                            "manufacturerData" to manufacturerData,
-                            "advertisedServiceUuids" to (it.scanRecord?.serviceUuids?.map { parcelUuid -> parcelUuid.toString() } ?: emptyList()),
-                            // ... add other details as needed
-                        )
-
-                        // Construct DiscoveredDevice (either as an object or a map)
-                        val discoveredDevice = DiscoveredDevice(deviceMap)
-
-                        // Invoke method on Flutter side
-                        channel.invokeMethod("bleDeviceScanned", discoveredDevice.toMap())
                     }
                 }
             }
@@ -150,6 +173,48 @@ class BleScannerHandler(private val channel: MethodChannel, activity: Context) {
     }
 
     /**
+     * Emits device discovery information to the Flutter/Dart side.
+     *
+     * This method formats the scan result's advertisement data and sends it through the method channel
+     * to notify the Flutter side that a BLE device has been discovered.
+     *
+     * @param scanResult The discovered device's ScanResult containing complete advertisement data.
+     * @param scanFilters The filters used for the scan (for UUID filtering).
+     */
+    private fun emitDeviceDiscovery(scanResult: ScanResult, scanFilters: List<ScanFilter>?) {
+        // Extract the manufacturer data
+        val manufacturerDataMap = scanResult.scanRecord?.manufacturerSpecificData
+        val manufacturerData: String? = manufacturerDataMap?.let { dataMap ->
+            val stringBuilder = StringBuilder()
+            for (i in 0 until dataMap.size()) {
+                val key: Int = dataMap.keyAt(i)
+                val value: ByteArray? = dataMap[key]
+                value?.joinToString(separator = "") { byte ->
+                    "%02x".format(byte)
+                }?.let { hexString ->
+                    stringBuilder.append(hexString)
+                }
+            }
+            stringBuilder.toString()
+        }
+
+        // Create a map with device details
+        val deviceMap: Map<String, Any?> = mapOf(
+            "name" to scanResult.device.name,
+            "address" to scanResult.device.address,
+            "rssi" to scanResult.rssi,
+            "manufacturerData" to manufacturerData,
+            "advertisedServiceUuids" to (scanResult.scanRecord?.serviceUuids?.map { parcelUuid -> parcelUuid.toString() } ?: emptyList()),
+        )
+
+        // Construct DiscoveredDevice
+        val discoveredDevice = DiscoveredDevice(deviceMap)
+
+        // Invoke method on Flutter side
+        channel.invokeMethod("bleDeviceScanned", discoveredDevice.toMap())
+    }
+
+    /**
      * Stops scanning for nearby Bluetooth devices.
      *
      * This method stops the scanning process that was initiated with startScan().
@@ -167,6 +232,9 @@ class BleScannerHandler(private val channel: MethodChannel, activity: Context) {
                 bluetoothLeScanner.stopScan(scanCallback)
                 scanCallback = null // Clear the callback reference
             }
+            // Clear scan session data
+            discoveredDevices.clear()
+            partialAdvertisementData.clear()
         } catch (e: SecurityException) {
             channel.invokeMethod(
                 "error",

@@ -149,6 +149,10 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
                 }
             }
             
+            // Clear previous scan session data
+            discoveredDevices.removeAll()
+            partialAdvertisementData.removeAll()
+
             // Start scanning with optional service UUIDs and options.
             centralManager.scanForPeripherals(withServices: serviceUUIDs, options: options)
             result(nil)
@@ -168,6 +172,9 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
         case CentralMethod.stopScan.rawValue:
             // Stop scanning for BLE devices
             centralManager.stopScan()
+            // Clear scan session data
+            discoveredDevices.removeAll()
+            partialAdvertisementData.removeAll()
             result(nil)
             
         case CentralMethod.connect.rawValue:
@@ -272,11 +279,15 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
         emitCurrentBluetoothStatus()
     }
     
-    // A list of UUIDs discovered by the scanning process. This is used to determine if a peripheral about which data is sent in the didDiscover method
-    // below, was discovered previously. This information is, in turn, used to infer if a device has sent additional information to the device in a
-    // scan response.
-    var discoveredDevices: [UUID] = []
-    
+    /// A set of device UUIDs that have been discovered during the current scan session.
+    /// This tracks which devices we've seen before to differentiate between initial advertisement and scan response packets.
+    private var discoveredDevices: Set<UUID> = []
+
+    /// Stores partial advertisement data for devices that support scan responses.
+    /// The key is the peripheral UUID, and the value contains the initial advertisement data and RSSI.
+    /// This data is merged with scan response data before being emitted to Flutter.
+    private var partialAdvertisementData: [UUID: (data: [String: Any], rssi: NSNumber)] = [:]
+
     /// Called when a peripheral is discovered while scanning.
     ///
     /// Adds the discovered peripheral to the map if it isn't already there and prepares the device information to be sent to Flutter.
@@ -316,56 +327,97 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
         // Add the peripheral to the map
         peripheralsMap[peripheral.identifier.uuidString] = peripheral
         
-        // Check if the BLE device has indicated it supports scannable advertisement packets. If this is the case, the OS will automatically send a
-        // scan request and this function should receive another call when the scan response is received. This function will wait until all
-        // advertisement data is collected before returning it to the Dart side.
-        let isScannable = (advertisementData[CBAdvertisementDataIsConnectable] as? Bool ?? false) && discoveredDevices.contains(peripheral.identifier) == false
-        
-        // Add the device to the list of discovered devices if it has not already been added
-        if discoveredDevices.contains(peripheral.identifier) == false {
-            discoveredDevices.append(peripheral.identifier)
-        }
-        
-        // If the device does not indicate that more advertisement data is forthcoming, return the scan discovery information to the Dart side
-        if(!isScannable) {
-            // Get a list of service UUIDs as strings, to be sent to the Dart side.
-            let advertisedServiceUuids = (advertisementData[CBAdvertisementDataServiceUUIDsKey] as? [CBUUID])?.map { $0.uuidString }
-            
-            // Create a dictionary with device details
-            var deviceMap: [String: Any?] = [
-                "name": peripheral.name,
-                "address": peripheral.identifier.uuidString,
-                "advertisedServiceUuids": advertisedServiceUuids,
-                "rssi": RSSI.intValue,
-            ]
-            
-            // Extract the manufacturer data
-            let manufacturerData = advertisementData[CBAdvertisementDataManufacturerDataKey] as? Data
-            
-            // Process the manufacturer data if it exists
-            if let manufacturerData = manufacturerData {
-                // Check that the data is at least 2 bytes long (to extract the manufacturer identifier)
-                if manufacturerData.count >= 2 {
-                    // Extract the manufacturer identifier (first two bytes)
-                    let manufacturerIdData = manufacturerData.subdata(in: 0..<2)
-                    // Extract the manufacturer-specific payload (the remaining bytes)
-                    let manufacturerPayloadData = manufacturerData.subdata(in: 2..<manufacturerData.count)
-                    
-                    // Convert both the data parts into uppercase hexadecimal strings
-                    let manufacturerIdHex = manufacturerIdData.map { String(format: "%02X", $0) }.joined()
-                    let manufacturerPayloadHex = manufacturerPayloadData.map { String(format: "%02X", $0) }.joined()
-                    
-                    let formattedManufacturerData = "\(manufacturerIdHex)\(manufacturerPayloadHex)"
-                    
-                    deviceMap["manufacturerData"] = formattedManufacturerData
+        // Determine if this is the first time we're seeing this device
+        let isFirstDiscovery: Bool = !discoveredDevices.contains(peripheral.identifier)
+
+        // Check if the device is connectable, which may indicate it supports scan responses
+        let isConnectable: Bool = advertisementData[CBAdvertisementDataIsConnectable] as? Bool ?? false
+
+        if isFirstDiscovery {
+            // Mark this device as discovered
+            discoveredDevices.insert(peripheral.identifier)
+
+            // If the device is connectable, it might send a scan response. Store the initial data and wait.
+            if isConnectable {
+                partialAdvertisementData[peripheral.identifier] = (data: advertisementData, rssi: RSSI)
+                return // Don't emit yet - wait for potential scan response
+            }
+
+            // Device is not connectable, so no scan response is expected. Emit immediately.
+            emitDeviceDiscovery(peripheral: peripheral, advertisementData: advertisementData, rssi: RSSI)
+        } else {
+            // This is a subsequent discovery - likely a scan response or duplicate advertisement
+
+            // Check if we have stored partial data (meaning we're waiting for scan response)
+            if let partialData = partialAdvertisementData[peripheral.identifier] {
+                // This is the scan response. Merge the data and emit.
+                var mergedAdvertisementData: [String: Any] = partialData.data
+
+                // Merge the scan response data into the initial advertisement data
+                for (key, value) in advertisementData {
+                    mergedAdvertisementData[key] = value
                 }
+
+                // Clean up the partial data storage
+                partialAdvertisementData.removeValue(forKey: peripheral.identifier)
+
+                // Emit the complete device information with merged data
+                emitDeviceDiscovery(peripheral: peripheral, advertisementData: mergedAdvertisementData, rssi: RSSI)
+            } else {
+                // We've seen this device before but aren't waiting for scan response
+                // This is a duplicate advertisement - emit it
+                emitDeviceDiscovery(peripheral: peripheral, advertisementData: advertisementData, rssi: RSSI)
             }
-            
-            // Send device information to Flutter side
-            let jsonData = try? JSONSerialization.data(withJSONObject: deviceMap, options: [])
-            if let jsonData = jsonData, let jsonString = String(data: jsonData, encoding: .utf8) {
-                centralChannel.invokeMethod("bleDeviceScanned", arguments: jsonString)
+        }
+    }
+
+    /// Emits device discovery information to the Flutter/Dart side.
+    ///
+    /// This method formats the peripheral's advertisement data and sends it through the method channel
+    /// to notify the Flutter side that a BLE device has been discovered.
+    ///
+    /// - Parameters:
+    ///   - peripheral: The discovered `CBPeripheral` device.
+    ///   - advertisementData: The complete advertisement data for the device.
+    ///   - rssi: The received signal strength indicator (RSSI) value.
+    private func emitDeviceDiscovery(peripheral: CBPeripheral, advertisementData: [String: Any], rssi: NSNumber) {
+        // Get a list of service UUIDs as strings, to be sent to the Dart side.
+        let advertisedServiceUuids: [String]? = (advertisementData[CBAdvertisementDataServiceUUIDsKey] as? [CBUUID])?.map { $0.uuidString }
+
+        // Create a dictionary with device details
+        var deviceMap: [String: Any?] = [
+            "name": peripheral.name,
+            "address": peripheral.identifier.uuidString,
+            "advertisedServiceUuids": advertisedServiceUuids,
+            "rssi": rssi.intValue,
+        ]
+
+        // Extract the manufacturer data
+        let manufacturerData: Data? = advertisementData[CBAdvertisementDataManufacturerDataKey] as? Data
+
+        // Process the manufacturer data if it exists
+        if let manufacturerData = manufacturerData {
+            // Check that the data is at least 2 bytes long (to extract the manufacturer identifier)
+            if manufacturerData.count >= 2 {
+                // Extract the manufacturer identifier (first two bytes)
+                let manufacturerIdData: Data = manufacturerData.subdata(in: 0..<2)
+                // Extract the manufacturer-specific payload (the remaining bytes)
+                let manufacturerPayloadData: Data = manufacturerData.subdata(in: 2..<manufacturerData.count)
+
+                // Convert both the data parts into uppercase hexadecimal strings
+                let manufacturerIdHex: String = manufacturerIdData.map { String(format: "%02X", $0) }.joined()
+                let manufacturerPayloadHex: String = manufacturerPayloadData.map { String(format: "%02X", $0) }.joined()
+
+                let formattedManufacturerData: String = "\(manufacturerIdHex)\(manufacturerPayloadHex)"
+
+                deviceMap["manufacturerData"] = formattedManufacturerData
             }
+        }
+
+        // Send device information to Flutter side
+        let jsonData: Data? = try? JSONSerialization.data(withJSONObject: deviceMap, options: [])
+        if let jsonData = jsonData, let jsonString = String(data: jsonData, encoding: .utf8) {
+            centralChannel.invokeMethod("bleDeviceScanned", arguments: jsonString)
         }
     }
     
