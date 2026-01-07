@@ -880,10 +880,36 @@ class BleDeviceInterface(
                 return
             }
 
-            // Set the descriptor value to enable or disable notifications
+            // Determine the descriptor value based on whether we're enabling/disabling
+            // and whether the characteristic supports notifications vs indications
             val descriptorValue: ByteArray = if (enable) {
-                BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
+                // Check characteristic properties to determine if it supports indications or notifications
+                val supportsNotify: Boolean = (characteristic.properties and BluetoothGattCharacteristic.PROPERTY_NOTIFY) != 0
+                val supportsIndicate: Boolean = (characteristic.properties and BluetoothGattCharacteristic.PROPERTY_INDICATE) != 0
+
+                when {
+                    supportsIndicate -> {
+                        // Prefer indications if supported (indications require acknowledgment, more reliable)
+                        BluetoothGattDescriptor.ENABLE_INDICATION_VALUE
+                    }
+                    supportsNotify -> {
+                        // Use notifications if supported
+                        BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
+                    }
+                    else -> {
+                        // Characteristic doesn't support notifications or indications
+                        pendingDescriptorWrites.remove(deviceAddress)
+                        devicesWithPendingDescriptorWrites.remove(deviceAddress)
+                        result.error(
+                            "NOT_SUPPORTED",
+                            "Characteristic $characteristicUuid does not support notifications or indications",
+                            null
+                        )
+                        return
+                    }
+                }
             } else {
+                // Disabling - same value for both notifications and indications
                 BluetoothGattDescriptor.DISABLE_NOTIFICATION_VALUE
             }
 
