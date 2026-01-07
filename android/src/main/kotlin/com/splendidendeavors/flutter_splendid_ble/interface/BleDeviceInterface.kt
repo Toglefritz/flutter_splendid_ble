@@ -104,6 +104,23 @@ class BleDeviceInterface(
     private val pendingWrites: MutableMap<String, PendingWrite> = mutableMapOf()
 
     /**
+     * Tracks devices that are physically connected but waiting for MTU negotiation to complete.
+     *
+     * When a BLE device connects, it goes through several initialization steps:
+     * 1. Physical connection established (STATE_CONNECTED reported by OS)
+     * 2. MTU negotiation (optional but recommended)
+     * 3. Connection parameters update
+     *
+     * This set tracks devices that are in STATE_CONNECTED but haven't completed MTU negotiation yet.
+     * We defer reporting CONNECTED to Flutter until MTU negotiation completes to ensure the
+     * connection is truly ready for communication. This prevents race conditions where Flutter
+     * attempts to write immediately after connection but before the link is fully initialized.
+     *
+     * Key is the device address (MAC address as String).
+     */
+    private val devicesAwaitingMtu: MutableSet<String> = mutableSetOf()
+
+    /**
      * Get the BluetoothGatt instance for a specific device address.
      *
      * @param deviceAddress The MAC address of the Bluetooth device.
@@ -126,30 +143,134 @@ class BleDeviceInterface(
      *
      * This method is invoked when the GATT server connection state changes between the device and
      * the remote BLE device we're connected to. States include CONNECTED, DISCONNECTED,
-     * CONNECTING, and DISCONNECTING. This method maps those states to a ConnectionState enum and
-     * forwards it to the Flutter side using the MethodChannel.
+     * CONNECTING, and DISCONNECTING.
+     *
+     * ## Important: MTU Negotiation and Connection Readiness
+     *
+     * When a device reaches STATE_CONNECTED, it is physically connected but not yet ready for
+     * reliable communication. The BLE stack needs to complete MTU (Maximum Transmission Unit)
+     * negotiation before the connection is fully initialized.
+     *
+     * To prevent race conditions where Flutter attempts to write immediately after connection
+     * but before MTU negotiation completes, this method:
+     * 1. Detects when a device reaches STATE_CONNECTED
+     * 2. Immediately requests MTU negotiation (requestMtu)
+     * 3. Marks the device as "awaiting MTU"
+     * 4. Does NOT report CONNECTED to Flutter yet
+     * 5. Waits for onMtuChanged callback
+     * 6. Only then reports CONNECTED to Flutter
+     *
+     * This ensures that when Flutter receives the CONNECTED status, the connection is truly
+     * ready for communication, eliminating the race condition.
      *
      * @param gatt The GATT client.
      * @param status The status of the operation. BluetoothGatt.GATT_SUCCESS if the operation succeeds.
      * @param newState The new state, can be one of BluetoothProfile.STATE_* constants.
      */
     override fun onConnectionStateChange(gatt: BluetoothGatt, status: Int, newState: Int) {
-        val deviceAddress = gatt.device.address
+        val deviceAddress: String = gatt.device.address
 
         mainHandler.post {
-            val state = when (newState) {
-                BluetoothProfile.STATE_CONNECTED -> ConnectionState.CONNECTED
-                BluetoothProfile.STATE_DISCONNECTED -> {
-                    // Clean up pending writes when disconnected
-                    pendingWrites.remove(deviceAddress)
-                    ConnectionState.DISCONNECTED
-                }
-                BluetoothProfile.STATE_CONNECTING -> ConnectionState.CONNECTING
-                BluetoothProfile.STATE_DISCONNECTING -> ConnectionState.DISCONNECTING
-                else -> ConnectionState.UNKNOWN
-            }
+            when (newState) {
+                BluetoothProfile.STATE_CONNECTED -> {
+                    // Device is physically connected, but not ready for communication yet
+                    // Request MTU negotiation before reporting CONNECTED to Flutter
+                    devicesAwaitingMtu.add(deviceAddress)
 
-            channel.invokeMethod("bleConnectionState_$deviceAddress", state.name)
+                    // Request MTU of 517 bytes (maximum supported by BLE 4.2+)
+                    // This will trigger onMtuChanged callback when complete
+                    try {
+                        val mtuRequested: Boolean = gatt.requestMtu(517)
+                        if (!mtuRequested) {
+                            // MTU request failed, report connected anyway to avoid blocking
+                            devicesAwaitingMtu.remove(deviceAddress)
+                            channel.invokeMethod("bleConnectionState_$deviceAddress", ConnectionState.CONNECTED.name)
+                        }
+                        // If successful, we'll report CONNECTED in onMtuChanged
+                    } catch (e: Exception) {
+                        // MTU request threw exception, report connected anyway
+                        devicesAwaitingMtu.remove(deviceAddress)
+                        channel.invokeMethod("bleConnectionState_$deviceAddress", ConnectionState.CONNECTED.name)
+                    }
+                }
+
+                BluetoothProfile.STATE_DISCONNECTED -> {
+                    // Clean up pending writes and MTU tracking when disconnected
+                    pendingWrites.remove(deviceAddress)
+                    devicesAwaitingMtu.remove(deviceAddress)
+                    channel.invokeMethod("bleConnectionState_$deviceAddress", ConnectionState.DISCONNECTED.name)
+                }
+
+                BluetoothProfile.STATE_CONNECTING -> {
+                    channel.invokeMethod("bleConnectionState_$deviceAddress", ConnectionState.CONNECTING.name)
+                }
+
+                BluetoothProfile.STATE_DISCONNECTING -> {
+                    channel.invokeMethod("bleConnectionState_$deviceAddress", ConnectionState.DISCONNECTING.name)
+                }
+
+                else -> {
+                    channel.invokeMethod("bleConnectionState_$deviceAddress", ConnectionState.UNKNOWN.name)
+                }
+            }
+        }
+    }
+
+    /**
+     * Called when the MTU (Maximum Transmission Unit) for a connection has been changed.
+     *
+     * This callback is triggered after calling requestMtu() on the GATT client. MTU negotiation
+     * is a critical step in BLE connection initialization that determines the maximum packet size
+     * that can be transmitted.
+     *
+     * ## Connection Readiness
+     *
+     * This method is the final step in connection initialization. When this callback is invoked:
+     * 1. The physical connection is established
+     * 2. MTU negotiation is complete
+     * 3. The connection is now ready for reliable communication
+     *
+     * Only at this point do we report CONNECTED status to Flutter, ensuring that when Flutter
+     * receives the connection event, it can immediately perform read/write operations without
+     * race conditions.
+     *
+     * ## MTU Value
+     *
+     * The negotiated MTU value determines the maximum size of GATT write operations:
+     * - Default MTU: 23 bytes (20 bytes payload + 3 bytes overhead)
+     * - Maximum MTU: 517 bytes (514 bytes payload + 3 bytes overhead)
+     * - Actual MTU is the minimum of what both devices support
+     *
+     * This value could be exposed to Flutter in the future if needed for optimizing write sizes.
+     *
+     * @param gatt The GATT client whose MTU has been changed
+     * @param mtu The new MTU size in bytes
+     * @param status The status of the MTU change operation (GATT_SUCCESS if successful)
+     */
+    override fun onMtuChanged(gatt: BluetoothGatt, mtu: Int, status: Int) {
+        super.onMtuChanged(gatt, mtu, status)
+
+        val deviceAddress: String = gatt.device.address
+
+        mainHandler.post {
+            // Check if this device was waiting for MTU negotiation
+            if (devicesAwaitingMtu.contains(deviceAddress)) {
+                // MTU negotiation complete, remove from waiting set
+                devicesAwaitingMtu.remove(deviceAddress)
+
+                // Now the connection is truly ready - report CONNECTED to Flutter
+                channel.invokeMethod("bleConnectionState_$deviceAddress", ConnectionState.CONNECTED.name)
+
+                // Log the negotiated MTU for debugging (optional - could be removed in production)
+                if (status == BluetoothGatt.GATT_SUCCESS) {
+                    // Successfully negotiated MTU
+                    // In the future, we could expose this value to Flutter
+                    android.util.Log.d("BleDeviceInterface", "MTU negotiated for $deviceAddress: $mtu bytes")
+                } else {
+                    // MTU negotiation failed, but connection still usable with default MTU (23 bytes)
+                    android.util.Log.w("BleDeviceInterface", "MTU negotiation failed for $deviceAddress (status: $status), using default MTU")
+                }
+            }
         }
     }
 

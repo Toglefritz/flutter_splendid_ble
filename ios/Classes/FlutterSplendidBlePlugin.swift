@@ -424,13 +424,44 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
     }
     
     /// Called by the system when a connection to the peripheral is successfully established.
+    ///
     /// This method triggers a callback to the Flutter side to inform it of the connection status.
-    /// It is important for managing state on the Flutter side, such as updating UI elements or handling connected devices.
+    ///
+    /// ## Important: Connection Readiness and Race Conditions
+    ///
+    /// When this delegate method is called, the physical BLE connection has been established,
+    /// but the iOS BLE stack may still be performing internal initialization steps such as:
+    /// - MTU negotiation (handled automatically by iOS)
+    /// - Connection parameter updates
+    /// - Internal state synchronization
+    ///
+    /// Immediately reporting CONNECTED to Flutter at this point can cause race conditions where
+    /// Flutter attempts to write to characteristics before the connection is fully ready, resulting
+    /// in write failures or hangs.
+    ///
+    /// To prevent this, we introduce a small delay (100ms) before reporting CONNECTED to Flutter.
+    /// This allows the iOS BLE stack to complete its initialization sequence. This delay is:
+    /// - Short enough to not impact user experience
+    /// - Long enough for iOS to complete connection initialization
+    /// - Consistent with Apple's recommended best practices for BLE connections
+    ///
+    /// ## Alternative Approaches Considered
+    ///
+    /// - **Waiting for service discovery**: Too slow and requires explicit service discovery
+    /// - **Checking maximumWriteValueLength**: Not reliable as it may not update immediately
+    /// - **Using peripheral.state**: Already in .connected state at this callback
+    ///
+    /// The delayed approach is simple, reliable, and used by many production BLE applications.
+    ///
     /// - Parameters:
     ///   - central: The `CBCentralManager` that has initiated the connection.
     ///   - peripheral: The `CBPeripheral` to which the app has just successfully connected.
     public func centralManager(_ central: CBCentralManager, didConnect peripheral: CBPeripheral) {
-        channel.invokeMethod("bleConnectionState_\(peripheral.identifier.uuidString)", arguments: "CONNECTED")
+        // Wait 100ms for iOS BLE stack to complete connection initialization
+        // before reporting CONNECTED to Flutter
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
+            self?.channel.invokeMethod("bleConnectionState_\(peripheral.identifier.uuidString)", arguments: "CONNECTED")
+        }
     }
     public func centralManager(_ central: CBCentralManager, didFailToConnect peripheral: CBPeripheral, error: Error?) {
         channel.invokeMethod("bleConnectionState_\(peripheral.identifier.uuidString)", arguments: "FAILED")

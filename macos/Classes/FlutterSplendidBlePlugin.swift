@@ -422,13 +422,18 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
     }
     
     /// Called by the system when a connection to the peripheral is successfully established.
+    ///
     /// This method triggers a callback to the Flutter side to inform it of the connection status.
     /// It is important for managing state on the Flutter side, such as updating UI elements or handling connected devices.
     /// - Parameters:
     ///   - central: The `CBCentralManager` that has initiated the connection.
     ///   - peripheral: The `CBPeripheral` to which the app has just successfully connected.
     public func centralManager(_ central: CBCentralManager, didConnect peripheral: CBPeripheral) {
-        centralChannel.invokeMethod("bleConnectionState_\(peripheral.identifier.uuidString)", arguments: "CONNECTED")
+        // Wait 100ms for macOS BLE stack to complete connection initialization
+        // before reporting CONNECTED to Flutter
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
+            self?.centralChannel.invokeMethod("bleConnectionState_\(peripheral.identifier.uuidString)", arguments: "CONNECTED")
+        }
     }
     
     /// Called by the system when the central manager fails to create a connection with the peripheral.
