@@ -400,13 +400,14 @@ class FlutterSplendidBlePlugin : FlutterPlugin, MethodCallHandler, ActivityAware
                 if (deviceAddress != null && characteristicUuidStr != null) {
                     val characteristicUuid = UUID.fromString(characteristicUuidStr)
                     try {
-                        // The actual implementation logic for subscribing to the characteristic
+                        // Pass result to complete later when descriptor write finishes
                         bleDeviceInterface.subscribeToCharacteristic(
                             deviceAddress,
                             characteristicUuid,
-                            true
+                            true,
+                            result // Result will be completed in onDescriptorWrite callback
                         )
-                        result.success(null)
+                        // Don't call result.success here - it will be called in onDescriptorWrite callback
                     } catch (e: Exception) {
                         result.error(
                             "SUBSCRIBE_ERROR",
@@ -430,16 +431,17 @@ class FlutterSplendidBlePlugin : FlutterPlugin, MethodCallHandler, ActivityAware
                 if (deviceAddress != null && characteristicUuidStr != null) {
                     val characteristicUuid = UUID.fromString(characteristicUuidStr)
                     try {
-                        // The actual implementation logic for subscribing to the characteristic
+                        // Pass result to complete later when descriptor write finishes
                         bleDeviceInterface.subscribeToCharacteristic(
                             deviceAddress,
                             characteristicUuid,
-                            false
+                            false,
+                            result // Result will be completed in onDescriptorWrite callback
                         )
-                        result.success(null)
+                        // Don't call result.success here - it will be called in onDescriptorWrite callback
                     } catch (e: Exception) {
                         result.error(
-                            "SUBSCRIBE_ERROR",
+                            "UNSUBSCRIBE_ERROR",
                             "Failed to unsubscribe from characteristic: ${e.message}",
                             null
                         )

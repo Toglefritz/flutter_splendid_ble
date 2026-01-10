@@ -104,6 +104,63 @@ class BleDeviceInterface(
     private val pendingWrites: MutableMap<String, PendingWrite> = mutableMapOf()
 
     /**
+     * Tracks devices that are physically connected but waiting for MTU negotiation to complete.
+     *
+     * When a BLE device connects, it goes through several initialization steps:
+     * 1. Physical connection established (STATE_CONNECTED reported by OS)
+     * 2. MTU negotiation (optional but recommended)
+     * 3. Connection parameters update
+     *
+     * This set tracks devices that are in STATE_CONNECTED but haven't completed MTU negotiation yet.
+     * We defer reporting CONNECTED to Flutter until MTU negotiation completes to ensure the
+     * connection is truly ready for communication. This prevents race conditions where Flutter
+     * attempts to write immediately after connection but before the link is fully initialized.
+     *
+     * Key is the device address (MAC address as String).
+     */
+    private val devicesAwaitingMtu: MutableSet<String> = mutableSetOf()
+
+    /**
+     * Tracks devices that have pending descriptor write operations in progress.
+     *
+     * The BLE specification requires that only one GATT operation can be in progress at a time
+     * per device. This includes:
+     * - Characteristic writes
+     * - Characteristic reads
+     * - Descriptor writes (e.g., enabling/disabling notifications)
+     * - Descriptor reads
+     *
+     * When enabling notifications via subscribeToCharacteristic(), a descriptor write operation
+     * is initiated. If a characteristic write is attempted before the descriptor write completes,
+     * it will fail with "Failed to initiate write operation".
+     *
+     * This set tracks which devices currently have descriptor writes in progress, allowing
+     * the writeCharacteristic() method to detect this condition and return an appropriate error
+     * instead of silently failing.
+     *
+     * The device address is added when a descriptor write begins and removed when
+     * onDescriptorWrite() callback fires.
+     */
+    private val devicesWithPendingDescriptorWrites: MutableSet<String> = mutableSetOf()
+
+    /**
+     * Tracks pending descriptor write operations with their MethodChannel.Result callbacks.
+     *
+     * Similar to pendingWrites for characteristic writes, this map stores the Result callback
+     * for descriptor write operations (subscription/unsubscription). The key is the device address.
+     *
+     * When subscribeToCharacteristic() is called, the Result is stored here and completed
+     * later in the onDescriptorWrite() callback. This ensures proper async/await behavior
+     * in Dart - the Flutter method doesn't return until the descriptor write actually completes.
+     *
+     * This is critical because:
+     * 1. Descriptor writes are asynchronous operations that take 30-100ms
+     * 2. Flutter code expects await to wait for completion
+     * 3. Subsequent operations depend on notifications being fully enabled
+     */
+    private val pendingDescriptorWrites: MutableMap<String, MethodChannel.Result> = mutableMapOf()
+
+    /**
      * Get the BluetoothGatt instance for a specific device address.
      *
      * @param deviceAddress The MAC address of the Bluetooth device.
@@ -126,30 +183,144 @@ class BleDeviceInterface(
      *
      * This method is invoked when the GATT server connection state changes between the device and
      * the remote BLE device we're connected to. States include CONNECTED, DISCONNECTED,
-     * CONNECTING, and DISCONNECTING. This method maps those states to a ConnectionState enum and
-     * forwards it to the Flutter side using the MethodChannel.
+     * CONNECTING, and DISCONNECTING.
+     *
+     * ## Important: MTU Negotiation and Connection Readiness
+     *
+     * When a device reaches STATE_CONNECTED, it is physically connected but not yet ready for
+     * reliable communication. The BLE stack needs to complete MTU (Maximum Transmission Unit)
+     * negotiation before the connection is fully initialized.
+     *
+     * To prevent race conditions where Flutter attempts to write immediately after connection
+     * but before MTU negotiation completes, this method:
+     * 1. Detects when a device reaches STATE_CONNECTED
+     * 2. Immediately requests MTU negotiation (requestMtu)
+     * 3. Marks the device as "awaiting MTU"
+     * 4. Does NOT report CONNECTED to Flutter yet
+     * 5. Waits for onMtuChanged callback
+     * 6. Only then reports CONNECTED to Flutter
+     *
+     * This ensures that when Flutter receives the CONNECTED status, the connection is truly
+     * ready for communication, eliminating the race condition.
      *
      * @param gatt The GATT client.
      * @param status The status of the operation. BluetoothGatt.GATT_SUCCESS if the operation succeeds.
      * @param newState The new state, can be one of BluetoothProfile.STATE_* constants.
      */
     override fun onConnectionStateChange(gatt: BluetoothGatt, status: Int, newState: Int) {
-        val deviceAddress = gatt.device.address
+        val deviceAddress: String = gatt.device.address
 
         mainHandler.post {
-            val state = when (newState) {
-                BluetoothProfile.STATE_CONNECTED -> ConnectionState.CONNECTED
-                BluetoothProfile.STATE_DISCONNECTED -> {
-                    // Clean up pending writes when disconnected
-                    pendingWrites.remove(deviceAddress)
-                    ConnectionState.DISCONNECTED
-                }
-                BluetoothProfile.STATE_CONNECTING -> ConnectionState.CONNECTING
-                BluetoothProfile.STATE_DISCONNECTING -> ConnectionState.DISCONNECTING
-                else -> ConnectionState.UNKNOWN
-            }
+            when (newState) {
+                BluetoothProfile.STATE_CONNECTED -> {
+                    // Device is physically connected, but not ready for communication yet
+                    // Request MTU negotiation before reporting CONNECTED to Flutter
+                    devicesAwaitingMtu.add(deviceAddress)
 
-            channel.invokeMethod("bleConnectionState_$deviceAddress", state.name)
+                    // Request MTU of 517 bytes (maximum supported by BLE 4.2+)
+                    // This will trigger onMtuChanged callback when complete
+                    try {
+                        val mtuRequested: Boolean = gatt.requestMtu(517)
+                        if (!mtuRequested) {
+                            // MTU request failed, report connected anyway to avoid blocking
+                            devicesAwaitingMtu.remove(deviceAddress)
+                            channel.invokeMethod("bleConnectionState_$deviceAddress", ConnectionState.CONNECTED.name)
+                        }
+                        // If successful, we'll report CONNECTED in onMtuChanged
+                    } catch (e: Exception) {
+                        // MTU request threw exception, report connected anyway
+                        devicesAwaitingMtu.remove(deviceAddress)
+                        channel.invokeMethod("bleConnectionState_$deviceAddress", ConnectionState.CONNECTED.name)
+                    }
+                }
+
+                BluetoothProfile.STATE_DISCONNECTED -> {
+                    // Clean up all pending operations and tracking when disconnected
+                    pendingWrites.remove(deviceAddress)
+                    devicesAwaitingMtu.remove(deviceAddress)
+                    devicesWithPendingDescriptorWrites.remove(deviceAddress)
+
+                    // Complete any pending descriptor write with error
+                    val pendingDescriptorResult: MethodChannel.Result? = pendingDescriptorWrites.remove(deviceAddress)
+                    pendingDescriptorResult?.error(
+                        "DISCONNECTED",
+                        "Device disconnected during descriptor write operation",
+                        null
+                    )
+
+                    channel.invokeMethod("bleConnectionState_$deviceAddress", ConnectionState.DISCONNECTED.name)
+                }
+
+                BluetoothProfile.STATE_CONNECTING -> {
+                    channel.invokeMethod("bleConnectionState_$deviceAddress", ConnectionState.CONNECTING.name)
+                }
+
+                BluetoothProfile.STATE_DISCONNECTING -> {
+                    channel.invokeMethod("bleConnectionState_$deviceAddress", ConnectionState.DISCONNECTING.name)
+                }
+
+                else -> {
+                    channel.invokeMethod("bleConnectionState_$deviceAddress", ConnectionState.UNKNOWN.name)
+                }
+            }
+        }
+    }
+
+    /**
+     * Called when the MTU (Maximum Transmission Unit) for a connection has been changed.
+     *
+     * This callback is triggered after calling requestMtu() on the GATT client. MTU negotiation
+     * is a critical step in BLE connection initialization that determines the maximum packet size
+     * that can be transmitted.
+     *
+     * ## Connection Readiness
+     *
+     * This method is the final step in connection initialization. When this callback is invoked:
+     * 1. The physical connection is established
+     * 2. MTU negotiation is complete
+     * 3. The connection is now ready for reliable communication
+     *
+     * Only at this point do we report CONNECTED status to Flutter, ensuring that when Flutter
+     * receives the connection event, it can immediately perform read/write operations without
+     * race conditions.
+     *
+     * ## MTU Value
+     *
+     * The negotiated MTU value determines the maximum size of GATT write operations:
+     * - Default MTU: 23 bytes (20 bytes payload + 3 bytes overhead)
+     * - Maximum MTU: 517 bytes (514 bytes payload + 3 bytes overhead)
+     * - Actual MTU is the minimum of what both devices support
+     *
+     * This value could be exposed to Flutter in the future if needed for optimizing write sizes.
+     *
+     * @param gatt The GATT client whose MTU has been changed
+     * @param mtu The new MTU size in bytes
+     * @param status The status of the MTU change operation (GATT_SUCCESS if successful)
+     */
+    override fun onMtuChanged(gatt: BluetoothGatt, mtu: Int, status: Int) {
+        super.onMtuChanged(gatt, mtu, status)
+
+        val deviceAddress: String = gatt.device.address
+
+        mainHandler.post {
+            // Check if this device was waiting for MTU negotiation
+            if (devicesAwaitingMtu.contains(deviceAddress)) {
+                // MTU negotiation complete, remove from waiting set
+                devicesAwaitingMtu.remove(deviceAddress)
+
+                // Now the connection is truly ready - report CONNECTED to Flutter
+                channel.invokeMethod("bleConnectionState_$deviceAddress", ConnectionState.CONNECTED.name)
+
+                // Log the negotiated MTU for debugging (optional - could be removed in production)
+                if (status == BluetoothGatt.GATT_SUCCESS) {
+                    // Successfully negotiated MTU
+                    // In the future, we could expose this value to Flutter
+                    android.util.Log.d("BleDeviceInterface", "MTU negotiated for $deviceAddress: $mtu bytes")
+                } else {
+                    // MTU negotiation failed, but connection still usable with default MTU (23 bytes)
+                    android.util.Log.w("BleDeviceInterface", "MTU negotiation failed for $deviceAddress (status: $status), using default MTU")
+                }
+            }
         }
     }
 
@@ -242,8 +413,17 @@ class BleDeviceInterface(
             bluetoothGattMap[deviceAddress]?.disconnect()
             bluetoothGattMap.remove(deviceAddress)
 
-            // Clean up pending writes for this device
+            // Clean up all pending operations for this device
             pendingWrites.remove(deviceAddress)
+            devicesWithPendingDescriptorWrites.remove(deviceAddress)
+
+            // Complete any pending descriptor write with error
+            val pendingDescriptorResult: MethodChannel.Result? = pendingDescriptorWrites.remove(deviceAddress)
+            pendingDescriptorResult?.error(
+                "DISCONNECTED",
+                "Device disconnected during descriptor write operation",
+                null
+            )
         } catch (e: SecurityException) {
             channel.invokeMethod(
                 "error",
@@ -361,7 +541,19 @@ class BleDeviceInterface(
         writeType: Int = BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT,
         result: MethodChannel.Result
     ) {
-        // Check if a write is already pending for this device
+        // Check if a descriptor write is in progress for this device
+        // This commonly happens when trying to write immediately after enabling notifications
+        if (devicesWithPendingDescriptorWrites.contains(deviceAddress)) {
+            result.error(
+                "DESCRIPTOR_WRITE_IN_PROGRESS",
+                "A descriptor write operation (likely notification setup) is in progress for device $deviceAddress. " +
+                "Please wait for it to complete before writing. This typically takes 50-100ms.",
+                null
+            )
+            return
+        }
+
+        // Check if a characteristic write is already pending for this device
         if (pendingWrites.containsKey(deviceAddress)) {
             result.error(
                 "WRITE_IN_PROGRESS",
@@ -594,12 +786,19 @@ class BleDeviceInterface(
      * Enabling notifications allows a client application to listen for changes in the value of the characteristic,
      * while disabling notifications stops the client from receiving such updates.
      *
+     * ## Asynchronous Operation
+     *
+     * This method initiates an asynchronous descriptor write operation. The Result parameter is NOT completed
+     * immediately. Instead, it is stored and completed later when the onDescriptorWrite() callback fires.
+     * This ensures proper async/await behavior in Dart.
+     *
      * The method achieves this by doing the following:
      * 1. Retrieves the BluetoothGatt object associated with the device address.
      * 2. Locates the service that contains the characteristic, based on its UUID.
      * 3. Activates or deactivates notifications at the Android OS level by calling `setCharacteristicNotification`.
      * 4. Locates the Client Characteristic Configuration Descriptor (CCCD) associated with the characteristic.
      * 5. Writes the appropriate value (ENABLE_NOTIFICATION_VALUE/DISABLE_NOTIFICATION_VALUE) to the descriptor.
+     * 6. Stores the Result callback to complete when onDescriptorWrite() fires.
      *
      * Enabling notifications results in the `onCharacteristicChanged()` callback being invoked whenever the characteristic's value changes.
      * This provides a way for applications to react to real-time updates from the BLE device.
@@ -607,6 +806,7 @@ class BleDeviceInterface(
      * @param deviceAddress The MAC address of the target BLE device.
      * @param characteristicUuid The UUID identifying the characteristic for which to toggle notifications.
      * @param enable A boolean indicating whether to enable (true) or disable (false) notifications.
+     * @param result The MethodChannel.Result to complete when the descriptor write finishes.
      *
      * @throws SecurityException if required Bluetooth permissions are missing.
      *
@@ -617,68 +817,146 @@ class BleDeviceInterface(
     fun subscribeToCharacteristic(
         deviceAddress: String,
         characteristicUuid: UUID,
-        enable: Boolean
+        enable: Boolean,
+        result: MethodChannel.Result
     ) {
-        //val gatt = bleConnectionHandler.getBluetoothGatt(deviceAddress)
-        val gatt = getBluetoothGatt(deviceAddress)
-        if (gatt == null) {
-            channel.invokeMethod(
-                "error",
-                "No BluetoothGatt instance found for device address: $deviceAddress"
+        // Check if a descriptor write is already pending for this device
+        if (pendingDescriptorWrites.containsKey(deviceAddress)) {
+            result.error(
+                "DESCRIPTOR_WRITE_IN_PROGRESS",
+                "A descriptor write operation is already in progress for device $deviceAddress. " +
+                "Please wait for it to complete.",
+                null
             )
             return
         }
 
-        val service =
-            gatt.services.find { it.characteristics.any { char -> char.uuid == characteristicUuid } }
-        val characteristic = service?.getCharacteristic(characteristicUuid)
+        val gatt: BluetoothGatt? = getBluetoothGatt(deviceAddress)
+        if (gatt == null) {
+            result.error(
+                "DEVICE_NOT_FOUND",
+                "No BluetoothGatt instance found for device address: $deviceAddress",
+                null
+            )
+            return
+        }
 
-        if (characteristic != null) {
-            try {
-                // This call sets locally enables notifications from the characteristic
-                // within the Android operating system
-                gatt.setCharacteristicNotification(characteristic, enable)
+        val service = gatt.services.find { it.characteristics.any { char -> char.uuid == characteristicUuid } }
+        val characteristic: BluetoothGattCharacteristic? = service?.getCharacteristic(characteristicUuid)
 
-                // Find the CCCD (Client Characteristic Configuration Descriptor) based on its UUID
-                val descriptor = characteristic.getDescriptor(
-                    UUID.fromString("00002902-0000-1000-8000-00805f9b34fb")
+        if (characteristic == null) {
+            result.error(
+                "CHARACTERISTIC_NOT_FOUND",
+                "Characteristic with UUID $characteristicUuid not found.",
+                null
+            )
+            return
+        }
+
+        try {
+            // This call locally enables notifications from the characteristic
+            // within the Android operating system
+            val notificationSet: Boolean = gatt.setCharacteristicNotification(characteristic, enable)
+            if (!notificationSet) {
+                result.error(
+                    "NOTIFICATION_FAILED",
+                    "Failed to set characteristic notification for $characteristicUuid",
+                    null
                 )
+                return
+            }
 
-                if (descriptor == null) {
-                    channel.invokeMethod(
-                        "error",
-                        "CCCD descriptor not found for characteristic $characteristicUuid"
-                    )
-                    return
-                }
+            // Find the CCCD (Client Characteristic Configuration Descriptor) based on its UUID
+            val descriptor: BluetoothGattDescriptor? = characteristic.getDescriptor(
+                UUID.fromString("00002902-0000-1000-8000-00805f9b34fb")
+            )
 
-                // Set the descriptor value to enable or disable notifications
-                val descriptorValue = if (enable) {
-                    BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
-                } else {
-                    BluetoothGattDescriptor.DISABLE_NOTIFICATION_VALUE
-                }
+            if (descriptor == null) {
+                result.error(
+                    "DESCRIPTOR_NOT_FOUND",
+                    "CCCD descriptor not found for characteristic $characteristicUuid",
+                    null
+                )
+                return
+            }
 
-                // Write the value to the descriptor to enable/disable notifications on the device
-                // Use the appropriate API based on Android version
-                if (android.os.Build.VERSION.SDK_INT >= 33) {
-                    gatt.writeDescriptor(descriptor, descriptorValue)
-                } else {
-                    @Suppress("DEPRECATION")
-                    descriptor.value = descriptorValue
-                    @Suppress("DEPRECATION")
-                    gatt.writeDescriptor(descriptor)
+            // Determine the descriptor value based on whether we're enabling/disabling
+            // and whether the characteristic supports notifications vs indications
+            val descriptorValue: ByteArray = if (enable) {
+                // Check characteristic properties to determine if it supports indications or notifications
+                val supportsNotify: Boolean = (characteristic.properties and BluetoothGattCharacteristic.PROPERTY_NOTIFY) != 0
+                val supportsIndicate: Boolean = (characteristic.properties and BluetoothGattCharacteristic.PROPERTY_INDICATE) != 0
+
+                when {
+                    supportsIndicate -> {
+                        // Prefer indications if supported (indications require acknowledgment, more reliable)
+                        BluetoothGattDescriptor.ENABLE_INDICATION_VALUE
+                    }
+                    supportsNotify -> {
+                        // Use notifications if supported
+                        BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
+                    }
+                    else -> {
+                        // Characteristic doesn't support notifications or indications
+                        pendingDescriptorWrites.remove(deviceAddress)
+                        devicesWithPendingDescriptorWrites.remove(deviceAddress)
+                        result.error(
+                            "NOT_SUPPORTED",
+                            "Characteristic $characteristicUuid does not support notifications or indications",
+                            null
+                        )
+                        return
+                    }
                 }
-            } catch (e: SecurityException) {
-                channel.invokeMethod(
-                    "error",
-                    "Required Bluetooth permissions are missing: ${e.message}"
+            } else {
+                // Disabling - same value for both notifications and indications
+                BluetoothGattDescriptor.DISABLE_NOTIFICATION_VALUE
+            }
+
+            // Store the result to complete later in onDescriptorWrite callback
+            pendingDescriptorWrites[deviceAddress] = result
+
+            // Mark this device as having a pending descriptor write
+            // This will be cleared in onDescriptorWrite callback
+            devicesWithPendingDescriptorWrites.add(deviceAddress)
+
+            // Write the value to the descriptor to enable/disable notifications on the device
+            // Use the appropriate API based on Android version
+            val writeSuccess: Boolean = if (android.os.Build.VERSION.SDK_INT >= 33) {
+                gatt.writeDescriptor(descriptor, descriptorValue) == BluetoothGatt.GATT_SUCCESS
+            } else {
+                @Suppress("DEPRECATION")
+                descriptor.value = descriptorValue
+                @Suppress("DEPRECATION")
+                gatt.writeDescriptor(descriptor)
+            }
+
+            if (!writeSuccess) {
+                // Write initiation failed, clean up and return error
+                pendingDescriptorWrites.remove(deviceAddress)
+                devicesWithPendingDescriptorWrites.remove(deviceAddress)
+                result.error(
+                    "WRITE_FAILED",
+                    "Failed to initiate descriptor write operation",
+                    null
                 )
             }
-        } else {
-            channel.invokeMethod(
-                "error",
-                "Characteristic with UUID $characteristicUuid not found."
+            // If successful, result will be completed in onDescriptorWrite callback
+        } catch (e: SecurityException) {
+            pendingDescriptorWrites.remove(deviceAddress)
+            devicesWithPendingDescriptorWrites.remove(deviceAddress)
+            result.error(
+                "PERMISSION_ERROR",
+                "Required Bluetooth permissions are missing: ${e.message}",
+                null
+            )
+        } catch (e: Exception) {
+            pendingDescriptorWrites.remove(deviceAddress)
+            devicesWithPendingDescriptorWrites.remove(deviceAddress)
+            result.error(
+                "SUBSCRIBE_ERROR",
+                "Failed to subscribe to characteristic: ${e.message}",
+                null
             )
         }
     }
@@ -688,6 +966,10 @@ class BleDeviceInterface(
      *
      * This callback is particularly important for notification subscriptions, as enabling/disabling
      * notifications requires writing to the Client Characteristic Configuration Descriptor (CCCD).
+     *
+     * This method completes the MethodChannel.Result that was stored in subscribeToCharacteristic(),
+     * ensuring proper async/await behavior in Dart. The Flutter method call doesn't return until
+     * the descriptor write actually completes.
      *
      * Note: The callback signature is the same across all API levels. What changed in API 33+
      * is the writeDescriptor method signature, not the callback signature.
@@ -703,12 +985,34 @@ class BleDeviceInterface(
     ) {
         super.onDescriptorWrite(gatt, descriptor, status)
 
+        val deviceAddress: String = gatt.device.address
+
         mainHandler.post {
-            if (status != BluetoothGatt.GATT_SUCCESS) {
-                channel.invokeMethod(
-                    "error",
-                    "Failed to write descriptor ${descriptor.uuid}: GATT status $status"
-                )
+            // Clear the pending descriptor write flag for this device
+            devicesWithPendingDescriptorWrites.remove(deviceAddress)
+
+            // Get the pending result if one exists
+            val pendingResult: MethodChannel.Result? = pendingDescriptorWrites.remove(deviceAddress)
+
+            if (pendingResult != null) {
+                // Complete the Flutter method call
+                if (status == BluetoothGatt.GATT_SUCCESS) {
+                    pendingResult.success(null)
+                } else {
+                    pendingResult.error(
+                        "DESCRIPTOR_WRITE_FAILED",
+                        "Failed to write descriptor ${descriptor.uuid}: GATT status $status",
+                        null
+                    )
+                }
+            } else {
+                // No pending result - this might be from an old implementation or unexpected call
+                if (status != BluetoothGatt.GATT_SUCCESS) {
+                    channel.invokeMethod(
+                        "error",
+                        "Failed to write descriptor ${descriptor.uuid}: GATT status $status"
+                    )
+                }
             }
         }
     }

@@ -70,15 +70,18 @@ class ManufacturerData {
     return String.fromCharCodes(manufacturerDataInts);
   }
 
-  /// Converts the manufacturer data to a string that is formatted for easy reading. The manufacturer identifier is
-  /// surrounded by angle brackets to make its separation from the rest of the data more clear. A space is included
-  /// after every fourth character to separate the manufacturer data into chunks of four characters.
+  /// Converts the manufacturer data to a hexadecimal string format for easy reading.
   ///
-  /// The end result of this formatting is a value that looks similar to the format used by the nRF Connect for Mobile
-  /// app.
+  /// The manufacturer identifier is surrounded by angle brackets to make its separation
+  /// from the rest of the data more clear. Each byte is represented as a two-digit
+  /// hexadecimal value with spaces between bytes for readability.
+  ///
+  /// Example output: `<4C00> 02 15 A1 B2 C3 D4 ...`
+  ///
+  /// The format is similar to that used by the nRF Connect for Mobile app.
   String toFormattedString() {
     // Create a string representing the manufacturer identifier, surrounded by
-    //angle brackets.
+    // angle brackets.
     final StringBuffer formattedString = StringBuffer('<');
     for (int i = 0; i < manufacturerId.length; i++) {
       formattedString
@@ -86,13 +89,13 @@ class ManufacturerData {
     }
     formattedString.write('> ');
 
-    // Create a string representing the payload, with spaces after every fourth
-    // character.
+    // Create a string representing the payload, with spaces between each byte
+    // (two hex characters).
     for (int i = 0; i < payload.length; i++) {
-      formattedString.write(payload[i].toRadixString(16).padLeft(2, '0'));
-      if ((i + 1).isEven) {
+      if (i > 0) {
         formattedString.write(' ');
       }
+      formattedString.write(payload[i].toRadixString(16).padLeft(2, '0'));
     }
 
     return formattedString.toString().toUpperCase();
