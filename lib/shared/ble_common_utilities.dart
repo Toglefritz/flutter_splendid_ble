@@ -29,8 +29,10 @@ class BleCommonUtilities {
     final String statusString =
         await channel.invokeMethod('checkBluetoothAdapterStatus') as String;
 
-    return BluetoothStatus.values
-        .firstWhere((e) => e.identifier == statusString);
+    return BluetoothStatus.values.firstWhere(
+      (e) => e.identifier == statusString,
+      orElse: () => BluetoothStatus.notAvailable,
+    );
   }
 
   /// Emits the current Bluetooth adapter status to the Dart side.
@@ -92,8 +94,10 @@ class BleCommonUtilities {
   ) async {
     final String permissionStatusString =
         await channel.invokeMethod('requestBluetoothPermissions') as String;
-    return BluetoothPermissionStatus.values
-        .firstWhere((status) => status.identifier == permissionStatusString);
+    return BluetoothPermissionStatus.values.firstWhere(
+      (status) => status.identifier == permissionStatusString,
+      orElse: () => BluetoothPermissionStatus.unknown,
+    );
   }
 
   /// Emits the current Bluetooth permission status to the Dart side.

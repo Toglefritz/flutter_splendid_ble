@@ -96,7 +96,7 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
         case SharedMethod.checkBluetoothAdapterStatus.rawValue:
             // Check the status of the Bluetooth adapter. The `centralManager` is used for this purpose since
             // the adapter status should be the same for either the `centralManager` or `peripheralManager`.
-            let status = centralManager.state == .poweredOn ? "available" : "notAvailable"
+            let status = centralManager.state == .poweredOn ? "enabled" : "notAvailable"
             result(status)
             
         case SharedMethod.emitCurrentBluetoothStatus.rawValue:
