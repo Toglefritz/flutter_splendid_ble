@@ -6,9 +6,8 @@ import '../config/esp32_test_constants.dart';
 
 /// Service for performing BLE connection tests.
 ///
-/// This service encapsulates all connection-related test logic, including
-/// basic connection establishment, connection state monitoring, disconnection,
-/// and connection timeout handling. It does not include pairing or bonding tests.
+/// This service encapsulates all connection-related test logic, including basic connection establishment, connection
+/// state monitoring, disconnection, and connection timeout handling. It does not include pairing or bonding tests.
 class ConnectionTestService {
   /// The BLE central instance used for connection operations.
   final SplendidBleCentral _ble;

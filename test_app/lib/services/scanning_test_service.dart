@@ -7,9 +7,8 @@ import '../config/esp32_test_constants.dart';
 
 /// Service for performing BLE scanning tests.
 ///
-/// This service encapsulates all scanning-related test logic, including
-/// unfiltered scans, service UUID filtering, device name filtering,
-/// and negative test cases.
+/// This service encapsulates all scanning-related test logic, including unfiltered scans, service UUID filtering,
+/// device name filtering, and negative test cases.
 class ScanningTestService {
   /// The BLE central instance used for scanning operations.
   final SplendidBleCentral _ble;
@@ -177,7 +176,7 @@ class ScanningTestService {
 
                 _addOutputLine('    Company ID: 0x${companyId.toRadixString(16).toUpperCase().padLeft(4, '0')}');
                 _addOutputLine(
-                    '    Payload: ${manufacturerData.payload.map((int byte) => '0x${byte.toRadixString(16).toUpperCase().padLeft(2, '0')}').join(' ')}');
+                    '    Payload: ${manufacturerData.payload.map((int byte) => '0x${byte.toRadixString(16).toUpperCase().padLeft(2, '0')}').join(' ')}',);
 
                 // Verify expected manufacturer data
                 if (companyId == kTestManufacturerId) {
@@ -190,13 +189,13 @@ class ScanningTestService {
                   } else {
                     _addOutputLine('    ✗ Payload does not match expected patterns');
                     _addOutputLine(
-                        '    Expected (adv): ${kExpectedAdvertisementData.map((int byte) => '0x${byte.toRadixString(16).toUpperCase().padLeft(2, '0')}').join(' ')}');
+                        '    Expected (adv): ${kExpectedAdvertisementData.map((int byte) => '0x${byte.toRadixString(16).toUpperCase().padLeft(2, '0')}').join(' ')}',);
                     _addOutputLine(
-                        '    Expected (scan): ${kExpectedScanResponseData.map((int byte) => '0x${byte.toRadixString(16).toUpperCase().padLeft(2, '0')}').join(' ')}');
+                        '    Expected (scan): ${kExpectedScanResponseData.map((int byte) => '0x${byte.toRadixString(16).toUpperCase().padLeft(2, '0')}').join(' ')}',);
                   }
                 } else {
                   _addOutputLine(
-                      '    ✗ Unexpected company ID (expected 0x${kTestManufacturerId.toRadixString(16).toUpperCase().padLeft(4, '0')})');
+                      '    ✗ Unexpected company ID (expected 0x${kTestManufacturerId.toRadixString(16).toUpperCase().padLeft(4, '0')})',);
                 }
               } else {
                 _addOutputLine('  ✗ No manufacturer data found');
@@ -266,7 +265,7 @@ class ScanningTestService {
           if (!discoveredDevices.contains(device.address)) {
             discoveredDevices.add(device.address);
             _addOutputLine(
-                '  Found: ${device.name?.isNotEmpty ?? false ? device.name : 'Unknown'} (${device.address})');
+                '  Found: ${device.name?.isNotEmpty ?? false ? device.name : 'Unknown'} (${device.address})',);
 
             if (device.name == kTestDeviceName) {
               testDeviceFound = true;

@@ -6,9 +6,8 @@ import '../config/esp32_test_constants.dart';
 
 /// Service for performing BLE service discovery tests.
 ///
-/// This service tests service and characteristic discovery functionality.
-/// It first establishes a connection to the test device, then performs
-/// service discovery and validation tests.
+/// This service tests service and characteristic discovery functionality. It first establishes a connection to the test
+/// device, then performs service discovery and validation tests.
 class ServiceDiscoveryTestService {
   /// The BLE central instance used for service discovery operations.
   final SplendidBleCentral _ble;
@@ -33,8 +32,8 @@ class ServiceDiscoveryTestService {
   /// 3. Validate test service exists
   /// 4. Validate characteristics exist
   ///
-  /// The [deviceAddress] parameter specifies the test device to connect to.
-  /// Returns true if all tests pass, false if any test fails.
+  /// The [deviceAddress] parameter specifies the test device to connect to. Returns true if all tests pass, false if
+  /// any test fails.
   Future<bool> runAllTests(String deviceAddress) async {
     _addOutputLine('Running BLE service discovery tests...');
     _addOutputLine('Target device: $deviceAddress');
@@ -248,7 +247,7 @@ class ServiceDiscoveryTestService {
         for (final BleCharacteristic characteristic in service.characteristics) {
           _addOutputLine('    Characteristic: ${characteristic.uuid}');
           _addOutputLine(
-              '      Properties: ${characteristic.properties.map((BleCharacteristicProperty prop) => prop.name).join(', ')}');
+              '      Properties: ${characteristic.properties.map((BleCharacteristicProperty prop) => prop.name).join(', ')}',);
 
           final String permissionsText =
               characteristic.permissions?.map((BleCharacteristicPermission perm) => perm.name).join(', ') ?? 'none';

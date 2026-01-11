@@ -12,5 +12,5 @@ linter:
     avoid_catches_without_on_clauses: false
 
 formatter:
-  page_width: 120
+  page_width: 80
   trailing_commas: preserve

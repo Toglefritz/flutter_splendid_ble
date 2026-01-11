@@ -15,7 +15,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get bleTestConsoleTitle => 'BLE Test Console';
 
   @override
-  String get startTestsTooltip => 'Start Tests';
+  String get readyToRunTestsTitle => 'Ready to run BLE tests';
 
   @override
   String get runTestsButton => 'Run Tests';
@@ -24,8 +24,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get runningTestsStatus => 'Running...';
 
   @override
-  String get readyToRunTestsTitle => 'Ready to run BLE tests';
+  String get startTestsTooltip => 'Start Tests';
 
   @override
-  String get tapRunTestsInstruction => 'Tap \"Run Tests\" to start scanning for devices';
+  String get tapRunTestsInstruction =>
+      'Tap \"Run Tests\" to start scanning for devices';
 }

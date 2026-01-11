@@ -72,9 +72,8 @@ class ManufacturerData {
 
   /// Converts the manufacturer data to a hexadecimal string format for easy reading.
   ///
-  /// The manufacturer identifier is surrounded by angle brackets to make its separation
-  /// from the rest of the data more clear. Each byte is represented as a two-digit
-  /// hexadecimal value with spaces between bytes for readability.
+  /// The manufacturer identifier is surrounded by angle brackets to make its separation from the rest of the data more
+  /// clear. Each byte is represented as a two-digit hexadecimal value with spaces between bytes for readability.
   ///
   /// Example output: `<4C00> 02 15 A1 B2 C3 D4 ...`
   ///

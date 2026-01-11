@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_splendid_ble/flutter_splendid_ble.dart';
 
 import '../../services/connection_test_service.dart';
+import '../../services/pairing_test_service.dart';
 import '../../services/scanning_test_service.dart';
 import '../../services/service_discovery_test_service.dart';
 import 'ble_test_route.dart';
@@ -11,9 +12,8 @@ import 'ble_test_view.dart';
 
 /// Controller for the BLE testing screen.
 ///
-/// This controller manages the state and logic for running BLE tests against
-/// the ESP32 test device. It coordinates different test services and handles
-/// UI updates for the terminal-style test interface.
+/// This controller manages the state and logic for running BLE tests against the ESP32 test device. It coordinates
+/// different test services and handles UI updates for the terminal-style test interface.
 class BleTestController extends State<BleTestRoute> {
   /// The BLE central instance used for all Bluetooth operations.
   late final SplendidBleCentral _ble;
@@ -26,6 +26,9 @@ class BleTestController extends State<BleTestRoute> {
 
   /// Service for performing service discovery tests.
   late final ServiceDiscoveryTestService _serviceDiscoveryTestService;
+
+  /// Service for performing pairing tests.
+  late final PairingTestService _pairingTestService;
 
   /// List of test output lines displayed in the terminal interface.
   final List<String> _outputLines = <String>[];
@@ -51,7 +54,9 @@ class BleTestController extends State<BleTestRoute> {
     _ble = SplendidBleCentral();
     _scanningTestService = ScanningTestService(_ble, _addOutputLine);
     _connectionTestService = ConnectionTestService(_ble, _addOutputLine);
-    _serviceDiscoveryTestService = ServiceDiscoveryTestService(_ble, _addOutputLine);
+    _serviceDiscoveryTestService =
+        ServiceDiscoveryTestService(_ble, _addOutputLine);
+    _pairingTestService = PairingTestService(_ble, _addOutputLine);
     _addOutputLine('Flutter Splendid BLE Test Console');
     _addOutputLine('Ready to run BLE tests...');
     _addOutputLine('');
@@ -115,9 +120,15 @@ class BleTestController extends State<BleTestRoute> {
       final String? deviceAddress = _connectionTestService.testDeviceAddress;
       if (deviceAddress != null) {
         await _serviceDiscoveryTestService.runAllTests(deviceAddress);
+
+        // Run pairing tests
+        await _pairingTestService.runAllTests(deviceAddress);
       } else {
         _addOutputLine('');
-        _addOutputLine('⚠ SKIP: Service discovery tests skipped - no device address available');
+        _addOutputLine(
+            '⚠ SKIP: Service discovery tests skipped - no device address available',);
+        _addOutputLine(
+            '⚠ SKIP: Pairing tests skipped - no device address available',);
       }
 
       _addOutputLine('');
@@ -142,7 +153,8 @@ class BleTestController extends State<BleTestRoute> {
       throw Exception('Bluetooth must be enabled to run tests');
     }
 
-    final BluetoothPermissionStatus permissions = await _ble.requestBluetoothPermissions();
+    final BluetoothPermissionStatus permissions =
+        await _ble.requestBluetoothPermissions();
     _addOutputLine('Permissions: ${permissions.name}');
 
     if (permissions != BluetoothPermissionStatus.granted) {
@@ -162,6 +174,7 @@ class BleTestController extends State<BleTestRoute> {
     unawaited(_scanningTestService.dispose());
     unawaited(_connectionTestService.dispose());
     unawaited(_serviceDiscoveryTestService.dispose());
+    unawaited(_pairingTestService.dispose());
     super.dispose();
   }
 }

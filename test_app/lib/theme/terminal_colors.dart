@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 
 /// Color scheme for terminal/console interfaces.
 ///
-/// Provides VS Code-inspired colors for the BLE test console interface.
-/// This theme extension can be accessed via Theme.of(context).extension<TerminalColors>().
+/// Provides VS Code-inspired colors for the BLE test console interface. This theme extension can be accessed via
+/// Theme.of(context).extension<TerminalColors>().
 @immutable
 class TerminalColors extends ThemeExtension<TerminalColors> {
   /// Creates a terminal colors theme extension.

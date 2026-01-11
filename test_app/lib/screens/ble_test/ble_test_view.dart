@@ -8,8 +8,8 @@ import 'models/line_style.dart';
 
 /// View for the BLE testing screen.
 ///
-/// This view presents a modern, readable interface for displaying BLE test
-/// results with clear visual hierarchy, color coding, and auto-scrolling.
+/// This view presents a modern, readable interface for displaying BLE test results with clear visual hierarchy, color
+/// coding, and auto-scrolling.
 class BleTestView extends StatelessWidget {
   /// Creates a new BLE test view.
   const BleTestView(this.state, {super.key});
@@ -19,7 +19,8 @@ class BleTestView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final TerminalColors colors = Theme.of(context).extension<TerminalColors>()!;
+    final TerminalColors colors =
+        Theme.of(context).extension<TerminalColors>()!;
 
     return Scaffold(
       backgroundColor: colors.background,
@@ -143,7 +144,14 @@ class BleTestView extends StatelessWidget {
                       child: Row(
                         children: <Widget>[
                           const SizedBox(width: 52),
-                          Text('█', style: TextStyle(color: colors.accent, fontSize: 14, fontFamily: 'monospace')),
+                          Text(
+                            '█',
+                            style: TextStyle(
+                              color: colors.accent,
+                              fontSize: 14,
+                              fontFamily: 'monospace',
+                            ),
+                          ),
                         ],
                       ),
                     );
@@ -154,24 +162,53 @@ class BleTestView extends StatelessWidget {
 
                   // Determine line style based on content
                   final LineStyle style;
-                  if (cleanLine.startsWith('TEST ') && cleanLine.contains(':')) {
-                    style = LineStyle(color: colors.accent, fontWeight: FontWeight.bold, icon: Icons.science);
+                  if (cleanLine.startsWith('TEST ') &&
+                      cleanLine.contains(':')) {
+                    style = LineStyle(
+                      color: colors.accent,
+                      fontWeight: FontWeight.bold,
+                      icon: Icons.science,
+                    );
                   } else if (cleanLine.startsWith('✓')) {
-                    style = LineStyle(color: colors.success, fontWeight: FontWeight.w500, icon: Icons.check_circle);
+                    style = LineStyle(
+                      color: colors.success,
+                      fontWeight: FontWeight.w500,
+                      icon: Icons.check_circle,
+                    );
                   } else if (cleanLine.startsWith('✗')) {
-                    style = LineStyle(color: colors.error, fontWeight: FontWeight.w500, icon: Icons.error);
+                    style = LineStyle(
+                      color: colors.error,
+                      fontWeight: FontWeight.w500,
+                      icon: Icons.error,
+                    );
                   } else if (cleanLine.startsWith('ERROR:')) {
-                    style = LineStyle(color: colors.error, fontWeight: FontWeight.bold, icon: Icons.warning);
-                  } else if (cleanLine.contains('status:') || cleanLine.contains('Permissions:')) {
-                    style = LineStyle(color: colors.warning, useMonospace: true);
-                  } else if (cleanLine.startsWith('  Found:') || cleanLine.startsWith('  →')) {
-                    style = LineStyle(color: colors.deviceFound, useMonospace: true);
+                    style = LineStyle(
+                      color: colors.error,
+                      fontWeight: FontWeight.bold,
+                      icon: Icons.warning,
+                    );
+                  } else if (cleanLine.contains('status:') ||
+                      cleanLine.contains('Permissions:')) {
+                    style =
+                        LineStyle(color: colors.warning, useMonospace: true);
+                  } else if (cleanLine.startsWith('  Found:') ||
+                      cleanLine.startsWith('  →')) {
+                    style = LineStyle(
+                      color: colors.deviceFound,
+                      useMonospace: true,
+                    );
                   } else if (cleanLine.startsWith('  Scan completed:')) {
-                    style = LineStyle(color: colors.info, fontWeight: FontWeight.w500);
+                    style = LineStyle(
+                      color: colors.info,
+                      fontWeight: FontWeight.w500,
+                    );
                   } else if (cleanLine.endsWith('...') ||
                       cleanLine.startsWith('Starting') ||
                       cleanLine.startsWith('Running')) {
-                    style = LineStyle(color: colors.secondaryText, fontWeight: FontWeight.w500);
+                    style = LineStyle(
+                      color: colors.secondaryText,
+                      fontWeight: FontWeight.w500,
+                    );
                   } else {
                     style = LineStyle(color: colors.mutedText);
                   }
@@ -181,28 +218,30 @@ class BleTestView extends StatelessWidget {
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: <Widget>[
-                        SizedBox(
-                          width: 40,
-                          child: style.icon != null
-                              ? Icon(style.icon, size: 16, color: style.color)
-                              : Text(
-                                  '${index + 1}',
-                                  style: TextStyle(
-                                    color: colors.disabledText,
-                                    fontSize: 12,
-                                    fontFamily: 'monospace',
-                                  ),
-                                ),
-                        ),
-                        Flexible(
-                          child: Text(
-                            line.trim(),
+                        if (style.icon != null)
+                          Icon(style.icon, size: 16, color: style.color)
+                        else
+                          Text(
+                            '${index + 1}',
                             style: TextStyle(
-                              color: style.color,
-                              fontSize: 14,
-                              fontFamily: style.useMonospace ? 'monospace' : null,
-                              fontWeight: style.fontWeight,
-                              height: 1.4,
+                              color: colors.disabledText,
+                              fontSize: 12,
+                              fontFamily: 'monospace',
+                            ),
+                          ),
+                        Flexible(
+                          child: Padding(
+                            padding: const EdgeInsets.only(left: Insets.xSmall),
+                            child: Text(
+                              line.trim(),
+                              style: TextStyle(
+                                color: style.color,
+                                fontSize: 14,
+                                fontFamily:
+                                    style.useMonospace ? 'monospace' : null,
+                                fontWeight: style.fontWeight,
+                                height: 1.4,
+                              ),
                             ),
                           ),
                         ),

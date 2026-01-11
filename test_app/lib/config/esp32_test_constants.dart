@@ -1,44 +1,74 @@
 /// The advertised name of the ESP32 BLE test device.
 ///
-/// This name is broadcast by the ESP32 and used by tests to identify
-/// and filter for the correct test device during scanning operations.
+/// This name is broadcast by the ESP32 and used by tests to identify and filter for the correct test device during
+/// scanning operations.
 const String kTestDeviceName = 'SplendidBLE-Tester';
 
 /// The primary service UUID advertised by the ESP32 test device.
 ///
-/// This UUID identifies the main BLE service provided by the test device
-/// and is used for service-based filtering during device discovery.
+/// This UUID identifies the main BLE service provided by the test device and is used for service-based filtering during
+/// device discovery.
 const String kTestServiceUuid = '10000000-1234-1234-1234-123456789abc';
 
 /// Test characteristic UUID for read operations.
 ///
 /// This characteristic should be discoverable within the test service
 /// and support read operations for service discovery validation.
-const String kTestReadCharacteristicUuid = '10000001-1234-1234-1234-123456789abc';
+const String kTestReadCharacteristicUuid =
+    '10000001-1234-1234-1234-123456789abc';
+
+/// Test characteristic UUID for read-only operations.
+///
+/// This characteristic should be discoverable within the test service
+/// and support only read operations.
+const String kTestReadOnlyCharacteristicUuid =
+    '10000002-1234-1234-1234-123456789abc';
 
 /// Test characteristic UUID for write operations.
 ///
 /// This characteristic should be discoverable within the test service
 /// and support write operations for service discovery validation.
-const String kTestWriteCharacteristicUuid = '10000002-1234-1234-1234-123456789abc';
+const String kTestWriteCharacteristicUuid =
+    '10000003-1234-1234-1234-123456789abc';
+
+/// Test characteristic UUID for encrypted read operations.
+///
+/// This characteristic requires encryption and will trigger a pairing prompt when accessed for the first time.
+const String kTestEncryptedReadCharacteristicUuid =
+    '10000006-1234-1234-1234-123456789abc';
+
+/// Test characteristic UUID for encrypted write operations.
+///
+/// This characteristic requires encryption and will trigger a pairing prompt when accessed for the first time.
+const String kTestEncryptedWriteCharacteristicUuid =
+    '10000007-1234-1234-1234-123456789abc';
+
+/// Test characteristic UUID for MITM-protected operations.
+///
+/// This characteristic requires encryption with MITM protection and will trigger a pairing prompt with additional
+/// authentication requirements.
+///
+/// NOTE: This characteristic may not be visible during service discovery until pairing is established. This is expected
+/// BLE security behavior on many platforms (iOS, macOS, etc.) where encrypted characteristics are hidden from unpaired
+/// devices.
+const String kTestMitmCharacteristicUuid =
+    '10000008-1234-1234-1234-123456789abc';
 
 /// A different UUID not advertised by the ESP32 test device.
 ///
-/// This UUID is used in negative tests to confirm that filtering
-/// works correctly and the test device is not detected when
-/// searching for services it doesn't provide.
+/// This UUID is used in negative tests to confirm that filtering works correctly and the test device is not detected
+/// when searching for services it doesn't provide.
 const String kDifferentServiceUuid = '20000000-5678-5678-5678-123456789def';
 
 /// The manufacturer ID used by the ESP32 test device.
 ///
-/// This is the company identifier (0xFFFF) used in manufacturer data.
-/// 0xFFFF is reserved for testing purposes.
+/// This is the company identifier (0xFFFF) used in manufacturer data. 0xFFFF is reserved for testing purposes.
 const int kTestManufacturerId = 0xFFFF;
 
 /// Expected manufacturer data payload in the main advertisement.
 ///
-/// The ESP32 test device broadcasts consecutive numbers 0x00 through 0x0F
-/// in the advertisement manufacturer data payload.
+/// The ESP32 test device broadcasts consecutive numbers 0x00 through 0x0F in the advertisement manufacturer data
+/// payload.
 const List<int> kExpectedAdvertisementData = <int>[
   0x00,
   0x01,
@@ -60,8 +90,8 @@ const List<int> kExpectedAdvertisementData = <int>[
 
 /// Expected manufacturer data payload in the scan response.
 ///
-/// The ESP32 test device broadcasts consecutive numbers 0x10 through 0x1F
-/// in the scan response manufacturer data payload.
+/// The ESP32 test device broadcasts consecutive numbers 0x10 through 0x1F in the scan response manufacturer data
+/// payload.
 const List<int> kExpectedScanResponseData = <int>[
   0x10,
   0x11,

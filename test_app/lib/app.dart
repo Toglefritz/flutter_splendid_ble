@@ -1,8 +1,7 @@
 /// Root application widget for the test_app Flutter application.
 ///
-/// This file contains the main application widget that configures the Flutter app
-/// with Material Design theming and sets up the initial route to the home screen
-/// following MVC architecture patterns.
+/// This file contains the main application widget that configures the Flutter app with Material Design theming and sets
+/// up the initial route to the home screen following MVC architecture patterns.
 library;
 
 import 'package:flutter/material.dart';
@@ -15,8 +14,7 @@ part 'theme/app_theme.dart';
 
 /// Root application widget that configures the Flutter app.
 ///
-/// This widget serves as the top-level container for the entire application
-/// and is responsible for:
+/// This widget serves as the top-level container for the entire application and is responsible for:
 /// * Setting up the Material Design theme and color scheme
 /// * Configuring the app title and debug settings
 /// * Defining the initial route (home screen)
