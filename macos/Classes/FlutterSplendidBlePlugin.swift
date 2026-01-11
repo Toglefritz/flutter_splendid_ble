@@ -113,20 +113,12 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
     private func handleCentralMethod(_ call: FlutterMethodCall, _ result: @escaping FlutterResult) {
         switch call.method {
         case CentralMethod.startScan.rawValue:
-            var serviceUUIDs: [CBUUID]? = nil
             var options: [String: Any]? = nil
             
             if let args = call.arguments as? [String: Any] {
                 // Handle Scan Filters
                 var expectedDeviceNames: Set<String> = []
                 if let filtersMap = args["filters"] as? [[String: Any]] {
-                    serviceUUIDs = filtersMap.compactMap { filterDict in
-                        if let uuidStrings = filterDict["serviceUuids"] as? [String] {
-                            return uuidStrings.compactMap { CBUUID(string: $0) }
-                        }
-                        return nil
-                    }.flatMap { $0 }
-                    
                     // Collect expected device names
                     for filter in filtersMap {
                         if let deviceName = filter["deviceName"] as? String {
@@ -154,7 +146,8 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
             partialAdvertisementData.removeAll()
 
             // Start scanning with optional service UUIDs and options.
-            centralManager.scanForPeripherals(withServices: serviceUUIDs, options: options)
+            // Note: We pass nil for serviceUUIDs to let Dart-side filtering handle all filtering
+            centralManager.scanForPeripherals(withServices: nil, options: options)
             result(nil)
             
         case CentralMethod.getConnectedDevices.rawValue:
