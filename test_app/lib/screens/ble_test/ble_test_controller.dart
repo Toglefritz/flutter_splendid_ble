@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_splendid_ble/flutter_splendid_ble.dart';
 
+import '../../services/connection_test_service.dart';
 import '../../services/scanning_test_service.dart';
 import 'ble_test_route.dart';
 import 'ble_test_view.dart';
@@ -18,6 +19,9 @@ class BleTestController extends State<BleTestRoute> {
 
   /// Service for performing scanning tests.
   late final ScanningTestService _scanningTestService;
+
+  /// Service for performing connection tests.
+  late final ConnectionTestService _connectionTestService;
 
   /// List of test output lines displayed in the terminal interface.
   final List<String> _outputLines = <String>[];
@@ -42,8 +46,9 @@ class BleTestController extends State<BleTestRoute> {
     super.initState();
     _ble = SplendidBleCentral();
     _scanningTestService = ScanningTestService(_ble, _addOutputLine);
+    _connectionTestService = ConnectionTestService(_ble, _addOutputLine);
     _addOutputLine('Flutter Splendid BLE Test Console');
-    _addOutputLine('Ready to run BLE scanning tests...');
+    _addOutputLine('Ready to run BLE tests...');
     _addOutputLine('');
   }
 
@@ -96,6 +101,9 @@ class BleTestController extends State<BleTestRoute> {
       // Run scanning tests
       await _scanningTestService.runAllTests();
 
+      // Run connection tests
+      await _connectionTestService.runAllTests();
+
       _addOutputLine('');
       _addOutputLine('All tests completed!');
     } catch (e) {
@@ -136,6 +144,7 @@ class BleTestController extends State<BleTestRoute> {
   void dispose() {
     _scrollController.dispose();
     unawaited(_scanningTestService.dispose());
+    unawaited(_connectionTestService.dispose());
     super.dispose();
   }
 }
