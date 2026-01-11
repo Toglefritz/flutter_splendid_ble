@@ -149,6 +149,7 @@ class ScanningTestService {
     bool testDeviceFound = false;
     bool manufacturerDataValid = false;
     int deviceCount = 0;
+    final Set<String> discoveredDevices = <String>{};
 
     try {
       final Stream<BleDevice> scanStream = await _ble.startScan();
@@ -158,45 +159,52 @@ class ScanningTestService {
           deviceCount++;
 
           if (device.name == kTestDeviceName) {
-            testDeviceFound = true;
-            _addOutputLine('  Found test device: ${device.name} (${device.address})');
+            // Only process the test device once
+            if (!discoveredDevices.contains(device.address)) {
+              discoveredDevices.add(device.address);
+              testDeviceFound = true;
+              _addOutputLine('  Found test device: ${device.name} (${device.address})');
 
-            // Check manufacturer data
-            final ManufacturerData? manufacturerData = device.manufacturerData;
-            if (manufacturerData != null) {
-              _addOutputLine('  Manufacturer data found:');
+              // Check manufacturer data
+              final ManufacturerData? manufacturerData = device.manufacturerData;
+              if (manufacturerData != null) {
+                _addOutputLine('  Manufacturer data found:');
 
-              // Convert manufacturer ID from bytes to integer (little-endian)
-              final int companyId = manufacturerData.manufacturerId.length >= 2
-                  ? manufacturerData.manufacturerId[0] | (manufacturerData.manufacturerId[1] << 8)
-                  : 0;
+                // Convert manufacturer ID from bytes to integer (little-endian)
+                final int companyId = manufacturerData.manufacturerId.length >= 2
+                    ? manufacturerData.manufacturerId[0] | (manufacturerData.manufacturerId[1] << 8)
+                    : 0;
 
-              _addOutputLine('    Company ID: 0x${companyId.toRadixString(16).toUpperCase().padLeft(4, '0')}');
-              _addOutputLine(
-                  '    Payload: ${manufacturerData.payload.map((int byte) => '0x${byte.toRadixString(16).toUpperCase().padLeft(2, '0')}').join(' ')}');
+                _addOutputLine('    Company ID: 0x${companyId.toRadixString(16).toUpperCase().padLeft(4, '0')}');
+                _addOutputLine(
+                    '    Payload: ${manufacturerData.payload.map((int byte) => '0x${byte.toRadixString(16).toUpperCase().padLeft(2, '0')}').join(' ')}');
 
-              // Verify expected manufacturer data
-              if (companyId == kTestManufacturerId) {
-                if (_listsEqual(manufacturerData.payload, kExpectedAdvertisementData)) {
-                  _addOutputLine('    ✓ Advertisement data matches expected pattern');
-                  manufacturerDataValid = true;
-                } else if (_listsEqual(manufacturerData.payload, kExpectedScanResponseData)) {
-                  _addOutputLine('    ✓ Scan response data matches expected pattern');
-                  manufacturerDataValid = true;
+                // Verify expected manufacturer data
+                if (companyId == kTestManufacturerId) {
+                  if (_listsEqual(manufacturerData.payload, kExpectedAdvertisementData)) {
+                    _addOutputLine('    ✓ Advertisement data matches expected pattern');
+                    manufacturerDataValid = true;
+                  } else if (_listsEqual(manufacturerData.payload, kExpectedScanResponseData)) {
+                    _addOutputLine('    ✓ Scan response data matches expected pattern');
+                    manufacturerDataValid = true;
+                  } else {
+                    _addOutputLine('    ✗ Payload does not match expected patterns');
+                    _addOutputLine(
+                        '    Expected (adv): ${kExpectedAdvertisementData.map((int byte) => '0x${byte.toRadixString(16).toUpperCase().padLeft(2, '0')}').join(' ')}');
+                    _addOutputLine(
+                        '    Expected (scan): ${kExpectedScanResponseData.map((int byte) => '0x${byte.toRadixString(16).toUpperCase().padLeft(2, '0')}').join(' ')}');
+                  }
                 } else {
-                  _addOutputLine('    ✗ Payload does not match expected patterns');
                   _addOutputLine(
-                      '    Expected (adv): ${kExpectedAdvertisementData.map((int byte) => '0x${byte.toRadixString(16).toUpperCase().padLeft(2, '0')}').join(' ')}');
-                  _addOutputLine(
-                      '    Expected (scan): ${kExpectedScanResponseData.map((int byte) => '0x${byte.toRadixString(16).toUpperCase().padLeft(2, '0')}').join(' ')}');
+                      '    ✗ Unexpected company ID (expected 0x${kTestManufacturerId.toRadixString(16).toUpperCase().padLeft(4, '0')})');
                 }
               } else {
-                _addOutputLine(
-                    '    ✗ Unexpected company ID (expected 0x${kTestManufacturerId.toRadixString(16).toUpperCase().padLeft(4, '0')})');
+                _addOutputLine('  ✗ No manufacturer data found');
               }
-            } else {
-              _addOutputLine('  ✗ No manufacturer data found');
             }
+          } else {
+            // Track other devices but don't report them repeatedly
+            discoveredDevices.add(device.address);
           }
         },
         onError: (Object error) {
@@ -212,7 +220,7 @@ class ScanningTestService {
       _scanSubscription = null;
     }
 
-    _addOutputLine('  Scan completed: $deviceCount devices found');
+    _addOutputLine('  Scan completed: $deviceCount total detections, ${discoveredDevices.length} unique devices');
 
     final bool testPassed = testDeviceFound && manufacturerDataValid;
     if (testPassed) {
@@ -244,6 +252,8 @@ class ScanningTestService {
   }) async {
     bool testDeviceFound = false;
     int deviceCount = 0;
+    final Set<String> discoveredDevices = <String>{};
+    final Completer<bool> scanCompleter = Completer<bool>();
 
     try {
       final Stream<BleDevice> scanStream = await _ble.startScan(filters: filters);
@@ -251,27 +261,52 @@ class ScanningTestService {
       _scanSubscription = scanStream.listen(
         (BleDevice device) {
           deviceCount++;
-          _addOutputLine('  Found: ${device.name?.isNotEmpty ?? false ? device.name : 'Unknown'} (${device.address})');
 
-          if (device.name == kTestDeviceName) {
-            testDeviceFound = true;
-            _addOutputLine('  → This is the test device!');
+          // Only report each unique device once
+          if (!discoveredDevices.contains(device.address)) {
+            discoveredDevices.add(device.address);
+            _addOutputLine(
+                '  Found: ${device.name?.isNotEmpty ?? false ? device.name : 'Unknown'} (${device.address})');
+
+            if (device.name == kTestDeviceName) {
+              testDeviceFound = true;
+              _addOutputLine('  → This is the test device!');
+
+              // Complete immediately when test device is found
+              if (!scanCompleter.isCompleted) {
+                scanCompleter.complete(true);
+              }
+            }
           }
         },
         onError: (Object error) {
           _addOutputLine('  Scan error: $error');
+          if (!scanCompleter.isCompleted) {
+            scanCompleter.complete(false);
+          }
         },
       );
 
-      // Scan for 10 seconds
-      await Future<void>.delayed(const Duration(seconds: 10));
+      // Wait for test device to be found or timeout after 10 seconds
+      try {
+        testDeviceFound = await scanCompleter.future.timeout(
+          const Duration(seconds: 10),
+          onTimeout: () {
+            _addOutputLine('  Scan timeout reached');
+            return testDeviceFound;
+          },
+        );
+      } on TimeoutException {
+        // Timeout handled above
+      }
     } finally {
       _ble.stopScan();
       await _scanSubscription?.cancel();
       _scanSubscription = null;
     }
 
-    _addOutputLine('  Scan completed: $deviceCount devices found');
+    _addOutputLine('  Scan completed: $deviceCount total detections, ${discoveredDevices.length} unique devices');
+    
     return testDeviceFound;
   }
 
