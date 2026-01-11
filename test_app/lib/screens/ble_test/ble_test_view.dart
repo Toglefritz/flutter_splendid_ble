@@ -194,18 +194,15 @@ class BleTestView extends StatelessWidget {
                                   ),
                                 ),
                         ),
-                        Padding(
-                          padding: const EdgeInsets.only(left: Insets.small),
-                          child: Expanded(
-                            child: Text(
-                              line.trim(),
-                              style: TextStyle(
-                                color: style.color,
-                                fontSize: 14,
-                                fontFamily: style.useMonospace ? 'monospace' : null,
-                                fontWeight: style.fontWeight,
-                                height: 1.4,
-                              ),
+                        Flexible(
+                          child: Text(
+                            line.trim(),
+                            style: TextStyle(
+                              color: style.color,
+                              fontSize: 14,
+                              fontFamily: style.useMonospace ? 'monospace' : null,
+                              fontWeight: style.fontWeight,
+                              height: 1.4,
                             ),
                           ),
                         ),

@@ -10,6 +10,18 @@ const String kTestDeviceName = 'SplendidBLE-Tester';
 /// and is used for service-based filtering during device discovery.
 const String kTestServiceUuid = '10000000-1234-1234-1234-123456789abc';
 
+/// Test characteristic UUID for read operations.
+///
+/// This characteristic should be discoverable within the test service
+/// and support read operations for service discovery validation.
+const String kTestReadCharacteristicUuid = '10000001-1234-1234-1234-123456789abc';
+
+/// Test characteristic UUID for write operations.
+///
+/// This characteristic should be discoverable within the test service
+/// and support write operations for service discovery validation.
+const String kTestWriteCharacteristicUuid = '10000002-1234-1234-1234-123456789abc';
+
 /// A different UUID not advertised by the ESP32 test device.
 ///
 /// This UUID is used in negative tests to confirm that filtering

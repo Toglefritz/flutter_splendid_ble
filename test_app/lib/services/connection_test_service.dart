@@ -28,6 +28,11 @@ class ConnectionTestService {
   /// Creates a new connection test service.
   ConnectionTestService(this._ble, this._addOutputLine);
 
+  /// Gets the address of the test device found during scanning.
+  ///
+  /// Returns null if no test device has been found yet.
+  String? get testDeviceAddress => _testDeviceAddress;
+
   /// Runs all connection tests in sequence.
   ///
   /// This method performs the complete connection test suite:

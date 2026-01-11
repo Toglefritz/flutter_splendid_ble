@@ -5,6 +5,7 @@ import 'package:flutter_splendid_ble/flutter_splendid_ble.dart';
 
 import '../../services/connection_test_service.dart';
 import '../../services/scanning_test_service.dart';
+import '../../services/service_discovery_test_service.dart';
 import 'ble_test_route.dart';
 import 'ble_test_view.dart';
 
@@ -22,6 +23,9 @@ class BleTestController extends State<BleTestRoute> {
 
   /// Service for performing connection tests.
   late final ConnectionTestService _connectionTestService;
+
+  /// Service for performing service discovery tests.
+  late final ServiceDiscoveryTestService _serviceDiscoveryTestService;
 
   /// List of test output lines displayed in the terminal interface.
   final List<String> _outputLines = <String>[];
@@ -47,6 +51,7 @@ class BleTestController extends State<BleTestRoute> {
     _ble = SplendidBleCentral();
     _scanningTestService = ScanningTestService(_ble, _addOutputLine);
     _connectionTestService = ConnectionTestService(_ble, _addOutputLine);
+    _serviceDiscoveryTestService = ServiceDiscoveryTestService(_ble, _addOutputLine);
     _addOutputLine('Flutter Splendid BLE Test Console');
     _addOutputLine('Ready to run BLE tests...');
     _addOutputLine('');
@@ -66,10 +71,12 @@ class BleTestController extends State<BleTestRoute> {
       if (_scrollController.hasClients) {
         Future<void>.delayed(const Duration(milliseconds: 50), () {
           if (_scrollController.hasClients) {
-            _scrollController.animateTo(
-              _scrollController.position.maxScrollExtent,
-              duration: const Duration(milliseconds: 200),
-              curve: Curves.easeOut,
+            unawaited(
+              _scrollController.animateTo(
+                _scrollController.position.maxScrollExtent,
+                duration: const Duration(milliseconds: 200),
+                curve: Curves.easeOut,
+              ),
             );
           }
         });
@@ -103,6 +110,15 @@ class BleTestController extends State<BleTestRoute> {
 
       // Run connection tests
       await _connectionTestService.runAllTests();
+
+      // Run service discovery tests if we have a connected device
+      final String? deviceAddress = _connectionTestService.testDeviceAddress;
+      if (deviceAddress != null) {
+        await _serviceDiscoveryTestService.runAllTests(deviceAddress);
+      } else {
+        _addOutputLine('');
+        _addOutputLine('⚠ SKIP: Service discovery tests skipped - no device address available');
+      }
 
       _addOutputLine('');
       _addOutputLine('All tests completed!');
@@ -145,6 +161,7 @@ class BleTestController extends State<BleTestRoute> {
     _scrollController.dispose();
     unawaited(_scanningTestService.dispose());
     unawaited(_connectionTestService.dispose());
+    unawaited(_serviceDiscoveryTestService.dispose());
     super.dispose();
   }
 }
