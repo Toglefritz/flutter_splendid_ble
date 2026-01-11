@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter_splendid_ble/flutter_splendid_ble.dart';
+import 'package:flutter_splendid_ble/shared/models/manufacturer_data.dart';
 
 import '../config/esp32_test_constants.dart';
 
@@ -29,6 +30,7 @@ class ScanningTestService {
   /// 2. Service UUID filter test
   /// 3. Different UUID filter test (negative)
   /// 4. Device name filter test
+  /// 5. Manufacturer data verification test
   ///
   /// Returns true if all tests pass, false if any test fails.
   Future<bool> runAllTests() async {
@@ -40,6 +42,7 @@ class ScanningTestService {
       await _testServiceUuidFilter(),
       await _testDifferentUuidFilter(),
       await _testDeviceNameFilter(),
+      await _testManufacturerData(),
     ];
 
     final bool allPassed = results.every((bool result) => result);
@@ -136,6 +139,101 @@ class ScanningTestService {
     _addOutputLine('');
 
     return found;
+  }
+
+  /// Test 5: Manufacturer data verification - should detect and validate manufacturer data.
+  Future<bool> _testManufacturerData() async {
+    _addOutputLine('TEST 5: Manufacturer data verification');
+    _addOutputLine('Scanning for test device and verifying manufacturer data...');
+
+    bool testDeviceFound = false;
+    bool manufacturerDataValid = false;
+    int deviceCount = 0;
+
+    try {
+      final Stream<BleDevice> scanStream = await _ble.startScan();
+
+      _scanSubscription = scanStream.listen(
+        (BleDevice device) {
+          deviceCount++;
+
+          if (device.name == kTestDeviceName) {
+            testDeviceFound = true;
+            _addOutputLine('  Found test device: ${device.name} (${device.address})');
+
+            // Check manufacturer data
+            final ManufacturerData? manufacturerData = device.manufacturerData;
+            if (manufacturerData != null) {
+              _addOutputLine('  Manufacturer data found:');
+
+              // Convert manufacturer ID from bytes to integer (little-endian)
+              final int companyId = manufacturerData.manufacturerId.length >= 2
+                  ? manufacturerData.manufacturerId[0] | (manufacturerData.manufacturerId[1] << 8)
+                  : 0;
+
+              _addOutputLine('    Company ID: 0x${companyId.toRadixString(16).toUpperCase().padLeft(4, '0')}');
+              _addOutputLine(
+                  '    Payload: ${manufacturerData.payload.map((int byte) => '0x${byte.toRadixString(16).toUpperCase().padLeft(2, '0')}').join(' ')}');
+
+              // Verify expected manufacturer data
+              if (companyId == kTestManufacturerId) {
+                if (_listsEqual(manufacturerData.payload, kExpectedAdvertisementData)) {
+                  _addOutputLine('    ✓ Advertisement data matches expected pattern');
+                  manufacturerDataValid = true;
+                } else if (_listsEqual(manufacturerData.payload, kExpectedScanResponseData)) {
+                  _addOutputLine('    ✓ Scan response data matches expected pattern');
+                  manufacturerDataValid = true;
+                } else {
+                  _addOutputLine('    ✗ Payload does not match expected patterns');
+                  _addOutputLine(
+                      '    Expected (adv): ${kExpectedAdvertisementData.map((int byte) => '0x${byte.toRadixString(16).toUpperCase().padLeft(2, '0')}').join(' ')}');
+                  _addOutputLine(
+                      '    Expected (scan): ${kExpectedScanResponseData.map((int byte) => '0x${byte.toRadixString(16).toUpperCase().padLeft(2, '0')}').join(' ')}');
+                }
+              } else {
+                _addOutputLine(
+                    '    ✗ Unexpected company ID (expected 0x${kTestManufacturerId.toRadixString(16).toUpperCase().padLeft(4, '0')})');
+              }
+            } else {
+              _addOutputLine('  ✗ No manufacturer data found');
+            }
+          }
+        },
+        onError: (Object error) {
+          _addOutputLine('  Scan error: $error');
+        },
+      );
+
+      // Scan for 10 seconds
+      await Future<void>.delayed(const Duration(seconds: 10));
+    } finally {
+      _ble.stopScan();
+      await _scanSubscription?.cancel();
+      _scanSubscription = null;
+    }
+
+    _addOutputLine('  Scan completed: $deviceCount devices found');
+
+    final bool testPassed = testDeviceFound && manufacturerDataValid;
+    if (testPassed) {
+      _addOutputLine('✓ PASS: Test device found with valid manufacturer data');
+    } else if (testDeviceFound && !manufacturerDataValid) {
+      _addOutputLine('✗ FAIL: Test device found but manufacturer data invalid');
+    } else {
+      _addOutputLine('✗ FAIL: Test device not found');
+    }
+    _addOutputLine('');
+
+    return testPassed;
+  }
+
+  /// Compares two lists for equality.
+  bool _listsEqual(List<int> list1, List<int> list2) {
+    if (list1.length != list2.length) return false;
+    for (int i = 0; i < list1.length; i++) {
+      if (list1[i] != list2[i]) return false;
+    }
+    return true;
   }
 
   /// Performs a BLE scan with optional filters and returns whether test device was found.

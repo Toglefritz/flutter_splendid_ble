@@ -25,11 +25,17 @@ class BleTestController extends State<BleTestRoute> {
   /// Whether tests are currently running.
   bool _isRunning = false;
 
+  /// Scroll controller for the output list.
+  final ScrollController _scrollController = ScrollController();
+
   /// Gets the current test output lines.
   List<String> get outputLines => List<String>.unmodifiable(_outputLines);
 
   /// Gets whether tests are currently running.
   bool get isRunning => _isRunning;
+
+  /// Gets the scroll controller for the output list.
+  ScrollController get scrollController => _scrollController;
 
   @override
   void initState() {
@@ -45,6 +51,24 @@ class BleTestController extends State<BleTestRoute> {
   void _addOutputLine(String line) {
     setState(() {
       _outputLines.add(line);
+    });
+    _scrollToBottom();
+  }
+
+  /// Scrolls to the bottom of the output list.
+  void _scrollToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        Future<void>.delayed(const Duration(milliseconds: 50), () {
+          if (_scrollController.hasClients) {
+            _scrollController.animateTo(
+              _scrollController.position.maxScrollExtent,
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeOut,
+            );
+          }
+        });
+      }
     });
   }
 
@@ -110,6 +134,7 @@ class BleTestController extends State<BleTestRoute> {
 
   @override
   void dispose() {
+    _scrollController.dispose();
     unawaited(_scanningTestService.dispose());
     super.dispose();
   }

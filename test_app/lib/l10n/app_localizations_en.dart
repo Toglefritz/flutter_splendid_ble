@@ -16,4 +16,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get startTestsTooltip => 'Start Tests';
+
+  @override
+  String get runTestsButton => 'Run Tests';
+
+  @override
+  String get runningTestsStatus => 'Running...';
+
+  @override
+  String get readyToRunTestsTitle => 'Ready to run BLE tests';
+
+  @override
+  String get tapRunTestsInstruction => 'Tap \"Run Tests\" to start scanning for devices';
 }

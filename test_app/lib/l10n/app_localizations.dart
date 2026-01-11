@@ -108,6 +108,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Start Tests'**
   String get startTestsTooltip;
+
+  /// Label for the button that starts BLE tests
+  ///
+  /// In en, this message translates to:
+  /// **'Run Tests'**
+  String get runTestsButton;
+
+  /// Status text shown when tests are currently running
+  ///
+  /// In en, this message translates to:
+  /// **'Running...'**
+  String get runningTestsStatus;
+
+  /// Title shown when the test console is ready but no tests have been run
+  ///
+  /// In en, this message translates to:
+  /// **'Ready to run BLE tests'**
+  String get readyToRunTestsTitle;
+
+  /// Instruction text telling the user how to start tests
+  ///
+  /// In en, this message translates to:
+  /// **'Tap \"Run Tests\" to start scanning for devices'**
+  String get tapRunTestsInstruction;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

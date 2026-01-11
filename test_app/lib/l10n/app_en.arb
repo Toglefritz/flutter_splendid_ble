@@ -10,5 +10,21 @@
   "startTestsTooltip": "Start Tests",
   "@startTestsTooltip": {
     "description": "Tooltip for the button that starts BLE tests"
+  },
+  "runTestsButton": "Run Tests",
+  "@runTestsButton": {
+    "description": "Label for the button that starts BLE tests"
+  },
+  "runningTestsStatus": "Running...",
+  "@runningTestsStatus": {
+    "description": "Status text shown when tests are currently running"
+  },
+  "readyToRunTestsTitle": "Ready to run BLE tests",
+  "@readyToRunTestsTitle": {
+    "description": "Title shown when the test console is ready but no tests have been run"
+  },
+  "tapRunTestsInstruction": "Tap \"Run Tests\" to start scanning for devices",
+  "@tapRunTestsInstruction": {
+    "description": "Instruction text telling the user how to start tests"
   }
 }

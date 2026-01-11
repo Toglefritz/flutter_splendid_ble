@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 
 import 'l10n/app_localizations.dart';
 import 'screens/ble_test/ble_test_route.dart';
+import 'theme/terminal_colors.dart';
 
 part 'theme/app_theme.dart';
 

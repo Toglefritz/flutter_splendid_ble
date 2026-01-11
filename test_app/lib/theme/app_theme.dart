@@ -15,6 +15,9 @@ class _AppTheme {
         seedColor: _seedColor,
       ),
       useMaterial3: true,
+      extensions: const <ThemeExtension<dynamic>>[
+        TerminalColors.dark(),
+      ],
     );
   }
 
@@ -26,6 +29,9 @@ class _AppTheme {
         brightness: Brightness.dark,
       ),
       useMaterial3: true,
+      extensions: const <ThemeExtension<dynamic>>[
+        TerminalColors.dark(),
+      ],
     );
   }
 }
