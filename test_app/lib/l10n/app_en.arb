@@ -1,0 +1,14 @@
+{
+  "appTitle": "Test App",
+  "@appTitle": {
+    "description": "The title of the application"
+  },
+  "bleTestConsoleTitle": "BLE Test Console",
+  "@bleTestConsoleTitle": {
+    "description": "Title for the BLE test console screen"
+  },
+  "startTestsTooltip": "Start Tests",
+  "@startTestsTooltip": {
+    "description": "Tooltip for the button that starts BLE tests"
+  }
+}

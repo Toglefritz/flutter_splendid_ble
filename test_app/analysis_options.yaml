@@ -1,0 +1,16 @@
+include: package:very_good_analysis/analysis_options.yaml
+
+linter:
+  rules:
+    omit_local_variable_types: false
+    always_use_package_imports: false
+    prefer_relative_imports: true
+    lines_longer_than_80_chars: false
+    avoid_escaping_inner_quotes: false
+    sort_constructors_first: false
+    prefer_int_literals: false
+    avoid_catches_without_on_clauses: false
+
+formatter:
+  page_width: 120
+  trailing_commas: preserve
