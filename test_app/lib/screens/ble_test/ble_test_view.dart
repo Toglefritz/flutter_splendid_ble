@@ -169,6 +169,34 @@ class BleTestView extends StatelessWidget {
                       fontWeight: FontWeight.bold,
                       icon: Icons.science,
                     );
+                  } else if (cleanLine.startsWith('═══')) {
+                    style = LineStyle(
+                      color: colors.accent,
+                      fontWeight: FontWeight.bold,
+                      useMonospace: true,
+                    );
+                  } else if (cleanLine == 'TEST SUITE SUMMARY') {
+                    style = LineStyle(
+                      color: colors.accent,
+                      fontWeight: FontWeight.bold,
+                    );
+                  } else if (cleanLine.startsWith('Results:')) {
+                    style = LineStyle(
+                      color: colors.info,
+                      fontWeight: FontWeight.w500,
+                    );
+                  } else if (cleanLine.startsWith('✓ OVERALL:')) {
+                    style = LineStyle(
+                      color: colors.success,
+                      fontWeight: FontWeight.bold,
+                      icon: Icons.check_circle,
+                    );
+                  } else if (cleanLine.startsWith('✗ OVERALL:')) {
+                    style = LineStyle(
+                      color: colors.error,
+                      fontWeight: FontWeight.bold,
+                      icon: Icons.error,
+                    );
                   } else if (cleanLine.startsWith('✓')) {
                     style = LineStyle(
                       color: colors.success,
@@ -180,6 +208,12 @@ class BleTestView extends StatelessWidget {
                       color: colors.error,
                       fontWeight: FontWeight.w500,
                       icon: Icons.error,
+                    );
+                  } else if (cleanLine.startsWith('⚠')) {
+                    style = LineStyle(
+                      color: colors.warning,
+                      fontWeight: FontWeight.w500,
+                      icon: Icons.warning,
                     );
                   } else if (cleanLine.startsWith('ERROR:')) {
                     style = LineStyle(

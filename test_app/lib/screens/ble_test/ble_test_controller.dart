@@ -5,6 +5,7 @@ import 'package:flutter_splendid_ble/flutter_splendid_ble.dart';
 
 import '../../services/connection_test_service.dart';
 import '../../services/pairing_test_service.dart';
+import '../../services/read_write_test_service.dart';
 import '../../services/scanning_test_service.dart';
 import '../../services/service_discovery_test_service.dart';
 import 'ble_test_route.dart';
@@ -26,6 +27,9 @@ class BleTestController extends State<BleTestRoute> {
 
   /// Service for performing service discovery tests.
   late final ServiceDiscoveryTestService _serviceDiscoveryTestService;
+
+  /// Service for performing read/write tests.
+  late final ReadWriteTestService _readWriteTestService;
 
   /// Service for performing pairing tests.
   late final PairingTestService _pairingTestService;
@@ -56,6 +60,7 @@ class BleTestController extends State<BleTestRoute> {
     _connectionTestService = ConnectionTestService(_ble, _addOutputLine);
     _serviceDiscoveryTestService =
         ServiceDiscoveryTestService(_ble, _addOutputLine);
+    _readWriteTestService = ReadWriteTestService(_ble, _addOutputLine);
     _pairingTestService = PairingTestService(_ble, _addOutputLine);
     _addOutputLine('Flutter Splendid BLE Test Console');
     _addOutputLine('Ready to run BLE tests...');
@@ -110,31 +115,93 @@ class BleTestController extends State<BleTestRoute> {
       // Check Bluetooth status first
       await _checkBluetoothStatus();
 
+      // Track test results
+      final List<String> testResults = <String>[];
+
       // Run scanning tests
-      await _scanningTestService.runAllTests();
+      final bool scanningPassed = await _scanningTestService.runAllTests();
+      testResults.add('Scanning: ${scanningPassed ? 'PASSED' : 'FAILED'}');
 
       // Run connection tests
-      await _connectionTestService.runAllTests();
+      final bool connectionPassed = await _connectionTestService.runAllTests();
+      testResults.add('Connection: ${connectionPassed ? 'PASSED' : 'FAILED'}');
 
       // Run service discovery tests if we have a connected device
       final String? deviceAddress = _connectionTestService.testDeviceAddress;
       if (deviceAddress != null) {
-        await _serviceDiscoveryTestService.runAllTests(deviceAddress);
+        final bool discoveryPassed =
+            await _serviceDiscoveryTestService.runAllTests(deviceAddress);
+        testResults
+            .add('Service Discovery: ${discoveryPassed ? 'PASSED' : 'FAILED'}');
 
         // Run pairing tests
-        await _pairingTestService.runAllTests(deviceAddress);
+        final bool pairingPassed =
+            await _pairingTestService.runAllTests(deviceAddress);
+        testResults.add('Pairing: ${pairingPassed ? 'PASSED' : 'FAILED'}');
+
+        // Run read/write tests
+        final bool readWritePassed =
+            await _readWriteTestService.runAllTests(deviceAddress);
+        testResults.add('Read/Write: ${readWritePassed ? 'PASSED' : 'FAILED'}');
       } else {
         _addOutputLine('');
         _addOutputLine(
-            '⚠ SKIP: Service discovery tests skipped - no device address available',);
+          '⚠ SKIP: Service discovery tests skipped - no device address available',
+        );
         _addOutputLine(
-            '⚠ SKIP: Pairing tests skipped - no device address available',);
+          '⚠ SKIP: Pairing tests skipped - no device address available',
+        );
+        _addOutputLine(
+          '⚠ SKIP: Read/write tests skipped - no device address available',
+        );
+        testResults.add('Service Discovery: SKIPPED');
+        testResults.add('Pairing: SKIPPED');
+        testResults.add('Read/Write: SKIPPED');
+      }
+
+      // Display comprehensive summary
+      _addOutputLine('');
+      _addOutputLine('═══════════════════════════════════════');
+      _addOutputLine('TEST SUITE SUMMARY');
+      _addOutputLine('═══════════════════════════════════════');
+
+      final int passedCount = testResults
+          .where((String result) => result.contains('PASSED'))
+          .length;
+      final int failedCount = testResults
+          .where((String result) => result.contains('FAILED'))
+          .length;
+      final int skippedCount = testResults
+          .where((String result) => result.contains('SKIPPED'))
+          .length;
+
+      for (final String result in testResults) {
+        if (result.contains('PASSED')) {
+          _addOutputLine('✓ $result');
+        } else if (result.contains('FAILED')) {
+          _addOutputLine('✗ $result');
+        } else {
+          _addOutputLine('⚠ $result');
+        }
       }
 
       _addOutputLine('');
-      _addOutputLine('All tests completed!');
+      _addOutputLine(
+          'Results: $passedCount passed, $failedCount failed, $skippedCount skipped');
+
+      final bool overallSuccess = failedCount == 0;
+      if (overallSuccess) {
+        _addOutputLine('✓ OVERALL: TEST SUITE PASSED');
+      } else {
+        _addOutputLine('✗ OVERALL: TEST SUITE FAILED');
+      }
+      _addOutputLine('═══════════════════════════════════════');
     } catch (e) {
       _addOutputLine('ERROR: Test suite failed - $e');
+      _addOutputLine('');
+      _addOutputLine('═══════════════════════════════════════');
+      _addOutputLine('✗ OVERALL: TEST SUITE FAILED (Exception)');
+      _addOutputLine('═══════════════════════════════════════');
     } finally {
       setState(() {
         _isRunning = false;
@@ -174,6 +241,7 @@ class BleTestController extends State<BleTestRoute> {
     unawaited(_scanningTestService.dispose());
     unawaited(_connectionTestService.dispose());
     unawaited(_serviceDiscoveryTestService.dispose());
+    unawaited(_readWriteTestService.dispose());
     unawaited(_pairingTestService.dispose());
     super.dispose();
   }
