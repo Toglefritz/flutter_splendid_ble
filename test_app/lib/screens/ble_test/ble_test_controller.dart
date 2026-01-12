@@ -37,17 +37,20 @@ class BleTestController extends State<BleTestRoute> {
   /// List of test output lines displayed in the terminal interface.
   final List<String> _outputLines = <String>[];
 
-  /// Whether tests are currently running.
-  bool _isRunning = false;
-
-  /// Scroll controller for the output list.
-  final ScrollController _scrollController = ScrollController();
-
   /// Gets the current test output lines.
   List<String> get outputLines => List<String>.unmodifiable(_outputLines);
 
+  /// Determines if tests are currently running.
+  bool _isRunning = false;
+
   /// Gets whether tests are currently running.
   bool get isRunning => _isRunning;
+
+  /// Scroll controller for the output list.
+  ///
+  /// The primary purpose of this scroll controller is to automatically scroll the view as new output lines are added
+  /// by the test services.
+  final ScrollController _scrollController = ScrollController();
 
   /// Gets the scroll controller for the output list.
   ScrollController get scrollController => _scrollController;
@@ -55,23 +58,35 @@ class BleTestController extends State<BleTestRoute> {
   @override
   void initState() {
     super.initState();
+
+    // Initialize the Splendid BLE plugin
     _ble = SplendidBleCentral();
+
+    // Initialize each of the test services
     _scanningTestService = ScanningTestService(_ble, _addOutputLine);
     _connectionTestService = ConnectionTestService(_ble, _addOutputLine);
     _serviceDiscoveryTestService =
         ServiceDiscoveryTestService(_ble, _addOutputLine);
     _readWriteTestService = ReadWriteTestService(_ble, _addOutputLine);
     _pairingTestService = PairingTestService(_ble, _addOutputLine);
+
+    // Add some initial output lines for the start of the test
     _addOutputLine('Flutter Splendid BLE Test Console');
     _addOutputLine('Ready to run BLE tests...');
     _addOutputLine('');
   }
 
   /// Adds a new line to the test output.
+  ///
+  /// This method is used to add new output lines that will appear in the view. When new lines are added, the view
+  /// is scrolled to the bottom.
   void _addOutputLine(String line) {
+    // Add the new output line
     setState(() {
       _outputLines.add(line);
     });
+
+    // Scroll the view
     _scrollToBottom();
   }
 
@@ -115,7 +130,7 @@ class BleTestController extends State<BleTestRoute> {
       // Check Bluetooth status first
       await _checkBluetoothStatus();
 
-      // Track test results
+      // Track test results so a summary can be provided at the end
       final List<String> testResults = <String>[];
 
       // Run scanning tests
@@ -143,7 +158,9 @@ class BleTestController extends State<BleTestRoute> {
         final bool readWritePassed =
             await _readWriteTestService.runAllTests(deviceAddress);
         testResults.add('Read/Write: ${readWritePassed ? 'PASSED' : 'FAILED'}');
-      } else {
+      } 
+      // No device was connected
+      else {
         _addOutputLine('');
         _addOutputLine(
           '⚠ SKIP: Service discovery tests skipped - no device address available',
@@ -154,12 +171,12 @@ class BleTestController extends State<BleTestRoute> {
         _addOutputLine(
           '⚠ SKIP: Read/write tests skipped - no device address available',
         );
-        testResults.add('Service Discovery: SKIPPED');
-        testResults.add('Pairing: SKIPPED');
-        testResults.add('Read/Write: SKIPPED');
+        testResults..add('Service Discovery: SKIPPED')
+        ..add('Pairing: SKIPPED')
+        ..add('Read/Write: SKIPPED');
       }
 
-      // Display comprehensive summary
+      // Display a summary of all test sections
       _addOutputLine('');
       _addOutputLine('═══════════════════════════════════════');
       _addOutputLine('TEST SUITE SUMMARY');
@@ -243,6 +260,7 @@ class BleTestController extends State<BleTestRoute> {
     unawaited(_serviceDiscoveryTestService.dispose());
     unawaited(_readWriteTestService.dispose());
     unawaited(_pairingTestService.dispose());
+    
     super.dispose();
   }
 }

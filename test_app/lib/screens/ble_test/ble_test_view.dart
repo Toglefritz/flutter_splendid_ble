@@ -19,6 +19,7 @@ class BleTestView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Convenience variable for the terminal colors
     final TerminalColors colors =
         Theme.of(context).extension<TerminalColors>()!;
 
@@ -48,6 +49,7 @@ class BleTestView extends StatelessWidget {
           ],
         ),
         actions: <Widget>[
+          // If the tests are not running, show a "play" button to start the tests.
           if (!state.isRunning)
             Container(
               margin: const EdgeInsets.only(right: Insets.small),
@@ -65,6 +67,8 @@ class BleTestView extends StatelessWidget {
                 ),
               ),
             )
+
+          // If the tests are running, show a progress indicator
           else
             Container(
               margin: const EdgeInsets.only(right: Insets.small),
