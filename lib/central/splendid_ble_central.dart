@@ -121,4 +121,24 @@ class SplendidBleCentral {
   Future<BleConnectionState> getCurrentConnectionState(String deviceAddress) {
     return _platform.getCurrentConnectionState(deviceAddress);
   }
+
+  /// Observes connection state changes for a device without initiating a connection.
+  ///
+  /// Unlike [connect], this method does not initiate a connection attempt. It only sets up
+  /// monitoring for connection state changes for a device that has been previously discovered
+  /// or connected. This is useful for:
+  /// - Monitoring devices that may reconnect automatically
+  /// - Observing connection changes initiated by other apps or the system
+  /// - Tracking connection state without actively managing the connection
+  ///
+  /// The device must have been discovered through scanning or previously connected before
+  /// this method can monitor its state.
+  ///
+  /// Returns a [Stream] of [BleConnectionState] that emits whenever the connection state
+  /// changes for the specified device.
+  Future<Stream<BleConnectionState>> observeConnectionState({
+    required String deviceAddress,
+  }) {
+    return _platform.observeConnectionState(deviceAddress: deviceAddress);
+  }
 }

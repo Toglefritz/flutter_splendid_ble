@@ -440,6 +440,64 @@ class CentralMethodChannel extends CentralPlatformInterface {
     }
   }
 
+  /// Observes connection state changes for a BLE device without initiating a connection.
+  ///
+  /// This method sets up a stream to monitor connection state changes for a device that has
+  /// been previously discovered or connected. Unlike [connect], this method does not initiate
+  /// a connection attempt - it only observes state changes.
+  ///
+  /// The device must have been discovered through scanning or previously connected before
+  /// this method can monitor its state. The platform side automatically emits connection
+  /// state updates for all known devices (devices in the peripheralsMap), so this method
+  /// simply sets up a listener for those updates.
+  ///
+  /// This is useful for:
+  /// - Monitoring devices that may reconnect automatically
+  /// - Observing connection changes initiated by other apps or the system
+  /// - Tracking connection state without actively managing the connection
+  ///
+  /// The [deviceAddress] parameter specifies the device to monitor.
+  ///
+  /// Returns a [Stream] of [BleConnectionState] that emits whenever the connection state
+  /// changes for the specified device. The stream will emit:
+  /// - "CONNECTED" when the device connects
+  /// - "DISCONNECTED" when the device disconnects
+  /// - "CONNECTING" during connection establishment (platform-dependent)
+  /// - "DISCONNECTING" during disconnection (platform-dependent)
+  ///
+  /// Throws a [BluetoothConnectionException] if an error occurs while setting up monitoring.
+  @override
+  Future<Stream<BleConnectionState>> observeConnectionState({
+    required String deviceAddress,
+  }) async {
+    /// A [StreamController] emitting connection state changes for the specified device.
+    final StreamController<BleConnectionState> connectionStateStreamController =
+        StreamController<BleConnectionState>.broadcast();
+
+    // Set up a method call handler to listen for connection state updates from the platform.
+    // The platform side differentiates connection state updates for different devices by
+    // appending the device address to the method name (e.g., "bleConnectionState_<address>").
+    channel.setMethodCallHandler((MethodCall call) async {
+      if (call.method == 'bleConnectionState_$deviceAddress') {
+        final String connectionStateString = call.arguments as String;
+        final BleConnectionState state = BleConnectionState.values.firstWhere(
+          (value) => value.identifier == connectionStateString.toLowerCase(),
+        );
+        connectionStateStreamController.add(state);
+      } else if (call.method == 'error') {
+        connectionStateStreamController
+            .addError(BluetoothConnectionException(call.arguments as String));
+      }
+    });
+
+    // Note: Unlike connect(), we do NOT call the platform's connect method here.
+    // We're only setting up the listener for state changes. The platform will emit
+    // connection state updates for any known device (discovered or previously connected)
+    // when its state changes, regardless of whether we initiated the connection.
+
+    return connectionStateStreamController.stream;
+  }
+
   /// Asynchronously writes data to a specified Bluetooth Low Energy (BLE) characteristic.
   ///
   /// ## BLE Communication Overview

@@ -204,14 +204,28 @@ class FakeCentralMethodChannel extends CentralPlatformInterface {
   Future<Stream<BleConnectionState>> connect({
     required String deviceAddress,
   }) async {
+    // Reuse existing controller if one exists, or create a new one
+    // This ensures that both connect() and observeConnectionState() can share the same stream
     final StreamController<BleConnectionState> controller =
-        StreamController<BleConnectionState>.broadcast();
-    _connectionControllers[deviceAddress] = controller;
+        _connectionControllers.putIfAbsent(
+      deviceAddress,
+      StreamController<BleConnectionState>.broadcast,
+    );
 
-    // Add the initial connection state, or default to disconnected if not set.
+    // Simulate the connection process with state changes
     final BleConnectionState initialState =
         _connectionStates[deviceAddress] ?? BleConnectionState.disconnected;
+
+    // Emit the initial state
     controller.add(initialState);
+
+    // Simulate connection after a short delay
+    Future<void>.delayed(const Duration(milliseconds: 50), () {
+      if (!controller.isClosed) {
+        _connectionStates[deviceAddress] = BleConnectionState.connected;
+        controller.add(BleConnectionState.connected);
+      }
+    });
 
     return controller.stream;
   }
@@ -227,6 +241,32 @@ class FakeCentralMethodChannel extends CentralPlatformInterface {
     String deviceAddress,
   ) async {
     return _connectionStates[deviceAddress] ?? BleConnectionState.disconnected;
+  }
+
+  @override
+  Future<Stream<BleConnectionState>> observeConnectionState({
+    required String deviceAddress,
+  }) async {
+    // For the fake implementation, create or reuse a stream controller
+    // but don't initiate a connection
+    final StreamController<BleConnectionState> controller =
+        _connectionControllers.putIfAbsent(
+      deviceAddress,
+      StreamController<BleConnectionState>.broadcast,
+    );
+
+    // Emit the current state after a microtask delay to allow listeners to be set up
+    // This simulates the async nature of the platform channel
+    final BleConnectionState currentState =
+        _connectionStates[deviceAddress] ?? BleConnectionState.disconnected;
+
+    Future<void>.delayed(const Duration(milliseconds: 1), () {
+      if (!controller.isClosed) {
+        controller.add(currentState);
+      }
+    });
+
+    return controller.stream;
   }
 
   @override
@@ -284,5 +324,33 @@ class FakeCentralMethodChannel extends CentralPlatformInterface {
   ) async {
     await _characteristicStreams[characteristic.uuid]?.close();
     _characteristicStreams.remove(characteristic.uuid);
+  }
+
+  /// Simulates a connection state change for testing purposes.
+  ///
+  /// This method allows tests to simulate external connection state changes,
+  /// such as a device connecting or disconnecting without the app initiating
+  /// the connection. This is useful for testing the observeConnectionState()
+  /// functionality.
+  ///
+  /// The [deviceAddress] specifies which device's state to change, and
+  /// [state] specifies the new connection state.
+  ///
+  /// This method will:
+  /// 1. Update the internal connection state tracking
+  /// 2. Emit the new state to any active connection state streams
+  void simulateConnectionStateChange(
+    String deviceAddress,
+    BleConnectionState state,
+  ) {
+    // Update internal state
+    _connectionStates[deviceAddress] = state;
+
+    // Emit to any listening streams
+    final StreamController<BleConnectionState>? controller =
+        _connectionControllers[deviceAddress];
+    if (controller != null && !controller.isClosed) {
+      controller.add(state);
+    }
   }
 }

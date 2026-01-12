@@ -38,6 +38,18 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
     // Holds the UUIDs of characteristics for which a read operation has been initiated.
     private var pendingReadRequests: [CBUUID: Bool] = [:]
     
+    /// Tracks pending notification state change operations with their FlutterResult callbacks.
+    ///
+    /// When subscribeToCharacteristic() or unsubscribeFromCharacteristic() is called,
+    /// the operation is asynchronous. The FlutterResult is stored here and completed
+    /// later in the didUpdateNotificationStateFor callback. This ensures proper async/await
+    /// behavior in Dart - the Flutter method doesn't return until the notification state
+    /// change actually completes.
+    ///
+    /// Key format: "deviceAddress:characteristicUUID"
+    /// Value: The FlutterResult callback to complete when the operation finishes
+    private var pendingNotificationStateChanges: [String: FlutterResult] = [:]
+
     /// Initializes the `FlutterBlePlugin` and sets up the central manager.
     override init() {
         super.init()
@@ -441,14 +453,33 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
     }
     
     /// Invoked when an existing connection with a peripheral is terminated, either by the peripheral or the system.
+    ///
     /// This delegate method is essential for cleaning up resources and updating the application state in response to the disconnection.
     /// It also notifies the Flutter layer so that the UI and other app logic can be updated to reflect the disconnection.
+    ///
+    /// When a device disconnects, any pending notification state change operations are completed with an error to ensure
+    /// proper cleanup and prevent resource leaks.
+    ///
     /// - Parameters:
     ///   - central: The `CBCentralManager` that was connected to the peripheral.
     ///   - peripheral: The `CBPeripheral` that has disconnected.
     ///   - error: An optional `Error` that may contain the reason for the disconnection if it was not initiated by the user.
     public func centralManager(_ central: CBCentralManager, didDisconnectPeripheral peripheral: CBPeripheral, error: Error?) {
-        centralChannel.invokeMethod("bleConnectionState_\(peripheral.identifier.uuidString)", arguments: "DISCONNECTED")
+        let deviceAddress: String = peripheral.identifier.uuidString
+
+        // Clean up any pending notification state changes for this device
+        let keysToRemove = pendingNotificationStateChanges.keys.filter { $0.hasPrefix("\(deviceAddress):") }
+        for key in keysToRemove {
+            if let pendingResult = pendingNotificationStateChanges.removeValue(forKey: key) {
+                pendingResult(FlutterError(
+                    code: "DISCONNECTED",
+                    message: "Device disconnected during notification state change operation",
+                    details: nil
+                ))
+            }
+        }
+
+        centralChannel.invokeMethod("bleConnectionState_\(deviceAddress)", arguments: "DISCONNECTED")
     }
     
     // MARK: CBPeripheralDelegate Methods
@@ -510,18 +541,40 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
     }
     
     /// Invoked when the notification state has been updated for a characteristic.
+    ///
     /// This callback is triggered as a response to a call to `setNotifyValue(_:for:)` on a `CBPeripheral` instance,
     /// indicating whether notifications or indications are enabled or disabled for a given characteristic.
-    /// If there's an error, it is handled internally, and further error handling or user notification may be implemented as needed.
-    /// Upon a successful update, additional logic to handle the new notification state can be implemented.
+    ///
+    /// This method completes the pending FlutterResult that was stored in subscribeToCharacteristic() or
+    /// unsubscribeFromCharacteristic(), ensuring proper async/await behavior in Dart. The Flutter method
+    /// call doesn't return until the notification state change actually completes.
+    ///
     /// - Parameters:
     ///   - peripheral: The `CBPeripheral` providing this update, representing the BLE device whose characteristic's notification state has changed.
     ///   - characteristic: The `CBCharacteristic` for which the notification state has been updated.
     ///   - error: An optional `Error` object that contains the reason for the failure if the notification state update was unsuccessful.
     public func peripheral(_ peripheral: CBPeripheral, didUpdateNotificationStateFor characteristic: CBCharacteristic, error: Error?) {
-        guard error == nil else {
-            centralChannel.invokeMethod("error", arguments: "Failed to update notification state for characteristic \(characteristic.uuid): \(error!.localizedDescription)")
-            return
+        let deviceAddress: String = peripheral.identifier.uuidString
+        let characteristicUuidStr: String = characteristic.uuid.uuidString
+        let key: String = "\(deviceAddress):\(characteristicUuidStr)"
+
+        // Get and remove the pending result if one exists
+        if let pendingResult = pendingNotificationStateChanges.removeValue(forKey: key) {
+            // Complete the Flutter method call
+            if let error = error {
+                pendingResult(FlutterError(
+                    code: "NOTIFICATION_STATE_CHANGE_FAILED",
+                    message: "Failed to update notification state for characteristic \(characteristic.uuid): \(error.localizedDescription)",
+                    details: nil
+                ))
+            } else {
+                pendingResult(nil)
+            }
+        } else {
+            // No pending result - might be from an old implementation or unexpected call
+            if let error = error {
+                centralChannel.invokeMethod("error", arguments: "Failed to update notification state for characteristic \(characteristic.uuid): \(error.localizedDescription)")
+            }
         }
     }
     
@@ -818,8 +871,15 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
         
         
         if let characteristic = getCharacteristicByUuid(peripheral: peripheral, uuid: characteristicUuid) {
+            // Create a key to track this specific operation
+            let key = "\(deviceAddress):\(characteristicUuidStr)"
+
+            // Store the result callback to complete later when the operation finishes
+            pendingNotificationStateChanges[key] = result
+
+            // Initiate the notification state change
+            // The result will be completed in didUpdateNotificationStateFor callback
             peripheral.setNotifyValue(true, for: characteristic)
-            result(nil) // Indicate that the request was processed
         } else {
             result(FlutterError(code: "NOT_FOUND",
                                 message: "Characteristic with UUID \(characteristicUuidStr) not found.",
@@ -843,8 +903,16 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
         
         if let service = peripheral.services?.first(where: { $0.characteristics?.contains(where: { $0.uuid == cbCharacteristicUuid }) == true }),
            let characteristic = service.characteristics?.first(where: { $0.uuid == cbCharacteristicUuid }) {
+
+            // Create a key to track this specific operation
+            let key = "\(deviceAddress):\(characteristicUuidStr)"
+
+            // Store the result callback to complete later when the operation finishes
+            pendingNotificationStateChanges[key] = result
+
+            // Initiate the notification state change
+            // The result will be completed in didUpdateNotificationStateFor callback
             peripheral.setNotifyValue(false, for: characteristic)
-            result(nil) // Success
         } else {
             result(FlutterError(code: "SUBSCRIBE_ERROR",
                                 message: "Failed to unsubscribe from characteristic: Characteristic not found.",

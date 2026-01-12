@@ -468,14 +468,33 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
     }
     
     /// Invoked when an existing connection with a peripheral is terminated, either by the peripheral or the system.
+    ///
     /// This delegate method is essential for cleaning up resources and updating the application state in response to the disconnection.
     /// It also notifies the Flutter layer so that the UI and other app logic can be updated to reflect the disconnection.
+    ///
+    /// When a device disconnects, any pending notification state change operations are completed with an error to ensure
+    /// proper cleanup and prevent resource leaks.
+    ///
     /// - Parameters:
     ///   - central: The `CBCentralManager` that was connected to the peripheral.
     ///   - peripheral: The `CBPeripheral` that has disconnected.
     ///   - error: An optional `Error` that may contain the reason for the disconnection if it was not initiated by the user.
     public func centralManager(_ central: CBCentralManager, didDisconnectPeripheral peripheral: CBPeripheral, error: Error?) {
-        channel.invokeMethod("bleConnectionState_\(peripheral.identifier.uuidString)", arguments: "DISCONNECTED")
+        let deviceAddress: String = peripheral.identifier.uuidString
+
+        // Clean up any pending notification state changes for this device
+        let keysToRemove = pendingNotificationStateChanges.keys.filter { $0.hasPrefix("\(deviceAddress):") }
+        for key in keysToRemove {
+            if let pendingResult = pendingNotificationStateChanges.removeValue(forKey: key) {
+                pendingResult(FlutterError(
+                    code: "DISCONNECTED",
+                    message: "Device disconnected during notification state change operation",
+                    details: nil
+                ))
+            }
+        }
+
+        channel.invokeMethod("bleConnectionState_\(deviceAddress)", arguments: "DISCONNECTED")
     }
     
     // MARK: CBPeripheralDelegate Methods
