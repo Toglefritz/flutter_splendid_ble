@@ -300,7 +300,16 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
     // A list of UUIDs discovered by the scanning process. This is used to determine if a peripheral about which data is sent in the didDiscover method
     // below, was discovered previously. This information is, in turn, used to infer if a device has sent additional information to the device in a
     // scan response.
-    var discoveredDevices: [UUID] = []
+    var discoveredDevices: Set<UUID> = []
+    
+    /// A dictionary to store partial advertisement data for peripherals that support scan responses.
+    ///
+    /// This dictionary maps peripheral UUIDs to tuples containing their initial advertisement data and RSSI values.
+    /// It is used to temporarily store advertisement data from connectable devices while waiting for potential
+    /// scan response packets that may contain additional information like manufacturer data.
+    ///
+    /// The dictionary is automatically cleaned up when scan responses are received or when scanning stops.
+    var partialAdvertisementData: [UUID: (data: [String: Any], rssi: NSNumber)] = [:]
     
     /// Called when a peripheral is discovered while scanning.
     ///
