@@ -158,7 +158,7 @@ class BleTestController extends State<BleTestRoute> {
         final bool readWritePassed =
             await _readWriteTestService.runAllTests(deviceAddress);
         testResults.add('Read/Write: ${readWritePassed ? 'PASSED' : 'FAILED'}');
-      } 
+      }
       // No device was connected
       else {
         _addOutputLine('');
@@ -171,9 +171,10 @@ class BleTestController extends State<BleTestRoute> {
         _addOutputLine(
           '⚠ SKIP: Read/write tests skipped - no device address available',
         );
-        testResults..add('Service Discovery: SKIPPED')
-        ..add('Pairing: SKIPPED')
-        ..add('Read/Write: SKIPPED');
+        testResults
+          ..add('Service Discovery: SKIPPED')
+          ..add('Pairing: SKIPPED')
+          ..add('Read/Write: SKIPPED');
       }
 
       // Display a summary of all test sections
@@ -226,23 +227,78 @@ class BleTestController extends State<BleTestRoute> {
     }
   }
 
-  /// Checks Bluetooth adapter status and permissions.
+  /// Checks Bluetooth permissions and adapter status.
   Future<void> _checkBluetoothStatus() async {
-    _addOutputLine('Checking Bluetooth status...');
+    _addOutputLine('Checking Bluetooth permissions...');
 
-    final BluetoothStatus status = await _ble.checkBluetoothAdapterStatus();
-    _addOutputLine('Bluetooth status: ${status.name}');
+    // Use EXACTLY the same pattern as HomeController
+    final Stream<BluetoothPermissionStatus> bluetoothPermissionsStream =
+        await _ble.emitCurrentPermissionStatus();
 
-    if (status != BluetoothStatus.enabled) {
-      throw Exception('Bluetooth must be enabled to run tests');
+    // Set up the listener exactly like HomeController does
+    late StreamSubscription<BluetoothPermissionStatus> permissionSubscription;
+    final Completer<void> permissionCompleter = Completer<void>();
+
+    permissionSubscription =
+        bluetoothPermissionsStream.listen((BluetoothPermissionStatus status) {
+      _addOutputLine('Permission status update: ${status.name}');
+
+      // Handle exactly like HomeController does
+      if (status != BluetoothPermissionStatus.granted) {
+        _addOutputLine('Bluetooth permissions denied or are unknown.');
+        if (!permissionCompleter.isCompleted) {
+          permissionCompleter.completeError(Exception(
+              'Bluetooth permissions must be granted (got: ${status.name})'));
+        }
+      } else {
+        _addOutputLine('✓ Bluetooth permissions granted.');
+        if (!permissionCompleter.isCompleted) {
+          permissionCompleter.complete();
+        }
+      }
+    });
+
+    // Request permissions exactly like HomeController does
+    await _ble.requestBluetoothPermissions();
+
+    // Wait for permissions to be granted (or fail)
+    try {
+      await permissionCompleter.future.timeout(
+        const Duration(seconds: 10),
+        onTimeout: () => throw Exception('Permission request timed out'),
+      );
+    } finally {
+      await permissionSubscription.cancel();
     }
 
-    final BluetoothPermissionStatus permissions =
-        await _ble.requestBluetoothPermissions();
-    _addOutputLine('Permissions: ${permissions.name}');
+    _addOutputLine('Checking Bluetooth adapter status...');
 
-    if (permissions != BluetoothPermissionStatus.granted) {
-      throw Exception('Bluetooth permissions must be granted');
+    // Use EXACTLY the same adapter status pattern as HomeController
+    final Stream<BluetoothStatus> bluetoothStatusStream =
+        await _ble.emitCurrentBluetoothStatus();
+
+    late StreamSubscription<BluetoothStatus> statusSubscription;
+    final Completer<BluetoothStatus> statusCompleter =
+        Completer<BluetoothStatus>();
+
+    statusSubscription = bluetoothStatusStream.listen((BluetoothStatus status) {
+      _addOutputLine('Adapter status update: ${status.name}');
+      if (!statusCompleter.isCompleted) {
+        statusCompleter.complete(status);
+      }
+    });
+
+    // Wait for the first adapter status
+    final BluetoothStatus status = await statusCompleter.future.timeout(
+      const Duration(seconds: 5),
+      onTimeout: () => BluetoothStatus.notAvailable,
+    );
+
+    await statusSubscription.cancel();
+
+    if (status != BluetoothStatus.enabled) {
+      throw Exception(
+          'Bluetooth must be enabled to run tests (got: ${status.name})');
     }
 
     _addOutputLine('✓ Bluetooth ready');
@@ -260,7 +316,7 @@ class BleTestController extends State<BleTestRoute> {
     unawaited(_serviceDiscoveryTestService.dispose());
     unawaited(_readWriteTestService.dispose());
     unawaited(_pairingTestService.dispose());
-    
+
     super.dispose();
   }
 }
