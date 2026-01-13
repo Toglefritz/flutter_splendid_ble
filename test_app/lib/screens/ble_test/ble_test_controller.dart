@@ -158,6 +158,12 @@ class BleTestController extends State<BleTestRoute> {
         final bool readWritePassed =
             await _readWriteTestService.runAllTests(deviceAddress);
         testResults.add('Read/Write: ${readWritePassed ? 'PASSED' : 'FAILED'}');
+
+        // Run final disconnect test
+        final bool finalDisconnectPassed =
+            await _testFinalDisconnect(deviceAddress);
+        testResults.add(
+            'Final Disconnect: ${finalDisconnectPassed ? 'PASSED' : 'FAILED'}');
       }
       // No device was connected
       else {
@@ -174,7 +180,8 @@ class BleTestController extends State<BleTestRoute> {
         testResults
           ..add('Service Discovery: SKIPPED')
           ..add('Pairing: SKIPPED')
-          ..add('Read/Write: SKIPPED');
+          ..add('Read/Write: SKIPPED')
+          ..add('Final Disconnect: SKIPPED');
       }
 
       // Display a summary of all test sections
@@ -303,6 +310,72 @@ class BleTestController extends State<BleTestRoute> {
 
     _addOutputLine('✓ Bluetooth ready');
     _addOutputLine('');
+  }
+
+  /// Final test: Disconnect from test device and confirm disconnection.
+  Future<bool> _testFinalDisconnect(String deviceAddress) async {
+    _addOutputLine('');
+    _addOutputLine('FINAL TEST: Disconnect from test device');
+    _addOutputLine('Disconnecting from device at $deviceAddress...');
+
+    bool disconnectionSuccessful = false;
+
+    try {
+      // Monitor connection state changes
+      final Stream<BleConnectionState> connectionStream = await _ble.connect(
+        deviceAddress: deviceAddress,
+      );
+
+      final Completer<BleConnectionState> disconnectionCompleter =
+          Completer<BleConnectionState>();
+      late StreamSubscription<BleConnectionState> connectionSubscription;
+
+      connectionSubscription = connectionStream.listen(
+        (BleConnectionState state) {
+          _addOutputLine('  Connection state: ${state.identifier}');
+
+          if (state == BleConnectionState.disconnected &&
+              !disconnectionCompleter.isCompleted) {
+            disconnectionSuccessful = true;
+            disconnectionCompleter.complete(state);
+          }
+        },
+        onError: (Object error) {
+          _addOutputLine('  Connection monitoring error: $error');
+          if (!disconnectionCompleter.isCompleted) {
+            disconnectionCompleter.completeError(error);
+          }
+        },
+      );
+
+      // Initiate disconnection
+      await _ble.disconnect(deviceAddress);
+      _addOutputLine('  Disconnect command sent');
+
+      // Wait for disconnection confirmation
+      try {
+        await disconnectionCompleter.future.timeout(
+          const Duration(seconds: 10),
+          onTimeout: () {
+            _addOutputLine('  Disconnection timed out');
+            return BleConnectionState.unknown;
+          },
+        );
+      } finally {
+        await connectionSubscription.cancel();
+      }
+    } catch (error) {
+      _addOutputLine('  Disconnection failed with error: $error');
+    }
+
+    if (disconnectionSuccessful) {
+      _addOutputLine('✓ PASS: Successfully disconnected from test device');
+    } else {
+      _addOutputLine('✗ FAIL: Failed to disconnect from test device');
+    }
+    _addOutputLine('');
+
+    return disconnectionSuccessful;
   }
 
   @override
