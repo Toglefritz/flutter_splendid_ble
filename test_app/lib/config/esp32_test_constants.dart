@@ -31,17 +31,24 @@ const String kTestReadOnlyCharacteristicUuid =
 const String kTestWriteCharacteristicUuid =
     '10000003-1234-1234-1234-123456789abc';
 
+/// Test characteristic UUID for indication operations.
+///
+/// This characteristic should be discoverable within the test service
+/// and support indication operations (notifications with acknowledgment).
+const String kTestIndicateCharacteristicUuid =
+    '10000005-1234-1234-1234-123456789abc';
+
 /// Test characteristic UUID for encrypted read operations.
 ///
 /// This characteristic requires encryption and will trigger a pairing prompt when accessed for the first time.
 const String kTestEncryptedReadCharacteristicUuid =
-    '10000006-1234-1234-1234-123456789abc';
+    '10000007-1234-1234-1234-123456789abc';
 
 /// Test characteristic UUID for encrypted write operations.
 ///
 /// This characteristic requires encryption and will trigger a pairing prompt when accessed for the first time.
 const String kTestEncryptedWriteCharacteristicUuid =
-    '10000007-1234-1234-1234-123456789abc';
+    '10000008-1234-1234-1234-123456789abc';
 
 /// Test characteristic UUID for MITM-protected operations.
 ///
@@ -52,7 +59,7 @@ const String kTestEncryptedWriteCharacteristicUuid =
 /// BLE security behavior on many platforms (iOS, macOS, etc.) where encrypted characteristics are hidden from unpaired
 /// devices.
 const String kTestMitmCharacteristicUuid =
-    '10000008-1234-1234-1234-123456789abc';
+    '10000009-1234-1234-1234-123456789abc';
 
 /// A different UUID not advertised by the ESP32 test device.
 ///
