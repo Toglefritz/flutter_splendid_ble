@@ -1,9 +1,11 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_splendid_ble/flutter_splendid_ble.dart';
 
 import '../../services/connection_test_service.dart';
+import '../../services/notification_test_service.dart';
 import '../../services/pairing_test_service.dart';
 import '../../services/read_write_test_service.dart';
 import '../../services/scanning_test_service.dart';
@@ -30,6 +32,9 @@ class BleTestController extends State<BleTestRoute> {
 
   /// Service for performing read/write tests.
   late final ReadWriteTestService _readWriteTestService;
+
+  /// Service for performing notification/indication tests.
+  late final NotificationTestService _notificationTestService;
 
   /// Service for performing pairing tests.
   late final PairingTestService _pairingTestService;
@@ -68,6 +73,7 @@ class BleTestController extends State<BleTestRoute> {
     _serviceDiscoveryTestService =
         ServiceDiscoveryTestService(_ble, _addOutputLine);
     _readWriteTestService = ReadWriteTestService(_ble, _addOutputLine);
+    _notificationTestService = NotificationTestService(_ble, _addOutputLine);
     _pairingTestService = PairingTestService(_ble, _addOutputLine);
 
     // Add some initial output lines for the start of the test
@@ -124,6 +130,34 @@ class BleTestController extends State<BleTestRoute> {
     await _runTests();
   }
 
+  /// Copies the test output to the clipboard.
+  ///
+  /// This method joins all output lines with newlines and copies the result
+  /// to the system clipboard. Shows a snackbar to confirm the action.
+  Future<void> copyOutputToClipboard(BuildContext context) async {
+    if (_outputLines.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No test output to copy'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+
+    final String output = _outputLines.join('\n');
+    await Clipboard.setData(ClipboardData(text: output));
+
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Copied ${_outputLines.length} lines to clipboard'),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
   /// Runs all BLE tests in sequence.
   Future<void> _runTests() async {
     try {
@@ -159,11 +193,19 @@ class BleTestController extends State<BleTestRoute> {
             await _readWriteTestService.runAllTests(deviceAddress);
         testResults.add('Read/Write: ${readWritePassed ? 'PASSED' : 'FAILED'}');
 
+        // Run notification/indication tests
+        final bool notificationPassed =
+            await _notificationTestService.runAllTests(deviceAddress);
+        testResults.add(
+          'Notifications/Indications: ${notificationPassed ? 'PASSED' : 'FAILED'}',
+        );
+
         // Run final disconnect test
         final bool finalDisconnectPassed =
             await _testFinalDisconnect(deviceAddress);
         testResults.add(
-            'Final Disconnect: ${finalDisconnectPassed ? 'PASSED' : 'FAILED'}');
+          'Final Disconnect: ${finalDisconnectPassed ? 'PASSED' : 'FAILED'}',
+        );
       }
       // No device was connected
       else {
@@ -177,10 +219,14 @@ class BleTestController extends State<BleTestRoute> {
         _addOutputLine(
           '⚠ SKIP: Read/write tests skipped - no device address available',
         );
+        _addOutputLine(
+          '⚠ SKIP: Notification/indication tests skipped - no device address available',
+        );
         testResults
           ..add('Service Discovery: SKIPPED')
           ..add('Pairing: SKIPPED')
           ..add('Read/Write: SKIPPED')
+          ..add('Notifications/Indications: SKIPPED')
           ..add('Final Disconnect: SKIPPED');
       }
 
@@ -388,6 +434,7 @@ class BleTestController extends State<BleTestRoute> {
     unawaited(_connectionTestService.dispose());
     unawaited(_serviceDiscoveryTestService.dispose());
     unawaited(_readWriteTestService.dispose());
+    unawaited(_notificationTestService.dispose());
     unawaited(_pairingTestService.dispose());
 
     super.dispose();

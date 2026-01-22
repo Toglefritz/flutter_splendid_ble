@@ -49,6 +49,15 @@ class BleTestView extends StatelessWidget {
           ],
         ),
         actions: <Widget>[
+          // Copy button - always visible when there's output
+          if (state.outputLines.isNotEmpty)
+            IconButton(
+              onPressed: () => state.copyOutputToClipboard(context),
+              icon: const Icon(Icons.copy, size: 20),
+              tooltip: 'Copy output to clipboard',
+              color: colors.secondaryText,
+            ),
+
           // If the tests are not running, show a "play" button to start the tests.
           if (!state.isRunning)
             Container(

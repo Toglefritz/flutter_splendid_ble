@@ -31,6 +31,13 @@ const String kTestReadOnlyCharacteristicUuid =
 const String kTestWriteCharacteristicUuid =
     '10000003-1234-1234-1234-123456789abc';
 
+/// Test characteristic UUID for notification operations.
+///
+/// This characteristic should be discoverable within the test service
+/// and support notification operations (fire-and-forget updates).
+const String kTestNotifyCharacteristicUuid =
+    '10000004-1234-1234-1234-123456789abc';
+
 /// Test characteristic UUID for indication operations.
 ///
 /// This characteristic should be discoverable within the test service
