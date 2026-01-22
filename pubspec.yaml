@@ -1,6 +1,6 @@
 name: flutter_splendid_ble
 description: A comprehensive Flutter plugin for interacting with Bluetooth Low Energy (BLE) devices.
-version: 0.20.0
+version: 1.0.0
 homepage: https://github.com/Toglefritz/flutter_splendid_ble
 repository: https://github.com/Toglefritz/flutter_splendid_ble
 

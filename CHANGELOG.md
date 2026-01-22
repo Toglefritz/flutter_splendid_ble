@@ -189,3 +189,51 @@ All notable changes to the `flutter_splendid_ble` plugin will be documented in t
 - Fixed service UUID reporting accuracy on iOS
 - Code cleanup and optimization for better performance
 - Updated documentation for improved clarity
+
+## [1.0.0] 2026/01/22
+
+### Platform Synchronization
+- Synchronized BLE APIs across Android, iOS, and macOS platforms for consistent behavior
+- Unified scan response handling across all platforms
+- Standardized manufacturer data reporting format
+- Consistent UUID filtering implementation delegated to Dart layer for cross-platform reliability
+- Updated iOS scan response handling to properly aggregate advertising and scan response data
+- Improved macOS deployment target compatibility
+
+### Enhanced BLE Operations
+- Implemented MTU negotiation immediately after connection establishment for optimal data transfer
+- Added support for characteristic indications in addition to notifications
+- Enhanced descriptor write operations with proper completion awaiting
+- Improved subscription/unsubscription reliability with confirmation waiting
+- Added method to monitor device connection state changes in real-time
+- Enhanced disconnect handling and connection state management
+
+### Testing Infrastructure
+- Created comprehensive ESP32-based BLE test device firmware for hardware-in-the-loop testing
+  - Implements multiple test characteristics (read, write, notify, indicate, encrypted, MITM)
+  - Provides manufacturer data in both advertisement and scan response packets
+  - Visual feedback via LED matrix for connection status
+  - Standardized test service with known UUIDs for validation
+- Developed dedicated test application for systematic BLE functionality validation
+  - Automated test suite covering all plugin capabilities
+  - Real-time test result reporting with pass/fail indicators
+  - Tests for scanning, connection, service discovery, read/write operations, notifications, and pairing
+  - Cross-platform validation (Android, iOS, macOS)
+- Added Makefile commands for firmware building and flashing
+- Integrated ESP32 test firmware as Git submodule
+
+### Reliability Improvements
+- Enhanced permission and adapter status checking logic
+- Improved error handling throughout the plugin
+- Code cleanup and optimization across all platform implementations
+- Better handling of edge cases in BLE operations
+
+### Developer Experience
+- Comprehensive hardware-in-the-loop testing capability
+- Clear visual feedback for test results
+- Detailed logging for debugging
+- Improved documentation for testing procedures
+
+### Breaking Changes
+None - this release maintains backward compatibility with 0.x versions while adding new capabilities.
+
