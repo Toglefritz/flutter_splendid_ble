@@ -50,7 +50,7 @@ class ReadWriteTestService {
     final bool connected = await _connectToDevice(deviceAddress);
     if (!connected) {
       _addOutputLine(
-          '✗ FAIL: Could not connect to device for read/write tests');
+          '✗ FAIL: Could not connect to device for read/write tests',);
       _addOutputLine('');
       _addOutputLine('Read/write tests FAILED');
       return false;
@@ -59,7 +59,7 @@ class ReadWriteTestService {
     final bool servicesDiscovered = await _discoverServices(deviceAddress);
     if (!servicesDiscovered) {
       _addOutputLine(
-          '✗ FAIL: Could not discover services for read/write tests');
+          '✗ FAIL: Could not discover services for read/write tests',);
       _addOutputLine('');
       _addOutputLine('Read/write tests FAILED');
       return false;
@@ -368,7 +368,7 @@ class ReadWriteTestService {
 
     try {
       _addOutputLine(
-          '  Reading from encrypted characteristic ${characteristic.uuid}...');
+          '  Reading from encrypted characteristic ${characteristic.uuid}...',);
       final String value = await characteristic.readValue<String>(
         timeout: const Duration(seconds: 30), // Longer timeout for pairing
       );
@@ -398,7 +398,7 @@ class ReadWriteTestService {
         _findCharacteristic(kTestEncryptedWriteCharacteristicUuid);
     if (characteristic == null) {
       _addOutputLine(
-          '✓ PASS: Encrypted write characteristic not found (expected)');
+          '✓ PASS: Encrypted write characteristic not found (expected)',);
       _addOutputLine('');
       return true; // Expected behavior - encrypted characteristics may be hidden
     }
@@ -409,7 +409,7 @@ class ReadWriteTestService {
 
     try {
       _addOutputLine(
-          '  Writing to encrypted characteristic ${characteristic.uuid}...');
+          '  Writing to encrypted characteristic ${characteristic.uuid}...',);
       _addOutputLine('  Encrypted test data: "$testData"');
 
       await characteristic.writeValue(

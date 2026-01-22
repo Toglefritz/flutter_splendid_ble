@@ -258,7 +258,7 @@ class BleTestController extends State<BleTestRoute> {
 
       _addOutputLine('');
       _addOutputLine(
-          'Results: $passedCount passed, $failedCount failed, $skippedCount skipped');
+          'Results: $passedCount passed, $failedCount failed, $skippedCount skipped',);
 
       final bool overallSuccess = failedCount == 0;
       if (overallSuccess) {
@@ -301,7 +301,7 @@ class BleTestController extends State<BleTestRoute> {
         _addOutputLine('Bluetooth permissions denied or are unknown.');
         if (!permissionCompleter.isCompleted) {
           permissionCompleter.completeError(Exception(
-              'Bluetooth permissions must be granted (got: ${status.name})'));
+              'Bluetooth permissions must be granted (got: ${status.name})',),);
         }
       } else {
         _addOutputLine('✓ Bluetooth permissions granted.');
@@ -351,7 +351,7 @@ class BleTestController extends State<BleTestRoute> {
 
     if (status != BluetoothStatus.enabled) {
       throw Exception(
-          'Bluetooth must be enabled to run tests (got: ${status.name})');
+          'Bluetooth must be enabled to run tests (got: ${status.name})',);
     }
 
     _addOutputLine('✓ Bluetooth ready');

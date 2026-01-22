@@ -30,7 +30,7 @@ class TestApp extends StatelessWidget {
   ///
   /// Returns a [MaterialApp] configured with:
   /// * App title derived from the project name
-  /// * Light and dark themes from [AppTheme]
+  /// * Light and dark themes from [_AppTheme]
   /// * Home route pointing to the main screen
   /// * Debug banner disabled for cleaner presentation
   /// * Localization support for multiple languages
