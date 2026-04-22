@@ -63,10 +63,24 @@ class ManufacturerData {
     );
   }
 
+  /// Returns the complete manufacturer data including ID and payload.
+  ///
+  /// This getter provides a consistent view of the full manufacturer data
+  /// by concatenating the manufacturer ID with the payload. The result is
+  /// the same across both iOS and Android platforms, as both store the
+  /// data in the same separated format after parsing via [fromString].
+  ///
+  /// Returns a list containing the manufacturer ID (first 2 bytes) followed
+  /// by the manufacturer-specific payload (remaining bytes).
+  List<int> get completeData {
+    return [...manufacturerId, ...payload];
+  }
+
   /// Converts the manufacturer data to a string.
   @override
   String toString() {
     final List<int> manufacturerDataInts = [...manufacturerId, ...payload];
+
     return String.fromCharCodes(manufacturerDataInts);
   }
 
