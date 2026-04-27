@@ -28,8 +28,8 @@ import 'extensions/scan_filter_list_extensions.dart';
 import 'models/connected_ble_device.dart';
 
 /// An implementation of [CentralPlatformInterface] that uses method channels.
-// Several methods in this class use SteamControllers. Callers to these functions should ensure that they are
-// closing these StreamControllers when they are no longer needed to avoid memory leaks
+// Several methods in this class use SteamControllers. Callers to these functions should ensure that they are closing
+// these StreamControllers when they are no longer needed to avoid memory leaks
 class CentralMethodChannel extends CentralPlatformInterface {
   /// The method channel used to interact with the native platform.
   @visibleForTesting
@@ -184,8 +184,8 @@ class CentralMethodChannel extends CentralPlatformInterface {
         case 'bleDeviceScanned':
           try {
             BleDevice device;
-            // Different operating systems will send the arguments in different formats. So, normalize the arguments
-            // as a Map<dynamic, dynamic> for use in the BleDevice.fromMap factory constructor.
+            // Different operating systems will send the arguments in different formats. So, normalize the arguments as
+            // a Map<dynamic, dynamic> for use in the BleDevice.fromMap factory constructor.
             if (call.arguments is String) {
               final Map<dynamic, dynamic> argumentsParsed = json
                   .decode(call.arguments as String) as Map<dynamic, dynamic>;
@@ -196,8 +196,8 @@ class CentralMethodChannel extends CentralPlatformInterface {
             }
 
             // Apply additional filtering on Dart side. Filtering is also done on the native side, but this allows for
-            // more complex filtering logic that may not be feasible on the native side.
-            // If the device matches the provided filters, add it to the stream.
+            // more complex filtering logic that may not be feasible on the native side. If the device matches the
+            // provided filters, add it to the stream.
             if (filters.deviceMatchesFilters(device)) {
               streamController.add(device);
             }
@@ -442,14 +442,13 @@ class CentralMethodChannel extends CentralPlatformInterface {
 
   /// Observes connection state changes for a BLE device without initiating a connection.
   ///
-  /// This method sets up a stream to monitor connection state changes for a device that has
-  /// been previously discovered or connected. Unlike [connect], this method does not initiate
-  /// a connection attempt - it only observes state changes.
+  /// This method sets up a stream to monitor connection state changes for a device that has been previously discovered
+  /// or connected. Unlike [connect], this method does not initiate a connection attempt - it only observes state
+  /// changes.
   ///
-  /// The device must have been discovered through scanning or previously connected before
-  /// this method can monitor its state. The platform side automatically emits connection
-  /// state updates for all known devices (devices in the peripheralsMap), so this method
-  /// simply sets up a listener for those updates.
+  /// The device must have been discovered through scanning or previously connected before this method can monitor its
+  /// state. The platform side automatically emits connection state updates for all known devices (devices in the
+  /// peripheralsMap), so this method simply sets up a listener for those updates.
   ///
   /// This is useful for:
   /// - Monitoring devices that may reconnect automatically
@@ -458,8 +457,8 @@ class CentralMethodChannel extends CentralPlatformInterface {
   ///
   /// The [deviceAddress] parameter specifies the device to monitor.
   ///
-  /// Returns a [Stream] of [BleConnectionState] that emits whenever the connection state
-  /// changes for the specified device. The stream will emit:
+  /// Returns a [Stream] of [BleConnectionState] that emits whenever the connection state changes for the specified
+  /// device. The stream will emit:
   /// - "CONNECTED" when the device connects
   /// - "DISCONNECTED" when the device disconnects
   /// - "CONNECTING" during connection establishment (platform-dependent)
@@ -474,9 +473,9 @@ class CentralMethodChannel extends CentralPlatformInterface {
     final StreamController<BleConnectionState> connectionStateStreamController =
         StreamController<BleConnectionState>.broadcast();
 
-    // Set up a method call handler to listen for connection state updates from the platform.
-    // The platform side differentiates connection state updates for different devices by
-    // appending the device address to the method name (e.g., "bleConnectionState_<address>").
+    // Set up a method call handler to listen for connection state updates from the platform. The platform side
+    // differentiates connection state updates for different devices by appending the device address to the method name
+    // (e.g., "bleConnectionState_<address>").
     channel.setMethodCallHandler((MethodCall call) async {
       if (call.method == 'bleConnectionState_$deviceAddress') {
         final String connectionStateString = call.arguments as String;
@@ -490,10 +489,9 @@ class CentralMethodChannel extends CentralPlatformInterface {
       }
     });
 
-    // Note: Unlike connect(), we do NOT call the platform's connect method here.
-    // We're only setting up the listener for state changes. The platform will emit
-    // connection state updates for any known device (discovered or previously connected)
-    // when its state changes, regardless of whether we initiated the connection.
+    // Note: Unlike connect(), we do NOT call the platform's connect method here. We're only setting up the listener for
+    // state changes. The platform will emit connection state updates for any known device (discovered or previously
+    // connected) when its state changes, regardless of whether we initiated the connection.
 
     return connectionStateStreamController.stream;
   }

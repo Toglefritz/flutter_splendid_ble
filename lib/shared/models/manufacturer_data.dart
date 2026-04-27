@@ -65,13 +65,12 @@ class ManufacturerData {
 
   /// Returns the complete manufacturer data including ID and payload.
   ///
-  /// This getter provides a consistent view of the full manufacturer data
-  /// by concatenating the manufacturer ID with the payload. The result is
-  /// the same across both iOS and Android platforms, as both store the
-  /// data in the same separated format after parsing via [fromString].
+  /// This getter provides a consistent view of the full manufacturer data by concatenating the manufacturer ID with the
+  /// payload. The result is the same across both iOS and Android platforms, as both store the data in the same
+  /// separated format after parsing via [fromString].
   ///
-  /// Returns a list containing the manufacturer ID (first 2 bytes) followed
-  /// by the manufacturer-specific payload (remaining bytes).
+  /// Returns a list containing the manufacturer ID (first 2 bytes) followed by the manufacturer-specific payload
+  /// (remaining bytes).
   List<int> get completeData {
     return [...manufacturerId, ...payload];
   }
@@ -93,8 +92,7 @@ class ManufacturerData {
   ///
   /// The format is similar to that used by the nRF Connect for Mobile app.
   String toFormattedString() {
-    // Create a string representing the manufacturer identifier, surrounded by
-    // angle brackets.
+    // Create a string representing the manufacturer identifier, surrounded by angle brackets.
     final StringBuffer formattedString = StringBuffer('<');
     for (int i = 0; i < manufacturerId.length; i++) {
       formattedString
@@ -102,8 +100,7 @@ class ManufacturerData {
     }
     formattedString.write('> ');
 
-    // Create a string representing the payload, with spaces between each byte
-    // (two hex characters).
+    // Create a string representing the payload, with spaces between each byte (two hex characters).
     for (int i = 0; i < payload.length; i++) {
       if (i > 0) {
         formattedString.write(' ');

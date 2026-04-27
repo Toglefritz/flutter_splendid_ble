@@ -4,9 +4,9 @@
 /// Use this class to specify options like the scan mode, report delay, whether to allow duplicates, and the desired
 /// callback type.
 ///
-/// On Android 8 (API 26) and above, [legacyMode] controls whether scanning is restricted to legacy PDUs. Setting
-/// it to `false` (the default when omitted) enables extended advertising, which is necessary to receive scan
-/// response data from devices that split their advertisement payload across two packets.
+/// On Android 8 (API 26) and above, [legacyMode] controls whether scanning is restricted to legacy PDUs. Setting it to
+/// `false` (the default when omitted) enables extended advertising, which is necessary to receive scan response data
+/// from devices that split their advertisement payload across two packets.
 ///
 /// Example usage:
 /// ```dart
@@ -30,11 +30,10 @@ class ScanSettings {
 
   /// Whether to restrict scanning to legacy BLE advertising PDUs.
   ///
-  /// When set to `false` on Android 8 (API 26) and above, the scanner operates in non-legacy
-  /// mode and can receive extended advertising PDUs. This is required for devices that send
-  /// additional data in a scan response packet. When this field is `null`, the Android side
-  /// defaults to `false` (non-legacy) so that scan response data is always included when
-  /// the hardware supports it.
+  /// When set to `false` on Android 8 (API 26) and above, the scanner operates in non-legacy mode and can receive
+  /// extended advertising PDUs. This is required for devices that send additional data in a scan response packet. When
+  /// this field is `null`, the Android side defaults to `false` (non-legacy) so that scan response data is always
+  /// included when the hardware supports it.
   ///
   /// This field has no effect on iOS or older Android versions.
   final bool? legacyMode;

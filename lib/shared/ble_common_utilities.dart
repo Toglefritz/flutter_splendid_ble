@@ -69,8 +69,8 @@ class BleCommonUtilities {
       }
     });
 
-    // Use a microtask to ensure the stream is returned before the native method is invoked
-    // This gives the caller a chance to set up their listener before the first value is emitted
+    // Use a microtask to ensure the stream is returned before the native method is invoked This gives the caller a
+    // chance to set up their listener before the first value is emitted
     unawaited(
       Future.microtask(() async {
         await channel.invokeMethod('emitCurrentBluetoothStatus');
@@ -135,8 +135,8 @@ class BleCommonUtilities {
       }
     });
 
-    // Use a microtask to ensure the stream is returned before the native method is invoked
-    // This gives the caller a chance to set up their listener before the first value is emitted
+    // Use a microtask to ensure the stream is returned before the native method is invoked This gives the caller a
+    // chance to set up their listener before the first value is emitted
     unawaited(
       Future.microtask(() async {
         await channel.invokeMethod('emitCurrentPermissionStatus');

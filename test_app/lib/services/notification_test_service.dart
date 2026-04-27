@@ -6,9 +6,8 @@ import '../config/esp32_test_constants.dart';
 
 /// Service for performing BLE notification and indication tests.
 ///
-/// This service tests the subscription mechanism for both notifications
-/// (fire-and-forget) and indications (require acknowledgment) to validate
-/// proper real-time data streaming behavior.
+/// This service tests the subscription mechanism for both notifications (fire-and-forget) and indications (require
+/// acknowledgment) to validate proper real-time data streaming behavior.
 class NotificationTestService {
   /// The BLE central instance used for notification operations.
   final SplendidBleCentral _ble;
@@ -46,8 +45,8 @@ class NotificationTestService {
   /// 7. Test indication value reception
   /// 8. Test indication unsubscribe
   ///
-  /// The [deviceAddress] parameter specifies the test device to connect to.
-  /// Returns true if all tests pass, false if any test fails.
+  /// The [deviceAddress] parameter specifies the test device to connect to. Returns true if all tests pass, false if
+  /// any test fails.
   Future<bool> runAllTests(String deviceAddress) async {
     _addOutputLine('Running BLE notification/indication tests...');
     _addOutputLine('Target device: $deviceAddress');

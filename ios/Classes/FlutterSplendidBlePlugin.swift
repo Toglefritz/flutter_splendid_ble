@@ -43,6 +43,18 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
     /// Value: The FlutterResult callback to complete when the operation finishes
     private var pendingNotificationStateChanges: [String: FlutterResult] = [:]
 
+    /// Tracks pending characteristic write operations with their FlutterResult callbacks.
+    ///
+    /// When writeCharacteristic() is called with write type `.withResponse`, the operation is
+    /// asynchronous — Core Bluetooth queues the write and fires `didWriteValueFor` once the
+    /// peripheral acknowledges it. The FlutterResult is stored here and completed in that
+    /// callback so that `await characteristic.writeValue(...)` on the Dart side does not
+    /// resolve until the ATT write response has been received.
+    ///
+    /// Key format: "deviceAddress:characteristicUUID"
+    /// Value: The FlutterResult callback to complete when the write is acknowledged
+    private var pendingWriteResults: [String: FlutterResult] = [:]
+
     /// Pending fallback work items keyed by peripheral UUID.
     ///
     /// When a connectable device's first advertisement is buffered, a `DispatchWorkItem` is
@@ -264,8 +276,20 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
             }
             
             peripheral.writeValue(dataValue, for: characteristic, type: writeType)
-            result(nil)
-            
+
+            if writeType == .withResponse {
+                // Store the result callback and complete it in didWriteValueFor once the
+                // peripheral sends an ATT write response. This ensures that the Dart-side
+                // await on writeValue() resolves only after the write is acknowledged,
+                // giving callers accurate per-write timing information.
+                let key = "\(deviceAddress):\(characteristicUuidStr)"
+                pendingWriteResults[key] = result
+            } else {
+                // Write without response: the peripheral will not send an acknowledgement,
+                // so resolve immediately.
+                result(nil)
+            }
+
         case CentralMethod.readCharacteristic.rawValue:
             guard let arguments = call.arguments as? [String: Any],
                   let characteristicUuidStr = arguments["characteristicUuid"] as? String,
@@ -576,6 +600,19 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
             }
         }
 
+        // Clean up any pending write results for this device. Completing them with an error
+        // prevents Dart callers from hanging indefinitely on a write future that will never resolve.
+        let writeKeysToRemove = pendingWriteResults.keys.filter { $0.hasPrefix("\(deviceAddress):") }
+        for key in writeKeysToRemove {
+            if let pendingResult = pendingWriteResults.removeValue(forKey: key) {
+                pendingResult(FlutterError(
+                    code: "DISCONNECTED",
+                    message: "Device disconnected during characteristic write operation",
+                    details: nil
+                ))
+            }
+        }
+
         channel.invokeMethod("bleConnectionState_\(deviceAddress)", arguments: "DISCONNECTED")
     }
     
@@ -722,9 +759,19 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
     ///   - error: An optional `Error` detailing what went wrong during the write operation, if anything.
     public func peripheral(_ peripheral: CBPeripheral, didWriteValueFor characteristic: CBCharacteristic, error: Error?) {
         let deviceAddress = peripheral.identifier.uuidString
+        let key = "\(deviceAddress):\(characteristic.uuid.uuidString)"
 
         if let error = error {
-            // Write failed - notify Flutter with error details
+            // Complete the pending Dart future with an error so the await on writeValue() throws.
+            if let pendingResult = pendingWriteResults.removeValue(forKey: key) {
+                pendingResult(FlutterError(
+                    code: "WRITE_FAILED",
+                    message: "Failed to write characteristic: \(error.localizedDescription)",
+                    details: nil
+                ))
+            }
+
+            // Also notify any legacy listeners via the method channel event.
             let errorMap: [String: Any] = [
                 "deviceAddress": deviceAddress,
                 "characteristicUuid": characteristic.uuid.uuidString,
@@ -733,7 +780,12 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
             ]
             channel.invokeMethod("onCharacteristicWrite", arguments: errorMap)
         } else {
-            // Write succeeded - notify Flutter
+            // Complete the pending Dart future successfully.
+            if let pendingResult = pendingWriteResults.removeValue(forKey: key) {
+                pendingResult(nil)
+            }
+
+            // Also notify any legacy listeners via the method channel event.
             let successMap: [String: Any] = [
                 "deviceAddress": deviceAddress,
                 "characteristicUuid": characteristic.uuid.uuidString,

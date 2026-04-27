@@ -12,36 +12,35 @@ const String kTestServiceUuid = '10000000-1234-1234-1234-123456789abc';
 
 /// Test characteristic UUID for read operations.
 ///
-/// This characteristic should be discoverable within the test service
-/// and support read operations for service discovery validation.
+/// This characteristic should be discoverable within the test service and support read operations for service discovery
+/// validation.
 const String kTestReadCharacteristicUuid =
     '10000001-1234-1234-1234-123456789abc';
 
 /// Test characteristic UUID for read-only operations.
 ///
-/// This characteristic should be discoverable within the test service
-/// and support only read operations.
+/// This characteristic should be discoverable within the test service and support only read operations.
 const String kTestReadOnlyCharacteristicUuid =
     '10000002-1234-1234-1234-123456789abc';
 
 /// Test characteristic UUID for write operations.
 ///
-/// This characteristic should be discoverable within the test service
-/// and support write operations for service discovery validation.
+/// This characteristic should be discoverable within the test service and support write operations for service
+/// discovery validation.
 const String kTestWriteCharacteristicUuid =
     '10000003-1234-1234-1234-123456789abc';
 
 /// Test characteristic UUID for notification operations.
 ///
-/// This characteristic should be discoverable within the test service
-/// and support notification operations (fire-and-forget updates).
+/// This characteristic should be discoverable within the test service and support notification operations
+/// (fire-and-forget updates).
 const String kTestNotifyCharacteristicUuid =
     '10000004-1234-1234-1234-123456789abc';
 
 /// Test characteristic UUID for indication operations.
 ///
-/// This characteristic should be discoverable within the test service
-/// and support indication operations (notifications with acknowledgment).
+/// This characteristic should be discoverable within the test service and support indication operations (notifications
+/// with acknowledgment).
 const String kTestIndicateCharacteristicUuid =
     '10000005-1234-1234-1234-123456789abc';
 
