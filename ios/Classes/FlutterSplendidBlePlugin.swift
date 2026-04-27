@@ -43,6 +43,33 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
     /// Value: The FlutterResult callback to complete when the operation finishes
     private var pendingNotificationStateChanges: [String: FlutterResult] = [:]
 
+    /// Tracks pending characteristic write operations with their FlutterResult callbacks.
+    ///
+    /// When writeCharacteristic() is called with write type `.withResponse`, the operation is
+    /// asynchronous — Core Bluetooth queues the write and fires `didWriteValueFor` once the
+    /// peripheral acknowledges it. The FlutterResult is stored here and completed in that
+    /// callback so that `await characteristic.writeValue(...)` on the Dart side does not
+    /// resolve until the ATT write response has been received.
+    ///
+    /// Key format: "deviceAddress:characteristicUUID"
+    /// Value: The FlutterResult callback to complete when the write is acknowledged
+    private var pendingWriteResults: [String: FlutterResult] = [:]
+
+    /// Pending fallback work items keyed by peripheral UUID.
+    ///
+    /// When a connectable device's first advertisement is buffered, a `DispatchWorkItem` is
+    /// scheduled to emit the buffered data after `scanResponseTimeoutSeconds` if no scan
+    /// response arrives first. Storing the items here allows them to be cancelled precisely
+    /// when the scan response does arrive, or swept when the scan session ends.
+    private var pendingFallbackWorkItems: [UUID: DispatchWorkItem] = [:]
+
+    /// How long to wait for a scan response before emitting the buffered initial advertisement.
+    ///
+    /// CoreBluetooth typically delivers the scan response within a few milliseconds of the
+    /// first advertisement. 0.3 seconds is a conservative upper bound that prevents devices
+    /// from being suppressed indefinitely when the OS only fires `didDiscover` once.
+    private static let scanResponseTimeoutSeconds: Double = 0.3
+
     /// Initializes the `FlutterSplendidBlePlugin` and sets up the central manager.
     override init() {
         super.init()
@@ -160,6 +187,11 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
                 }
             }
             
+            // Cancel any pending fallback emissions and flush devices that were buffered
+            // during a previous scan session but never received a scan response.
+            cancelAllPendingFallbacks()
+            flushPartialAdvertisementData()
+
             // Clear previous scan session data
             discoveredDevices.removeAll()
             partialAdvertisementData.removeAll()
@@ -171,7 +203,11 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
         case CentralMethod.stopScan.rawValue:
             // Stop scanning for BLE devices
             centralManager.stopScan()
-            // Clear scan session data
+            // Cancel pending fallback timers and flush any connectable devices that were
+            // buffered but never received a scan response. Without this, those devices
+            // would be dropped silently when the scan ends.
+            cancelAllPendingFallbacks()
+            flushPartialAdvertisementData()
             discoveredDevices.removeAll()
             partialAdvertisementData.removeAll()
             result(nil)
@@ -240,8 +276,20 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
             }
             
             peripheral.writeValue(dataValue, for: characteristic, type: writeType)
-            result(nil)
-            
+
+            if writeType == .withResponse {
+                // Store the result callback and complete it in didWriteValueFor once the
+                // peripheral sends an ATT write response. This ensures that the Dart-side
+                // await on writeValue() resolves only after the write is acknowledged,
+                // giving callers accurate per-write timing information.
+                let key = "\(deviceAddress):\(characteristicUuidStr)"
+                pendingWriteResults[key] = result
+            } else {
+                // Write without response: the peripheral will not send an acknowledgement,
+                // so resolve immediately.
+                result(nil)
+            }
+
         case CentralMethod.readCharacteristic.rawValue:
             guard let arguments = call.arguments as? [String: Any],
                   let characteristicUuidStr = arguments["characteristicUuid"] as? String,
@@ -313,34 +361,21 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
     
     /// Called when a peripheral is discovered while scanning.
     ///
-    /// Adds the discovered peripheral to the map if it isn't already there and prepares the device information to be sent to Flutter.
+    /// Adds the discovered peripheral to the map if it isn't already there and prepares the device
+    /// information to be sent to Flutter.
+    ///
+    /// For connectable devices, CoreBluetooth may call this method twice in quick succession: once
+    /// for the initial advertisement packet and once for the scan response. The scan response often
+    /// carries additional data such as the complete local name or manufacturer payload. This method
+    /// buffers the initial advertisement and schedules a fallback timeout so the device is always
+    /// emitted even when CoreBluetooth only calls `didDiscover` once (which happens when the OS
+    /// merges the two packets internally before delivery).
+    ///
     /// - Parameters:
     ///   - central: The central manager providing this update.
     ///   - peripheral: The `CBPeripheral` that was discovered.
     ///   - advertisementData: A dictionary containing any advertisement and scan response data.
     ///   - RSSI: The received signal strength indicator (RSSI) value for the peripheral.
-    ///
-    /// This function handles the discovery of BLE peripherals during a scan. It processes the advertisement data received from the peripheral
-    /// and prepares the device information to be sent to the Dart side of a Flutter application. The function supports BLE peripherals with
-    /// scannable advertisement data by leveraging the OS's automatic scan request mechanism.
-    ///
-    /// For BLE peripherals that support scannable advertisement data, the OS will automatically make a scan request after receiving the initial
-    /// advertisement packet. As a result, the `didDiscover` function will be called twice in quick succession for these devices:
-    ///
-    /// 1. The first call is triggered by the initial advertisement packet.
-    /// 2. The second call is triggered by the scan response packet.
-    ///
-    /// When this happens, the `CBPeripheral` will include additional advertisement data in the scan response, combining it with the initial data.
-    /// The function tracks the advertisement data for each discovered peripheral and waits for the scan response before sending the complete
-    /// data to the Dart side. This ensures that all relevant advertisement data, including manufacturer data, is captured and processed.
-    ///
-    /// The function uses two dictionaries to achieve this:
-    /// - `partialAdvertisementData`: Stores partial advertisement data for each peripheral.
-    /// - `scanResponseReceived`: Tracks whether the scan response has been received for each peripheral.
-    ///
-    /// The function checks the type of advertisement packet to determine if it should expect more data in a scan response. If the scan response
-    /// has been received, the function combines the initial advertisement data with the scan response data and sends the complete information
-    /// to the Dart side.
     public func centralManager(_ central: CBCentralManager, didDiscover peripheral: CBPeripheral, advertisementData: [String: Any], rssi RSSI: NSNumber) {
         // If scan filters for appliance names have been specified, only continue with devices matching one of the names.
         guard scanNameFilters.isEmpty || scanNameFilters.contains(peripheral.name ?? "") else {
@@ -357,39 +392,89 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
         let isConnectable: Bool = advertisementData[CBAdvertisementDataIsConnectable] as? Bool ?? false
 
         if isFirstDiscovery {
-            // Mark this device as discovered
             discoveredDevices.insert(peripheral.identifier)
 
-            // If the device is connectable, it might send a scan response. Store the initial data and wait.
             if isConnectable {
+                // Buffer the initial advertisement and schedule a fallback so the device is
+                // emitted even if the scan response never arrives.
                 partialAdvertisementData[peripheral.identifier] = (data: advertisementData, rssi: RSSI)
-                return // Don't emit yet - wait for potential scan response
+                scheduleFallbackEmit(for: peripheral)
+                return
             }
 
-            // Device is not connectable, so no scan response is expected. Emit immediately.
+            // Non-connectable devices do not send scan responses; emit now.
             emitDeviceDiscovery(peripheral: peripheral, advertisementData: advertisementData, rssi: RSSI)
         } else {
-            // This is a subsequent discovery - likely a scan response or duplicate advertisement
-
-            // Check if we have stored partial data (meaning we're waiting for scan response)
+            // Subsequent callback for a known device. If we are still waiting for a scan
+            // response (partial entry exists), this callback carries the merged advertisement
+            // and scan response data. CoreBluetooth combines both packets into the
+            // advertisementData dictionary transparently.
             if let partialData = partialAdvertisementData[peripheral.identifier] {
-                // This is the scan response. Merge the data and emit.
-                var mergedAdvertisementData: [String: Any] = partialData.data
+                // Scan response arrived in time - cancel the fallback.
+                cancelFallbackEmit(for: peripheral.identifier)
+                partialAdvertisementData.removeValue(forKey: peripheral.identifier)
 
-                // Merge the scan response data into the initial advertisement data
+                // Merge scan response keys over the initial advertisement data.
+                var mergedAdvertisementData: [String: Any] = partialData.data
                 for (key, value) in advertisementData {
                     mergedAdvertisementData[key] = value
                 }
 
-                // Clean up the partial data storage
-                partialAdvertisementData.removeValue(forKey: peripheral.identifier)
-
-                // Emit the complete device information with merged data
                 emitDeviceDiscovery(peripheral: peripheral, advertisementData: mergedAdvertisementData, rssi: RSSI)
-            } else {
-                // We've seen this device before but aren't waiting for scan response
-                // This is a duplicate advertisement - emit it
-                emitDeviceDiscovery(peripheral: peripheral, advertisementData: advertisementData, rssi: RSSI)
+            }
+            // Subsequent callbacks for already-emitted devices are ignored to avoid flooding
+            // the Flutter side with repeated entries during a scan session.
+        }
+    }
+
+    /// Schedules a fallback emission for a connectable device whose scan response may never arrive.
+    ///
+    /// If `scanResponseTimeoutSeconds` elapses without a subsequent `didDiscover` call, the buffered
+    /// initial advertisement is emitted so the Flutter side still learns about the device.
+    ///
+    /// - Parameter peripheral: The peripheral whose initial advertisement is currently buffered.
+    private func scheduleFallbackEmit(for peripheral: CBPeripheral) {
+        let peripheralId: UUID = peripheral.identifier
+        let workItem = DispatchWorkItem { [weak self] in
+            guard let self = self else { return }
+            if let buffered = self.partialAdvertisementData.removeValue(forKey: peripheralId) {
+                self.pendingFallbackWorkItems.removeValue(forKey: peripheralId)
+                self.emitDeviceDiscovery(peripheral: peripheral, advertisementData: buffered.data, rssi: buffered.rssi)
+            }
+        }
+        pendingFallbackWorkItems[peripheralId] = workItem
+        DispatchQueue.main.asyncAfter(deadline: .now() + Self.scanResponseTimeoutSeconds, execute: workItem)
+    }
+
+    /// Cancels the pending fallback emission for a specific peripheral.
+    ///
+    /// Called when the scan response arrives before the timeout, making the fallback unnecessary.
+    ///
+    /// - Parameter peripheralId: The UUID of the peripheral whose fallback should be cancelled.
+    private func cancelFallbackEmit(for peripheralId: UUID) {
+        pendingFallbackWorkItems.removeValue(forKey: peripheralId)?.cancel()
+    }
+
+    /// Cancels all pending fallback emissions and removes them from the work item map.
+    ///
+    /// Called at the start of a new scan session or when scanning stops to prevent stale
+    /// work items from firing after state has been cleared.
+    private func cancelAllPendingFallbacks() {
+        for workItem in pendingFallbackWorkItems.values {
+            workItem.cancel()
+        }
+        pendingFallbackWorkItems.removeAll()
+    }
+
+    /// Emits all buffered partial advertisement entries to Flutter and clears the buffer.
+    ///
+    /// Called when a scan session ends or restarts. Any connectable device that was buffered
+    /// but never received a scan response is emitted with whatever data was available, so the
+    /// Flutter side always receives a complete picture of nearby devices.
+    private func flushPartialAdvertisementData() {
+        for (uuid, buffered) in partialAdvertisementData {
+            if let peripheral = peripheralsMap[uuid.uuidString] {
+                emitDeviceDiscovery(peripheral: peripheral, advertisementData: buffered.data, rssi: buffered.rssi)
             }
         }
     }
@@ -510,6 +595,19 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
                 pendingResult(FlutterError(
                     code: "DISCONNECTED",
                     message: "Device disconnected during notification state change operation",
+                    details: nil
+                ))
+            }
+        }
+
+        // Clean up any pending write results for this device. Completing them with an error
+        // prevents Dart callers from hanging indefinitely on a write future that will never resolve.
+        let writeKeysToRemove = pendingWriteResults.keys.filter { $0.hasPrefix("\(deviceAddress):") }
+        for key in writeKeysToRemove {
+            if let pendingResult = pendingWriteResults.removeValue(forKey: key) {
+                pendingResult(FlutterError(
+                    code: "DISCONNECTED",
+                    message: "Device disconnected during characteristic write operation",
                     details: nil
                 ))
             }
@@ -661,9 +759,19 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
     ///   - error: An optional `Error` detailing what went wrong during the write operation, if anything.
     public func peripheral(_ peripheral: CBPeripheral, didWriteValueFor characteristic: CBCharacteristic, error: Error?) {
         let deviceAddress = peripheral.identifier.uuidString
+        let key = "\(deviceAddress):\(characteristic.uuid.uuidString)"
 
         if let error = error {
-            // Write failed - notify Flutter with error details
+            // Complete the pending Dart future with an error so the await on writeValue() throws.
+            if let pendingResult = pendingWriteResults.removeValue(forKey: key) {
+                pendingResult(FlutterError(
+                    code: "WRITE_FAILED",
+                    message: "Failed to write characteristic: \(error.localizedDescription)",
+                    details: nil
+                ))
+            }
+
+            // Also notify any legacy listeners via the method channel event.
             let errorMap: [String: Any] = [
                 "deviceAddress": deviceAddress,
                 "characteristicUuid": characteristic.uuid.uuidString,
@@ -672,7 +780,12 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
             ]
             channel.invokeMethod("onCharacteristicWrite", arguments: errorMap)
         } else {
-            // Write succeeded - notify Flutter
+            // Complete the pending Dart future successfully.
+            if let pendingResult = pendingWriteResults.removeValue(forKey: key) {
+                pendingResult(nil)
+            }
+
+            // Also notify any legacy listeners via the method channel event.
             let successMap: [String: Any] = [
                 "deviceAddress": deviceAddress,
                 "characteristicUuid": characteristic.uuid.uuidString,

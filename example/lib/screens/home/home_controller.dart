@@ -58,8 +58,8 @@ class HomeController extends State<HomeRoute> {
     final Stream<BluetoothPermissionStatus> bluetoothPermissionsStream =
         await _ble.emitCurrentPermissionStatus();
 
-    // Set up the listener IMMEDIATELY after getting the stream. The microtask in emitCurrentPermissionStatus ensures
-    // we have time to attach this listener.
+    // Set up the listener IMMEDIATELY after getting the stream. The microtask in emitCurrentPermissionStatus ensures we
+    // have time to attach this listener.
     _bluetoothPermissionsStream = bluetoothPermissionsStream.listen((event) {
       debugPrint('Received permission status: $event');
 
@@ -85,9 +85,8 @@ class HomeController extends State<HomeRoute> {
       }
     });
 
-    // Now request Bluetooth permissions through the plugin
-    // This will trigger the permission dialog if needed, and the result
-    // will be emitted through the stream we're already listening to
+    // Now request Bluetooth permissions through the plugin This will trigger the permission dialog if needed, and the
+    // result will be emitted through the stream we're already listening to
     await _ble.requestBluetoothPermissions();
   }
 
@@ -175,8 +174,7 @@ class HomeController extends State<HomeRoute> {
       behavior: SnackBarBehavior.floating,
     );
 
-    // Find the ScaffoldMessenger in the widget tree
-    // and use it to show a SnackBar.
+    // Find the ScaffoldMessenger in the widget tree and use it to show a SnackBar.
     ScaffoldMessenger.of(context).showSnackBar(snackBar);
   }
 

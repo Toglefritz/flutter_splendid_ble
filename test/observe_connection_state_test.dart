@@ -5,8 +5,8 @@ import 'package:flutter_test/flutter_test.dart';
 
 /// Tests for the observeConnectionState functionality.
 ///
-/// This test suite verifies that passive connection state monitoring works correctly,
-/// allowing observation of connection state changes without initiating a connection.
+/// This test suite verifies that passive connection state monitoring works correctly, allowing observation of
+/// connection state changes without initiating a connection.
 void main() {
   group('observeConnectionState', () {
     late FakeCentralMethodChannel fakePlatform;

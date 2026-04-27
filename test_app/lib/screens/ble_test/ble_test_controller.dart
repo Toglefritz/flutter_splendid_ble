@@ -53,8 +53,8 @@ class BleTestController extends State<BleTestRoute> {
 
   /// Scroll controller for the output list.
   ///
-  /// The primary purpose of this scroll controller is to automatically scroll the view as new output lines are added
-  /// by the test services.
+  /// The primary purpose of this scroll controller is to automatically scroll the view as new output lines are added by
+  /// the test services.
   final ScrollController _scrollController = ScrollController();
 
   /// Gets the scroll controller for the output list.
@@ -84,8 +84,8 @@ class BleTestController extends State<BleTestRoute> {
 
   /// Adds a new line to the test output.
   ///
-  /// This method is used to add new output lines that will appear in the view. When new lines are added, the view
-  /// is scrolled to the bottom.
+  /// This method is used to add new output lines that will appear in the view. When new lines are added, the view is
+  /// scrolled to the bottom.
   void _addOutputLine(String line) {
     // Add the new output line
     setState(() {
@@ -132,8 +132,8 @@ class BleTestController extends State<BleTestRoute> {
 
   /// Copies the test output to the clipboard.
   ///
-  /// This method joins all output lines with newlines and copies the result
-  /// to the system clipboard. Shows a snackbar to confirm the action.
+  /// This method joins all output lines with newlines and copies the result to the system clipboard. Shows a snackbar
+  /// to confirm the action.
   Future<void> copyOutputToClipboard(BuildContext context) async {
     if (_outputLines.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
