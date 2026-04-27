@@ -133,6 +133,21 @@ class BleDeviceInterface(
     private val cachedPhyMap: MutableMap<String, Pair<Int, Int>> = mutableMapOf()
 
     /**
+     * Cached BLE connection parameters for each connected device.
+     *
+     * Populated when [onConnectionUpdated] fires shortly after connection setup.
+     * The map key is the device MAC address. The Triple holds (interval, latency,
+     * supervisionTimeout) in raw BLE units: interval in 1.25 ms units, timeout in 10 ms units.
+     *
+     * [onConnectionUpdated] became part of the public [BluetoothGattCallback] API at
+     * API 34, so this map is only populated on devices running Android 14 or later.
+     * On earlier devices the Triple values are absent.
+     *
+     * Cleared when the device disconnects.
+     */
+    private val cachedConnectionParamsMap: MutableMap<String, Triple<Int, Int, Int>> = mutableMapOf()
+
+    /**
      * Tracks devices that have pending descriptor write operations in progress.
      *
      * The BLE specification requires that only one GATT operation can be in progress at a time
@@ -252,6 +267,7 @@ class BleDeviceInterface(
                     devicesAwaitingMtu.remove(deviceAddress)
                     devicesWithPendingDescriptorWrites.remove(deviceAddress)
                     cachedPhyMap.remove(deviceAddress)
+                    cachedConnectionParamsMap.remove(deviceAddress)
 
                     // Complete any pending descriptor write with error
                     val pendingDescriptorResult: MethodChannel.Result? = pendingDescriptorWrites.remove(deviceAddress)
@@ -395,6 +411,46 @@ class BleDeviceInterface(
         }
     }
 
+    /**
+     * Called when the connection parameters for a connected device are updated.
+     *
+     * Fires automatically shortly after connection setup completes, supplying the
+     * actual negotiated connection interval, peripheral latency, and supervision
+     * timeout. Values are cached in [cachedConnectionParamsMap] and returned by
+     * [readConnectionParameters].
+     *
+     * This method is defined WITHOUT the `override` keyword deliberately. The Android
+     * BLE stack calls it on [BluetoothGattCallback] subclasses via normal JVM virtual
+     * dispatch at runtime, but the method is marked `@hide` in the Android SDK source
+     * and is therefore absent from the compile-time public API surface. Declaring it
+     * without `override` avoids the "overrides nothing" compile error while still
+     * receiving the callbacks correctly on Android 8.0+ devices.
+     *
+     * @param gatt The GATT client for the affected device.
+     * @param interval Connection interval in 1.25 ms units.
+     * @param latency Peripheral latency (number of skippable connection events).
+     * @param timeout Supervision timeout in 10 ms units.
+     * @param status GATT_SUCCESS if the update succeeded.
+     */
+    @Suppress("unused")
+    fun onConnectionUpdated(
+        gatt: BluetoothGatt,
+        interval: Int,
+        latency: Int,
+        timeout: Int,
+        status: Int,
+    ) {
+        if (status == BluetoothGatt.GATT_SUCCESS) {
+            cachedConnectionParamsMap[gatt.device.address] = Triple(interval, latency, timeout)
+            android.util.Log.d(
+                "BleDeviceInterface",
+                "Connection params updated for ${gatt.device.address}: " +
+                    "interval=${interval * 1.25}ms " +
+                    "latency=$latency " +
+                    "timeout=${timeout * 10}ms"
+            )
+        }
+    }
 
     /**
      * Called when services have been discovered on the remote device.
@@ -1218,32 +1274,44 @@ class BleDeviceInterface(
     }
 
     /**
-     * Returns a snapshot of the current BLE PHY for the connected device.
+     * Returns a snapshot of the active BLE link parameters for the connected device.
      *
-     * PHY values are read from [cachedPhyMap], which is populated by [onPhyRead] shortly
-     * after connection setup. The connection interval, slave latency, and supervision timeout
-     * fields are not available on SDK < 34 (where [onConnectionUpdated] was a hidden API),
-     * so those keys are omitted from the returned map and the Dart layer displays "—".
+     * PHY values come from [cachedPhyMap], populated by [onPhyRead] immediately after
+     * connection setup. Connection interval, peripheral latency, and supervision timeout
+     * come from [cachedConnectionParamsMap], populated by [onConnectionUpdated].
      *
-     * Returns null via [result] on API < 26 or if the PHY cache has not yet been populated.
+     * [onConnectionUpdated] is a hidden Android API that fires on Android 8.0+ devices
+     * at runtime even though it does not appear in the public SDK. The interval, latency,
+     * and timeout fields are therefore available on all modern devices despite the hidden
+     * status of the underlying callback.
+     *
+     * Returns null via [result] if the PHY cache has not yet been populated (can occur
+     * briefly if this method is called immediately after connection before [onPhyRead]
+     * fires, which is unlikely in practice).
      *
      * @param deviceAddress The MAC address of the connected BLE device.
-     * @param result The Flutter method channel result to complete with the parameter map, or null.
+     * @param result The Flutter method channel result to complete.
      */
     fun readConnectionParameters(deviceAddress: String, result: MethodChannel.Result) {
         val phyPair: Pair<Int, Int>? = cachedPhyMap[deviceAddress]
 
         if (phyPair == null) {
-            // PHY data is not yet available (API < 26, or callbacks not yet fired).
             result.success(null)
             return
         }
 
-        val map: Map<String, Any> = mapOf(
+        val map: MutableMap<String, Any> = mutableMapOf(
             "txPhy" to phyPair.first,
-            "rxPhy" to phyPair.second
+            "rxPhy" to phyPair.second,
         )
 
+        val connectionParams: Triple<Int, Int, Int>? = cachedConnectionParamsMap[deviceAddress]
+        if (connectionParams != null) {
+            // Convert raw BLE units: interval × 1.25 ms, timeout × 10 ms.
+            map["connectionIntervalMs"] = connectionParams.first * 1.25
+            map["slaveLatency"] = connectionParams.second
+            map["supervisionTimeoutMs"] = connectionParams.third * 10
+        }
 
         result.success(map)
     }
