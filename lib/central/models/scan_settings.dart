@@ -4,9 +4,13 @@
 /// Use this class to specify options like the scan mode, report delay, whether to allow duplicates, and the desired
 /// callback type.
 ///
+/// On Android 8 (API 26) and above, [legacyMode] controls whether scanning is restricted to legacy PDUs. Setting it to
+/// `false` (the default when omitted) enables extended advertising, which is necessary to receive scan response data
+/// from devices that split their advertisement payload across two packets.
+///
 /// Example usage:
 /// ```dart
-/// var settings = ScanSettings(scanMode: ScanMode.lowPower);
+/// var settings = ScanSettings(scanMode: ScanMode.lowPower, legacyMode: false);
 /// ```
 class ScanSettings {
   /// The mode to be used for the BLE scan.
@@ -24,14 +28,22 @@ class ScanSettings {
   /// If `true`, each advertisement is reported only once. If `false`, advertisements might be reported multiple times.
   final bool? allowDuplicates;
 
-  /// Constructs a [ScanSettings] instance with the specified scan settings.
+  /// Whether to restrict scanning to legacy BLE advertising PDUs.
   ///
-  /// [scanMode] determines the mode used for scanning. [reportDelayMillis] determines the delay for reporting results.
-  /// [allowDuplicates] specifies whether to include duplicate advertisements.
+  /// When set to `false` on Android 8 (API 26) and above, the scanner operates in non-legacy mode and can receive
+  /// extended advertising PDUs. This is required for devices that send additional data in a scan response packet. When
+  /// this field is `null`, the Android side defaults to `false` (non-legacy) so that scan response data is always
+  /// included when the hardware supports it.
+  ///
+  /// This field has no effect on iOS or older Android versions.
+  final bool? legacyMode;
+
+  /// Constructs a [ScanSettings] instance with the specified scan settings.
   ScanSettings({
     this.scanMode,
     this.reportDelayMillis,
     this.allowDuplicates,
+    this.legacyMode,
   });
 
   /// Converts the [ScanSettings] instance into a map representation.
@@ -39,9 +51,10 @@ class ScanSettings {
   /// This method is useful for sending the settings data across platform channels.
   Map<String, dynamic> toMap() {
     return {
-      'scanMode': scanMode,
+      'scanMode': scanMode?.identifier,
       'reportDelayMillis': reportDelayMillis,
       'allowDuplicates': allowDuplicates,
+      if (legacyMode != null) 'legacy': legacyMode,
     };
   }
 }

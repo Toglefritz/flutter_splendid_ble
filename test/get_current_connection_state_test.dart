@@ -34,8 +34,7 @@ void main() {
     final BleConnectionState state =
         await methodChannelFlutterBle.getCurrentConnectionState(deviceAddress);
 
-    // Validate that the function correctly converted the method channel result
-    // to a Dart enum
+    // Validate that the function correctly converted the method channel result to a Dart enum
     expect(state, BleConnectionState.connected);
   });
 

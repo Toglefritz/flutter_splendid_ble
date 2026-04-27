@@ -6,9 +6,8 @@ import '../config/esp32_test_constants.dart';
 
 /// Service for performing BLE read/write operation tests.
 ///
-/// This service tests various read and write operations against both open
-/// and encrypted characteristics to validate proper data transfer and
-/// security behavior.
+/// This service tests various read and write operations against both open and encrypted characteristics to validate
+/// proper data transfer and security behavior.
 class ReadWriteTestService {
   /// The BLE central instance used for read/write operations.
   final SplendidBleCentral _ble;
@@ -39,8 +38,8 @@ class ReadWriteTestService {
   /// 6. Test encrypted read operations
   /// 7. Test encrypted write operations
   ///
-  /// The [deviceAddress] parameter specifies the test device to connect to.
-  /// Returns true if all tests pass, false if any test fails.
+  /// The [deviceAddress] parameter specifies the test device to connect to. Returns true if all tests pass, false if
+  /// any test fails.
   Future<bool> runAllTests(String deviceAddress) async {
     _addOutputLine('Running BLE read/write tests...');
     _addOutputLine('Target device: $deviceAddress');

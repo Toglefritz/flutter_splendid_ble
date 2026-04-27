@@ -206,8 +206,8 @@ class FakeCentralMethodChannel extends CentralPlatformInterface {
   Future<Stream<BleConnectionState>> connect({
     required String deviceAddress,
   }) async {
-    // Reuse existing controller if one exists, or create a new one
-    // This ensures that both connect() and observeConnectionState() can share the same stream
+    // Reuse existing controller if one exists, or create a new one This ensures that both connect() and
+    // observeConnectionState() can share the same stream
     final StreamController<BleConnectionState> controller =
         _connectionControllers.putIfAbsent(
       deviceAddress,
@@ -249,16 +249,15 @@ class FakeCentralMethodChannel extends CentralPlatformInterface {
   Future<Stream<BleConnectionState>> observeConnectionState({
     required String deviceAddress,
   }) async {
-    // For the fake implementation, create or reuse a stream controller
-    // but don't initiate a connection
+    // For the fake implementation, create or reuse a stream controller but don't initiate a connection
     final StreamController<BleConnectionState> controller =
         _connectionControllers.putIfAbsent(
       deviceAddress,
       StreamController<BleConnectionState>.broadcast,
     );
 
-    // Emit the current state after a microtask delay to allow listeners to be set up
-    // This simulates the async nature of the platform channel
+    // Emit the current state after a microtask delay to allow listeners to be set up This simulates the async nature of
+    // the platform channel
     final BleConnectionState currentState =
         _connectionStates[deviceAddress] ?? BleConnectionState.disconnected;
 
@@ -330,13 +329,11 @@ class FakeCentralMethodChannel extends CentralPlatformInterface {
 
   /// Simulates a connection state change for testing purposes.
   ///
-  /// This method allows tests to simulate external connection state changes,
-  /// such as a device connecting or disconnecting without the app initiating
-  /// the connection. This is useful for testing the observeConnectionState()
+  /// This method allows tests to simulate external connection state changes, such as a device connecting or
+  /// disconnecting without the app initiating the connection. This is useful for testing the observeConnectionState()
   /// functionality.
   ///
-  /// The [deviceAddress] specifies which device's state to change, and
-  /// [state] specifies the new connection state.
+  /// The [deviceAddress] specifies which device's state to change, and [state] specifies the new connection state.
   ///
   /// This method will:
   /// 1. Update the internal connection state tracking

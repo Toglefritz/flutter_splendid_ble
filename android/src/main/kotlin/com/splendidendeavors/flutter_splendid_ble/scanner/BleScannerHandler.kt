@@ -8,6 +8,8 @@ import android.bluetooth.le.ScanResult
 import android.bluetooth.le.ScanSettings
 import android.content.Context
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import androidx.annotation.RequiresApi
 import io.flutter.plugin.common.MethodChannel
 import android.os.ParcelUuid
@@ -48,6 +50,22 @@ class BleScannerHandler(private val channel: MethodChannel, activity: Context) {
     private var scanCallback: ScanCallback? = null
 
     /**
+     * Handler bound to the main looper, used to post delayed fallback emissions for devices
+     * that are connectable but whose scan response never arrives within the expected window.
+     */
+    private val mainHandler: Handler = Handler(Looper.getMainLooper())
+
+    /**
+     * How long to wait for a scan response before emitting the initial advertisement data
+     * as-is. The scan response from a connectable device almost always arrives within a
+     * single scan interval (tens of milliseconds), so 300 ms is a conservative upper bound
+     * that avoids suppressing devices indefinitely.
+     */
+    private companion object {
+        const val SCAN_RESPONSE_TIMEOUT_MS: Long = 300L
+    }
+
+    /**
      * Set of device addresses that have been discovered during the current scan session.
      * This tracks which devices we've seen before to differentiate between initial advertisement
      * and scan response packets.
@@ -60,6 +78,14 @@ class BleScannerHandler(private val channel: MethodChannel, activity: Context) {
      * This data is merged with scan response data before being emitted to Flutter.
      */
     private val partialAdvertisementData: MutableMap<String, ScanResult> = mutableMapOf()
+
+    /**
+     * Pending fallback runnables keyed by device address. Each runnable emits the buffered
+     * initial advertisement for a connectable device if no scan response has arrived by the
+     * time the timeout fires. Storing the runnables allows them to be cancelled when the scan
+     * response does arrive before the timeout or when the scan is stopped.
+     */
+    private val pendingFallbackRunnables: MutableMap<String, Runnable> = mutableMapOf()
 
     init {
         val bluetoothManager =
@@ -88,7 +114,10 @@ class BleScannerHandler(private val channel: MethodChannel, activity: Context) {
      */
     fun startScan(scanFilters: List<ScanFilter>? = null, scanSettings: ScanSettings? = null) {
         try {
-            // Clear previous scan session data
+            // Cancel and clear any state from a previous scan session. Pending fallback
+            // runnables are removed before clearing the partial data so the runnables do not
+            // fire after the new scan starts.
+            cancelAllPendingFallbacks()
             discoveredDevices.clear()
             partialAdvertisementData.clear()
 
@@ -96,10 +125,14 @@ class BleScannerHandler(private val channel: MethodChannel, activity: Context) {
             scanCallback = object : ScanCallback() {
                 override fun onScanResult(callbackType: Int, result: ScanResult?) {
                     result?.let {
-                        val resultServiceUuids: Set<UUID> = it.scanRecord?.serviceUuids?.map { parcelUuid -> parcelUuid.uuid }?.toSet() ?: emptySet()
+                        val resultServiceUuids: Set<UUID> = it.scanRecord?.serviceUuids
+                            ?.map { parcelUuid -> parcelUuid.uuid }
+                            ?.toSet() ?: emptySet()
+
                         val filterServiceUuids: Set<UUID> = scanFilters?.mapNotNull { filter ->
                             try {
-                                val field: java.lang.reflect.Field = ScanFilter::class.java.getDeclaredField("mUuid")
+                                val field: java.lang.reflect.Field =
+                                    ScanFilter::class.java.getDeclaredField("mUuid")
                                 field.isAccessible = true
                                 (field.get(filter) as? ParcelUuid)?.uuid
                             } catch (e: Exception) {
@@ -107,62 +140,58 @@ class BleScannerHandler(private val channel: MethodChannel, activity: Context) {
                             }
                         }?.toSet() ?: emptySet()
 
-                        val uuidFilterMatches: Boolean = filterServiceUuids.isEmpty() || resultServiceUuids.any { uuid -> uuid in filterServiceUuids }
+                        val uuidFilterMatches: Boolean = filterServiceUuids.isEmpty() ||
+                                resultServiceUuids.any { uuid -> uuid in filterServiceUuids }
 
                         if (!uuidFilterMatches) return
 
                         val deviceAddress: String = it.device.address
                         val isFirstDiscovery: Boolean = !discoveredDevices.contains(deviceAddress)
 
-                        // Check if the device is connectable (may indicate scan response support)
-                        val isConnectable: Boolean = it.isConnectable
-
                         if (isFirstDiscovery) {
-                            // Mark this device as discovered
                             discoveredDevices.add(deviceAddress)
 
-                            // If the device is connectable, it might send a scan response. Store the initial data and wait.
-                            if (isConnectable) {
+                            // Connectable devices can send a scan response packet that carries
+                            // additional data (e.g. the complete local name or manufacturer
+                            // payload). Buffer the initial result and schedule a fallback so
+                            // the device is always emitted, even if the scan response never
+                            // arrives within the timeout window.
+                            if (it.isConnectable) {
                                 partialAdvertisementData[deviceAddress] = it
-                                return // Don't emit yet - wait for potential scan response
+                                scheduleFallbackEmit(deviceAddress, it, scanFilters)
+                                return
                             }
 
-                            // Device is not connectable, so no scan response is expected. Emit immediately.
+                            // Non-connectable devices do not send scan responses; emit now.
                             emitDeviceDiscovery(it, scanFilters)
                         } else {
-                            // This is a subsequent discovery - likely a scan response or duplicate advertisement
-
-                            // Check if we have stored partial data (meaning we're waiting for scan response)
+                            // Subsequent callback for a known device. If we are still waiting
+                            // for a scan response (partial entry exists), this callback carries
+                            // the merged advertisement + scan response data. Android combines
+                            // both packets into the ScanResult transparently.
                             val partialData: ScanResult? = partialAdvertisementData[deviceAddress]
                             if (partialData != null) {
-                                // This is the scan response. The ScanResult already contains merged data.
-                                // Android automatically merges advertisement + scan response data in the ScanResult.
-                                // Clean up the partial data storage
+                                // Cancel the fallback - scan response arrived in time.
+                                cancelFallbackEmit(deviceAddress)
                                 partialAdvertisementData.remove(deviceAddress)
-
-                                // Emit the complete device information with merged data
-                                emitDeviceDiscovery(it, scanFilters)
-                            } else {
-                                // We've seen this device before but aren't waiting for scan response
-                                // This is a duplicate advertisement - emit it
                                 emitDeviceDiscovery(it, scanFilters)
                             }
+                            // Duplicate advertisements for already-emitted devices are ignored
+                            // to prevent flooding the Flutter side with repeated entries.
                         }
                     }
                 }
             }
 
-            // Start scanning, using different forms of the overloaded `startScan` method from the
-            // `BluetoothLeScanner` class depending upon whether filters and/or settings for the scan
-            // were provided.
-            if (scanFilters != null && scanSettings != null) {
-                bluetoothLeScanner.startScan(scanFilters, scanSettings, scanCallback)
-            } else if (scanFilters != null) {
-                bluetoothLeScanner.startScan(scanFilters, ScanSettings.Builder().build(), scanCallback)
-            } else if (scanSettings != null) {
-                bluetoothLeScanner.startScan(emptyList(), scanSettings, scanCallback)
+            // Build effective scan settings. When no caller-provided settings are supplied,
+            // construct defaults that disable legacy mode on API 26+ so that extended
+            // advertisement data (including split scan response payloads) is reported.
+            val effectiveSettings: ScanSettings = scanSettings ?: buildDefaultScanSettings()
+
+            if (scanFilters != null) {
+                bluetoothLeScanner.startScan(scanFilters, effectiveSettings, scanCallback)
             } else {
-                bluetoothLeScanner.startScan(scanCallback)
+                bluetoothLeScanner.startScan(emptyList(), effectiveSettings, scanCallback)
             }
         } catch (e: SecurityException) {
             channel.invokeMethod(
@@ -170,6 +199,70 @@ class BleScannerHandler(private val channel: MethodChannel, activity: Context) {
                 "Required Bluetooth permissions are missing: ${e.message}"
             )
         }
+    }
+
+    /**
+     * Builds a default [ScanSettings] instance.
+     *
+     * On API 26 (Android 8) and above, legacy mode is disabled so the scanner can receive
+     * extended advertising PDUs. This is required for devices that split advertisement data
+     * across the primary packet and a scan response. On older API levels the builder defaults
+     * are used unchanged because the non-legacy APIs are not available.
+     */
+    private fun buildDefaultScanSettings(): ScanSettings {
+        val builder = ScanSettings.Builder()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            builder.setLegacy(false)
+        }
+        return builder.build()
+    }
+
+    /**
+     * Schedules a fallback emission for a connectable device whose scan response has not yet
+     * arrived. If [SCAN_RESPONSE_TIMEOUT_MS] elapses without a subsequent callback, the
+     * buffered initial advertisement result is emitted so the Flutter side still learns about
+     * the device.
+     *
+     * @param deviceAddress The MAC address of the device being buffered.
+     * @param initialResult The initial ScanResult received for this device.
+     * @param scanFilters The active scan filters, forwarded to [emitDeviceDiscovery].
+     */
+    private fun scheduleFallbackEmit(
+        deviceAddress: String,
+        initialResult: ScanResult,
+        scanFilters: List<ScanFilter>?,
+    ) {
+        val runnable = Runnable {
+            // Only emit if the device is still in the buffer (scan response never arrived).
+            val buffered: ScanResult? = partialAdvertisementData.remove(deviceAddress)
+            if (buffered != null) {
+                pendingFallbackRunnables.remove(deviceAddress)
+                emitDeviceDiscovery(buffered, scanFilters)
+            }
+        }
+        pendingFallbackRunnables[deviceAddress] = runnable
+        mainHandler.postDelayed(runnable, SCAN_RESPONSE_TIMEOUT_MS)
+    }
+
+    /**
+     * Cancels a pending fallback emission for the given device address. Called when the scan
+     * response arrives before the timeout, making the fallback unnecessary.
+     *
+     * @param deviceAddress The MAC address whose pending runnable should be cancelled.
+     */
+    private fun cancelFallbackEmit(deviceAddress: String) {
+        pendingFallbackRunnables.remove(deviceAddress)?.let { mainHandler.removeCallbacks(it) }
+    }
+
+    /**
+     * Cancels all pending fallback runnables. Used when a scan session ends to prevent stale
+     * runnables from firing after [stopScan] clears the state maps.
+     */
+    private fun cancelAllPendingFallbacks() {
+        for (runnable in pendingFallbackRunnables.values) {
+            mainHandler.removeCallbacks(runnable)
+        }
+        pendingFallbackRunnables.clear()
     }
 
     /**
@@ -230,9 +323,19 @@ class BleScannerHandler(private val channel: MethodChannel, activity: Context) {
         try {
             if (scanCallback != null) {
                 bluetoothLeScanner.stopScan(scanCallback)
-                scanCallback = null // Clear the callback reference
+                scanCallback = null
             }
-            // Clear scan session data
+
+            // Cancel pending fallback runnables first so they do not fire after state is cleared.
+            cancelAllPendingFallbacks()
+
+            // Flush any connectable devices that were buffered but never received a scan
+            // response. Without this, those devices would be silently dropped when the scan
+            // ends, which means the Flutter side would never learn about them at all.
+            for ((_, bufferedResult) in partialAdvertisementData) {
+                emitDeviceDiscovery(bufferedResult, null)
+            }
+
             discoveredDevices.clear()
             partialAdvertisementData.clear()
         } catch (e: SecurityException) {
@@ -297,27 +400,39 @@ class BleScannerHandler(private val channel: MethodChannel, activity: Context) {
     }
 
     /**
-     * Creates a ScanSettings object from the given map representation.
+     * Creates a [ScanSettings] object from the given map representation.
      *
-     * This function is responsible for extracting relevant properties from the map and
-     * constructing a corresponding ScanSettings instance.
+     * Keys recognised in [settingsMap]:
+     * - `scanMode`: int corresponding to [ScanSettings.SCAN_MODE_*] constants
+     * - `reportDelayMillis`: Long, delay before batched results are reported
+     * - `matchMode`: int, how aggressively to match advertisements (API 23+)
+     * - `callbackType`: int, controls which events trigger the callback (API 23+)
+     * - `numOfMatches`: int, number of matches per filter before callback fires (API 23+)
+     * - `legacy`: Boolean, whether to restrict scanning to legacy PDUs (API 26+)
+     * - `phy`: int, PHY used for scanning (API 26+)
      *
      * @param settingsMap The map containing the settings properties.
-     * @return A ScanSettings instance corresponding to the given map.
+     * @return A [ScanSettings] instance configured from the provided map.
      */
-    @RequiresApi(Build.VERSION_CODES.O)
     fun createScanSettingsFromMap(settingsMap: Map<String, Any>?): ScanSettings {
         val builder = ScanSettings.Builder()
 
-        // Extract properties from the settingsMap and apply them to the builder
         settingsMap?.get("scanMode")?.let { builder.setScanMode(it as Int) }
-        settingsMap?.get("reportDelayMillis")?.let { builder.setReportDelay(it as Long) }
-        settingsMap?.get("matchMode")?.let { builder.setMatchMode(it as Int) }
-        settingsMap?.get("callbackType")?.let { builder.setCallbackType(it as Int) }
-        settingsMap?.get("numOfMatches")?.let { builder.setNumOfMatches(it as Int) }
-        settingsMap?.get("legacy")?.let { builder.setLegacy(it as Boolean) }
-        settingsMap?.get("phy")?.let { builder.setPhy(it as Int) }
-        // ... Add other properties as needed
+        settingsMap?.get("reportDelayMillis")?.let { builder.setReportDelay((it as Number).toLong()) }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            settingsMap?.get("matchMode")?.let { builder.setMatchMode(it as Int) }
+            settingsMap?.get("callbackType")?.let { builder.setCallbackType(it as Int) }
+            settingsMap?.get("numOfMatches")?.let { builder.setNumOfMatches(it as Int) }
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            // When the caller does not provide an explicit legacy value, default to false so
+            // that extended advertising PDUs and scan responses are both delivered.
+            val legacyValue: Boolean = settingsMap?.get("legacy") as? Boolean ?: false
+            builder.setLegacy(legacyValue)
+            settingsMap?.get("phy")?.let { builder.setPhy(it as Int) }
+        }
 
         return builder.build()
     }
