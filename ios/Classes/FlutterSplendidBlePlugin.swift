@@ -267,7 +267,7 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
                 result(FlutterError(code: "INVALID_ARGUMENT", message: "Device address, characteristic UUID, or value cannot be null.", details: nil))
                 return
             }
-            
+
             let dataValue = Data(stringValue.utf8)
             let writeTypeValue = arguments["writeType"] as? Int ?? CBCharacteristicWriteType.withResponse.rawValue
             guard let writeType = CBCharacteristicWriteType(rawValue: writeTypeValue) else {
@@ -322,6 +322,12 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
             // iOS does not expose a connection interval negotiation API to the
             // central role. Accepting the call silently ensures callers can use
             // a single code path across platforms.
+            result(nil)
+
+        case CentralMethod.readConnectionParameters.rawValue:
+            // Core Bluetooth does not expose the active link parameters (PHY,
+            // connection interval, supervision timeout) to the central role.
+            // Returning nil tells the Dart layer to display "not available" for all fields.
             result(nil)
 
         default:

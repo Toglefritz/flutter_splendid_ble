@@ -122,6 +122,17 @@ class BleDeviceInterface(
     private val devicesAwaitingMtu: MutableSet<String> = mutableSetOf()
 
     /**
+     * Cached PHY (physical layer) values for each connected device.
+     *
+     * Populated when [onPhyRead] or [onPhyUpdate] fires. The map key is the device
+     * MAC address. The value is a Pair of (txPhy, rxPhy) using Android's
+     * [BluetoothDevice.PHY_LE_*] constants (1 = LE 1M, 2 = LE 2M, 3 = Coded).
+     *
+     * Cleared when the device disconnects.
+     */
+    private val cachedPhyMap: MutableMap<String, Pair<Int, Int>> = mutableMapOf()
+
+    /**
      * Tracks devices that have pending descriptor write operations in progress.
      *
      * The BLE specification requires that only one GATT operation can be in progress at a time
@@ -240,6 +251,7 @@ class BleDeviceInterface(
                     pendingWrites.remove(deviceAddress)
                     devicesAwaitingMtu.remove(deviceAddress)
                     devicesWithPendingDescriptorWrites.remove(deviceAddress)
+                    cachedPhyMap.remove(deviceAddress)
 
                     // Complete any pending descriptor write with error
                     val pendingDescriptorResult: MethodChannel.Result? = pendingDescriptorWrites.remove(deviceAddress)
@@ -312,18 +324,77 @@ class BleDeviceInterface(
                 // Now the connection is truly ready - report CONNECTED to Flutter
                 channel.invokeMethod("bleConnectionState_$deviceAddress", ConnectionState.CONNECTED.name)
 
-                // Log the negotiated MTU for debugging (optional - could be removed in production)
                 if (status == BluetoothGatt.GATT_SUCCESS) {
-                    // Successfully negotiated MTU
-                    // In the future, we could expose this value to Flutter
                     android.util.Log.d("BleDeviceInterface", "MTU negotiated for $deviceAddress: $mtu bytes")
                 } else {
-                    // MTU negotiation failed, but connection still usable with default MTU (23 bytes)
                     android.util.Log.w("BleDeviceInterface", "MTU negotiation failed for $deviceAddress (status: $status), using default MTU")
+                }
+
+                // Trigger an initial PHY read so the cache is populated as soon as the
+                // connection is ready. The result arrives in onPhyRead shortly after.
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    try {
+                        gatt.readPhy()
+                    } catch (e: Exception) {
+                        android.util.Log.w("BleDeviceInterface", "readPhy failed for $deviceAddress: ${e.message}")
+                    }
                 }
             }
         }
     }
+
+    /**
+     * Called when a PHY read operation completes for a connected device.
+     *
+     * Fires in response to [BluetoothGatt.readPhy], which is triggered automatically
+     * after MTU negotiation completes. The result is cached in [cachedPhyMap] and
+     * can be retrieved synchronously via [readConnectionParameters].
+     *
+     * Only available on API 26 (Android 8.0) and above.
+     *
+     * @param gatt The GATT client for the device whose PHY was read.
+     * @param txPhy The TX PHY in use (1 = LE 1M, 2 = LE 2M, 3 = LE Coded).
+     * @param rxPhy The RX PHY in use (1 = LE 1M, 2 = LE 2M, 3 = LE Coded).
+     * @param status GATT_SUCCESS if the read succeeded.
+     */
+    @androidx.annotation.RequiresApi(Build.VERSION_CODES.O)
+    override fun onPhyRead(gatt: BluetoothGatt, txPhy: Int, rxPhy: Int, status: Int) {
+        super.onPhyRead(gatt, txPhy, rxPhy, status)
+        if (status == BluetoothGatt.GATT_SUCCESS) {
+            cachedPhyMap[gatt.device.address] = Pair(txPhy, rxPhy)
+            android.util.Log.d(
+                "BleDeviceInterface",
+                "PHY read for ${gatt.device.address}: TX=$txPhy RX=$rxPhy"
+            )
+        }
+    }
+
+    /**
+     * Called when the PHY of a connection changes, either because [BluetoothGatt.setPreferredPhy]
+     * was called or because the remote device requested a PHY update.
+     *
+     * Refreshes [cachedPhyMap] so that a subsequent [readConnectionParameters] call returns the
+     * current PHY rather than the value from connection setup.
+     *
+     * Only available on API 26 (Android 8.0) and above.
+     *
+     * @param gatt The GATT client for the affected device.
+     * @param txPhy The new TX PHY (1 = LE 1M, 2 = LE 2M, 3 = LE Coded).
+     * @param rxPhy The new RX PHY (1 = LE 1M, 2 = LE 2M, 3 = LE Coded).
+     * @param status GATT_SUCCESS if the update succeeded.
+     */
+    @androidx.annotation.RequiresApi(Build.VERSION_CODES.O)
+    override fun onPhyUpdate(gatt: BluetoothGatt, txPhy: Int, rxPhy: Int, status: Int) {
+        super.onPhyUpdate(gatt, txPhy, rxPhy, status)
+        if (status == BluetoothGatt.GATT_SUCCESS) {
+            cachedPhyMap[gatt.device.address] = Pair(txPhy, rxPhy)
+            android.util.Log.d(
+                "BleDeviceInterface",
+                "PHY updated for ${gatt.device.address}: TX=$txPhy RX=$rxPhy"
+            )
+        }
+    }
+
 
     /**
      * Called when services have been discovered on the remote device.
@@ -1055,33 +1126,6 @@ class BleDeviceInterface(
         }
     }
 
-    /**
-     * Called when the PHY of the connection changes.
-     *
-     * This callback fires after [requestPreferredPhy] triggers a [BluetoothGatt.setPreferredPhy]
-     * call. A status of [BluetoothGatt.GATT_SUCCESS] indicates the PHY was updated. Any other
-     * status indicates the negotiation failed; the connection will remain on its previous PHY.
-     *
-     * On failure, an error event is sent to Flutter via the method channel so that callers can
-     * surface the issue if necessary.
-     *
-     * @param gatt The GATT client whose PHY has been updated.
-     * @param txPhy The transmit PHY that is now in use.
-     * @param rxPhy The receive PHY that is now in use.
-     * @param status The GATT operation status.
-     */
-    override fun onPhyUpdate(gatt: BluetoothGatt, txPhy: Int, rxPhy: Int, status: Int) {
-        super.onPhyUpdate(gatt, txPhy, rxPhy, status)
-
-        if (status != BluetoothGatt.GATT_SUCCESS) {
-            mainHandler.post {
-                channel.invokeMethod(
-                    "error",
-                    "PHY update failed for ${gatt.device.address}: GATT status $status"
-                )
-            }
-        }
-    }
 
     /**
      * Requests a preferred PHY (physical layer) for the connection to the given device.
@@ -1171,5 +1215,36 @@ class BleDeviceInterface(
                 "Failed to request connection priority: ${e.message}"
             )
         }
+    }
+
+    /**
+     * Returns a snapshot of the current BLE PHY for the connected device.
+     *
+     * PHY values are read from [cachedPhyMap], which is populated by [onPhyRead] shortly
+     * after connection setup. The connection interval, slave latency, and supervision timeout
+     * fields are not available on SDK < 34 (where [onConnectionUpdated] was a hidden API),
+     * so those keys are omitted from the returned map and the Dart layer displays "—".
+     *
+     * Returns null via [result] on API < 26 or if the PHY cache has not yet been populated.
+     *
+     * @param deviceAddress The MAC address of the connected BLE device.
+     * @param result The Flutter method channel result to complete with the parameter map, or null.
+     */
+    fun readConnectionParameters(deviceAddress: String, result: MethodChannel.Result) {
+        val phyPair: Pair<Int, Int>? = cachedPhyMap[deviceAddress]
+
+        if (phyPair == null) {
+            // PHY data is not yet available (API < 26, or callbacks not yet fired).
+            result.success(null)
+            return
+        }
+
+        val map: Map<String, Any> = mapOf(
+            "txPhy" to phyPair.first,
+            "rxPhy" to phyPair.second
+        )
+
+
+        result.success(map)
     }
 }

@@ -490,6 +490,20 @@ class FlutterSplendidBlePlugin : FlutterPlugin, MethodCallHandler, ActivityAware
                 }
             }
 
+            "readConnectionParameters" -> {
+                val deviceAddress = call.argument<String>("address")
+                if (deviceAddress != null) {
+                    bleDeviceInterface.readConnectionParameters(deviceAddress, result)
+                    // Result is completed inside readConnectionParameters.
+                } else {
+                    result.error(
+                        "INVALID_ARGUMENT",
+                        "Device address cannot be null.",
+                        null
+                    )
+                }
+            }
+
             // Throw an exception if an unknown method name is received
             else -> result.notImplemented()
         }

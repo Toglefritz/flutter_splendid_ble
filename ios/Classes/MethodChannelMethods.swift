@@ -21,4 +21,5 @@ enum CentralMethod: String, CaseIterable {
     case unsubscribeFromCharacteristic = "unsubscribeFromCharacteristic"
     case requestPreferredPhy = "requestPreferredPhy"
     case requestConnectionPriority = "requestConnectionPriority"
+    case readConnectionParameters = "readConnectionParameters"
 }
