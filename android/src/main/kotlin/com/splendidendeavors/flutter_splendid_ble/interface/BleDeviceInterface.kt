@@ -1,5 +1,6 @@
 package com.splendidendeavors.flutter_splendid_ble.`interface`
 
+import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothGatt
 import android.bluetooth.BluetoothGattCallback
 import android.bluetooth.BluetoothGattCharacteristic
@@ -1051,6 +1052,124 @@ class BleDeviceInterface(
         // Invoke method on Flutter side
         mainHandler.post {
             channel.invokeMethod("onCharacteristicChanged", characteristicMap)
+        }
+    }
+
+    /**
+     * Called when the PHY of the connection changes.
+     *
+     * This callback fires after [requestPreferredPhy] triggers a [BluetoothGatt.setPreferredPhy]
+     * call. A status of [BluetoothGatt.GATT_SUCCESS] indicates the PHY was updated. Any other
+     * status indicates the negotiation failed; the connection will remain on its previous PHY.
+     *
+     * On failure, an error event is sent to Flutter via the method channel so that callers can
+     * surface the issue if necessary.
+     *
+     * @param gatt The GATT client whose PHY has been updated.
+     * @param txPhy The transmit PHY that is now in use.
+     * @param rxPhy The receive PHY that is now in use.
+     * @param status The GATT operation status.
+     */
+    override fun onPhyUpdate(gatt: BluetoothGatt, txPhy: Int, rxPhy: Int, status: Int) {
+        super.onPhyUpdate(gatt, txPhy, rxPhy, status)
+
+        if (status != BluetoothGatt.GATT_SUCCESS) {
+            mainHandler.post {
+                channel.invokeMethod(
+                    "error",
+                    "PHY update failed for ${gatt.device.address}: GATT status $status"
+                )
+            }
+        }
+    }
+
+    /**
+     * Requests a preferred PHY (physical layer) for the connection to the given device.
+     *
+     * This is a best-effort request. The BLE stack negotiates with the remote device and
+     * applies the PHY if both sides support it. The outcome is reported through the
+     * [onPhyUpdate] callback.
+     *
+     * The call is silently ignored on devices running API < 26 (Android 8.0 Oreo), which
+     * predates LE 2M and LE Coded PHY support in the Android API.
+     *
+     * @param deviceAddress The MAC address of the connected BLE device.
+     * @param txPhy The desired transmit PHY (1 = LE 1M, 2 = LE 2M, 3 = LE Coded).
+     * @param rxPhy The desired receive PHY (1 = LE 1M, 2 = LE 2M, 3 = LE Coded).
+     */
+    fun requestPreferredPhy(deviceAddress: String, txPhy: Int, rxPhy: Int) {
+        val gatt: BluetoothGatt? = getBluetoothGatt(deviceAddress)
+        if (gatt == null) {
+            channel.invokeMethod(
+                "error",
+                "No BluetoothGatt instance found for device address: $deviceAddress"
+            )
+            return
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            try {
+                // PHY_OPTION_NO_PREFERRED lets the remote device choose the coding scheme
+                // for LE Coded PHY; ignored for LE 1M and LE 2M.
+                gatt.setPreferredPhy(txPhy, rxPhy, BluetoothDevice.PHY_OPTION_NO_PREFERRED)
+            } catch (e: SecurityException) {
+                channel.invokeMethod(
+                    "error",
+                    "Required Bluetooth permissions are missing: ${e.message}"
+                )
+            }
+        }
+        // On API < 26, PHY selection is not supported by the Android API.
+        // The call is silently accepted so the platform layer can return success.
+    }
+
+    /**
+     * Requests a specific connection priority (connection interval) for the connection
+     * to the given device.
+     *
+     * Connection priority affects the connection interval at the link layer. Use
+     * [BluetoothGatt.CONNECTION_PRIORITY_HIGH] before a large data transfer to reduce
+     * the interval and increase throughput. Revert to [BluetoothGatt.CONNECTION_PRIORITY_BALANCED]
+     * after the transfer to conserve power.
+     *
+     * Unlike [requestPreferredPhy], there is no callback for this operation. A return value
+     * of `false` from [BluetoothGatt.requestConnectionPriority] indicates the request could
+     * not be initiated; this is reported as an error to Flutter.
+     *
+     * @param deviceAddress The MAC address of the connected BLE device.
+     * @param priority The desired connection priority constant from [BluetoothGatt]:
+     *   - 0 → CONNECTION_PRIORITY_BALANCED (default)
+     *   - 1 → CONNECTION_PRIORITY_HIGH
+     *   - 2 → CONNECTION_PRIORITY_LOW_POWER
+     */
+    fun requestConnectionPriority(deviceAddress: String, priority: Int) {
+        val gatt: BluetoothGatt? = getBluetoothGatt(deviceAddress)
+        if (gatt == null) {
+            channel.invokeMethod(
+                "error",
+                "No BluetoothGatt instance found for device address: $deviceAddress"
+            )
+            return
+        }
+
+        try {
+            val success: Boolean = gatt.requestConnectionPriority(priority)
+            if (!success) {
+                channel.invokeMethod(
+                    "error",
+                    "Failed to request connection priority for $deviceAddress"
+                )
+            }
+        } catch (e: SecurityException) {
+            channel.invokeMethod(
+                "error",
+                "Required Bluetooth permissions are missing: ${e.message}"
+            )
+        } catch (e: Exception) {
+            channel.invokeMethod(
+                "error",
+                "Failed to request connection priority: ${e.message}"
+            )
         }
     }
 }

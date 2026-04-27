@@ -1,6 +1,7 @@
 package com.splendidendeavors.flutter_splendid_ble
 
 import android.bluetooth.BluetoothDevice
+import android.bluetooth.BluetoothGatt
 import androidx.annotation.NonNull
 
 import io.flutter.embedding.engine.plugins.FlutterPlugin
@@ -450,6 +451,40 @@ class FlutterSplendidBlePlugin : FlutterPlugin, MethodCallHandler, ActivityAware
                     result.error(
                         "INVALID_ARGUMENT",
                         "Device address or characteristic UUID cannot be null.",
+                        null
+                    )
+                }
+            }
+
+            "requestPreferredPhy" -> {
+                val deviceAddress = call.argument<String>("address")
+                val txPhy = call.argument<Int>("txPhy") ?: BluetoothDevice.PHY_LE_1M_MASK
+                val rxPhy = call.argument<Int>("rxPhy") ?: BluetoothDevice.PHY_LE_1M_MASK
+
+                if (deviceAddress != null) {
+                    bleDeviceInterface.requestPreferredPhy(deviceAddress, txPhy, rxPhy)
+                    result.success(null)
+                } else {
+                    result.error(
+                        "INVALID_ARGUMENT",
+                        "Device address cannot be null.",
+                        null
+                    )
+                }
+            }
+
+            "requestConnectionPriority" -> {
+                val deviceAddress = call.argument<String>("address")
+                val priority = call.argument<Int>("priority")
+                    ?: BluetoothGatt.CONNECTION_PRIORITY_BALANCED
+
+                if (deviceAddress != null) {
+                    bleDeviceInterface.requestConnectionPriority(deviceAddress, priority)
+                    result.success(null)
+                } else {
+                    result.error(
+                        "INVALID_ARGUMENT",
+                        "Device address cannot be null.",
                         null
                     )
                 }
