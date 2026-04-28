@@ -19,4 +19,6 @@ enum CentralMethod: String, CaseIterable {
     case readCharacteristic = "readCharacteristic"
     case subscribeToCharacteristic = "subscribeToCharacteristic"
     case unsubscribeFromCharacteristic = "unsubscribeFromCharacteristic"
+    case requestPreferredPhy = "requestPreferredPhy"
+    case requestConnectionPriority = "requestConnectionPriority"
 }

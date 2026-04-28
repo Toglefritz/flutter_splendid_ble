@@ -292,7 +292,19 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
             
         case CentralMethod.unsubscribeFromCharacteristic.rawValue:
             unsubscribeFromCharacteristic(call: call, result: result)
-            
+
+        case CentralMethod.requestPreferredPhy.rawValue:
+            // CoreBluetooth negotiates the connection PHY automatically on macOS.
+            // The central role has no direct API to request a specific PHY after
+            // connection, so this call is accepted and succeeds silently.
+            result(nil)
+
+        case CentralMethod.requestConnectionPriority.rawValue:
+            // macOS does not expose a connection interval negotiation API to the
+            // central role. Accepting the call silently ensures callers can use
+            // a single code path across platforms.
+            result(nil)
+
         default:
             result(FlutterMethodNotImplemented)
         }

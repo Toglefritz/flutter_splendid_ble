@@ -2,7 +2,10 @@ import '../shared/models/ble_device.dart';
 import '../shared/models/bluetooth_permission_status.dart';
 import '../shared/models/bluetooth_status.dart';
 import 'central_platform_interface.dart';
+import 'models/ble_connection_parameters.dart';
+import 'models/ble_connection_priority.dart';
 import 'models/ble_connection_state.dart';
+import 'models/ble_phy.dart';
 import 'models/ble_service.dart';
 import 'models/connected_ble_device.dart';
 import 'models/scan_filter.dart';
@@ -139,5 +142,59 @@ class SplendidBleCentral {
     required String deviceAddress,
   }) {
     return _platform.observeConnectionState(deviceAddress: deviceAddress);
+  }
+
+  /// Requests a preferred PHY (physical layer) for the BLE connection.
+  ///
+  /// The request is advisory. The actual PHY applied depends on what both the central and the peripheral support. If
+  /// the remote device does not support the requested PHY, the connection remains on its current PHY.
+  ///
+  /// On Android this calls [BluetoothGatt.setPreferredPhy] (API 26+). On older hardware the call is silently ignored.
+  /// On iOS, PHY selection is handled automatically by the OS; this call succeeds without requesting any platform
+  /// action.
+  ///
+  /// Call this before beginning a large data transfer (such as an OTA firmware image) when the device supports LE 2M to
+  /// maximise throughput.
+  Future<void> requestPreferredPhy({
+    required String deviceAddress,
+    required BlePhy txPhy,
+    required BlePhy rxPhy,
+  }) {
+    return _platform.requestPreferredPhy(
+      deviceAddress: deviceAddress,
+      txPhy: txPhy,
+      rxPhy: rxPhy,
+    );
+  }
+
+  /// Requests a specific connection priority (connection interval) for a connected device.
+  ///
+  /// [BleConnectionPriority.high] minimises the connection interval, which increases effective throughput at the cost
+  /// of higher power consumption on both the central and the peripheral. It is good practice to revert to
+  /// [BleConnectionPriority.balanced] after the transfer completes.
+  ///
+  /// On Android this calls [BluetoothGatt.requestConnectionPriority]. On iOS, the connection interval is managed by the
+  /// OS; this call succeeds without requesting any platform action.
+  Future<void> requestConnectionPriority({
+    required String deviceAddress,
+    required BleConnectionPriority priority,
+  }) {
+    return _platform.requestConnectionPriority(
+      deviceAddress: deviceAddress,
+      priority: priority,
+    );
+  }
+
+  /// Returns a snapshot of the active BLE link parameters for the connected device.
+  ///
+  /// Reads from a native cache populated by callbacks that fire automatically during connection setup, so the call
+  /// completes without issuing any BLE operations.
+  ///
+  /// Returns null on iOS and on Android API < 26. Also returns null if the native callbacks have not yet fired (which
+  /// is unlikely given the time between connection and the point where the dashboard first calls this method).
+  Future<BleConnectionParameters?> readConnectionParameters({
+    required String deviceAddress,
+  }) {
+    return _platform.readConnectionParameters(deviceAddress: deviceAddress);
   }
 }

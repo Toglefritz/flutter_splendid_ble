@@ -3,7 +3,10 @@ import 'dart:convert';
 
 import '../central/models/ble_characteristic.dart';
 import '../central/models/ble_characteristic_value.dart';
+import '../central/models/ble_connection_parameters.dart';
+import '../central/models/ble_connection_priority.dart';
 import '../central/models/ble_connection_state.dart';
+import '../central/models/ble_phy.dart';
 import '../central/models/ble_service.dart';
 import '../central/models/scan_filter.dart';
 import '../central/models/scan_settings.dart';
@@ -350,4 +353,41 @@ class FakeCentralMethodChannel extends CentralPlatformInterface {
       controller.add(state);
     }
   }
+
+  /// No-op implementation of [requestPreferredPhy] for use in tests.
+  ///
+  /// There is no hardware to negotiate with in a test context, so this method simply returns successfully without
+  /// taking any action.
+  @override
+  Future<void> requestPreferredPhy({
+    required String deviceAddress,
+    required BlePhy txPhy,
+    required BlePhy rxPhy,
+  }) async {
+    // No-op: PHY negotiation has no meaning in a fake test environment.
+  }
+
+  /// No-op implementation of [requestConnectionPriority] for use in tests.
+  ///
+  /// There is no BLE stack to negotiate with in a test context, so this method simply returns successfully without
+  /// taking any action.
+  @override
+  Future<void> requestConnectionPriority({
+    required String deviceAddress,
+    required BleConnectionPriority priority,
+  }) async {
+  /// No-op: connection priority has no meaning in a fake test environment.
+  }
+
+  /// Stub implementation of [readConnectionParameters] for use in tests.
+  ///
+  /// There is no active BLE connection in a test context, so this method always returns null, which the UI treats as
+  /// "parameters not available".
+  @override
+  Future<BleConnectionParameters?> readConnectionParameters({
+    required String deviceAddress,
+  }) async {
+    return null;
+  }
 }
+

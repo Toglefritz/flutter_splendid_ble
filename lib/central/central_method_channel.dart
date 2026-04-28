@@ -8,7 +8,10 @@ import 'package:flutter/widgets.dart';
 
 import '../central/models/ble_characteristic.dart';
 import '../central/models/ble_characteristic_value.dart';
+import '../central/models/ble_connection_parameters.dart';
+import '../central/models/ble_connection_priority.dart';
 import '../central/models/ble_connection_state.dart';
+import '../central/models/ble_phy.dart';
 import '../central/models/ble_service.dart';
 import '../central/models/exceptions/bluetooth_connection_exception.dart';
 import '../central/models/exceptions/bluetooth_permission_exception.dart';
@@ -713,6 +716,77 @@ class CentralMethodChannel extends CentralPlatformInterface {
           'Failed to unsubscribe from BLE characteristic: ${e.message}',
         );
       }
+    }
+  }
+
+  /// Requests a preferred PHY for the connection to the specified device.
+  ///
+  /// On Android, this calls [BluetoothGatt.setPreferredPhy] (API 26+). The actual PHY applied depends on what the
+  /// remote device supports. On iOS, the call succeeds silently because PHY negotiation is handled by the OS.
+  @override
+  Future<void> requestPreferredPhy({
+    required String deviceAddress,
+    required BlePhy txPhy,
+    required BlePhy rxPhy,
+  }) async {
+    try {
+      await channel.invokeMethod('requestPreferredPhy', {
+        'address': deviceAddress,
+        'txPhy': txPhy.identifier,
+        'rxPhy': rxPhy.identifier,
+      });
+    } on PlatformException catch (e) {
+      throw BluetoothConnectionException(
+        'Failed to request preferred PHY: ${e.message}',
+      );
+    }
+  }
+
+  /// Requests a specific connection priority for a connected device.
+  ///
+  /// On Android, this calls [BluetoothGatt.requestConnectionPriority]. Use [BleConnectionPriority.high] before a large
+  /// data transfer to reduce the connection interval and improve throughput. On iOS, the call succeeds silently because
+  /// connection interval management is handled by the OS.
+  @override
+  Future<void> requestConnectionPriority({
+    required String deviceAddress,
+    required BleConnectionPriority priority,
+  }) async {
+    try {
+      await channel.invokeMethod('requestConnectionPriority', {
+        'address': deviceAddress,
+        'priority': priority.identifier,
+      });
+    } on PlatformException catch (e) {
+      throw BluetoothConnectionException(
+        'Failed to request connection priority: ${e.message}',
+      );
+    }
+  }
+
+  /// Returns a snapshot of the active BLE link parameters for the connected device.
+  ///
+  /// The native layer caches PHY values from [onPhyRead] and connection interval values from [onConnectionUpdated],
+  /// both of which fire automatically during connection setup. This call is effectively synchronous — it reads from the
+  /// native cache rather than triggering a BLE operation.
+  ///
+  /// Returns null on iOS and on Android API < 26, where the underlying callbacks are not available.
+  @override
+  Future<BleConnectionParameters?> readConnectionParameters({
+    required String deviceAddress,
+  }) async {
+    try {
+      final Map<dynamic, dynamic>? result =
+          await channel.invokeMethod<Map<dynamic, dynamic>>(
+        'readConnectionParameters',
+        {'address': deviceAddress},
+      );
+      if (result == null) return null;
+      return BleConnectionParameters.fromMap(result);
+    } on PlatformException catch (e) {
+      throw BluetoothConnectionException(
+        'Failed to read connection parameters: ${e.message}',
+      );
     }
   }
 }

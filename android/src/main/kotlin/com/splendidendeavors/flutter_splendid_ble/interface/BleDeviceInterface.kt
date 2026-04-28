@@ -1,5 +1,6 @@
 package com.splendidendeavors.flutter_splendid_ble.`interface`
 
+import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothGatt
 import android.bluetooth.BluetoothGattCallback
 import android.bluetooth.BluetoothGattCharacteristic
@@ -121,6 +122,32 @@ class BleDeviceInterface(
     private val devicesAwaitingMtu: MutableSet<String> = mutableSetOf()
 
     /**
+     * Cached PHY (physical layer) values for each connected device.
+     *
+     * Populated when [onPhyRead] or [onPhyUpdate] fires. The map key is the device
+     * MAC address. The value is a Pair of (txPhy, rxPhy) using Android's
+     * [BluetoothDevice.PHY_LE_*] constants (1 = LE 1M, 2 = LE 2M, 3 = Coded).
+     *
+     * Cleared when the device disconnects.
+     */
+    private val cachedPhyMap: MutableMap<String, Pair<Int, Int>> = mutableMapOf()
+
+    /**
+     * Cached BLE connection parameters for each connected device.
+     *
+     * Populated when [onConnectionUpdated] fires shortly after connection setup.
+     * The map key is the device MAC address. The Triple holds (interval, latency,
+     * supervisionTimeout) in raw BLE units: interval in 1.25 ms units, timeout in 10 ms units.
+     *
+     * [onConnectionUpdated] became part of the public [BluetoothGattCallback] API at
+     * API 34, so this map is only populated on devices running Android 14 or later.
+     * On earlier devices the Triple values are absent.
+     *
+     * Cleared when the device disconnects.
+     */
+    private val cachedConnectionParamsMap: MutableMap<String, Triple<Int, Int, Int>> = mutableMapOf()
+
+    /**
      * Tracks devices that have pending descriptor write operations in progress.
      *
      * The BLE specification requires that only one GATT operation can be in progress at a time
@@ -239,6 +266,8 @@ class BleDeviceInterface(
                     pendingWrites.remove(deviceAddress)
                     devicesAwaitingMtu.remove(deviceAddress)
                     devicesWithPendingDescriptorWrites.remove(deviceAddress)
+                    cachedPhyMap.remove(deviceAddress)
+                    cachedConnectionParamsMap.remove(deviceAddress)
 
                     // Complete any pending descriptor write with error
                     val pendingDescriptorResult: MethodChannel.Result? = pendingDescriptorWrites.remove(deviceAddress)
@@ -311,16 +340,115 @@ class BleDeviceInterface(
                 // Now the connection is truly ready - report CONNECTED to Flutter
                 channel.invokeMethod("bleConnectionState_$deviceAddress", ConnectionState.CONNECTED.name)
 
-                // Log the negotiated MTU for debugging (optional - could be removed in production)
                 if (status == BluetoothGatt.GATT_SUCCESS) {
-                    // Successfully negotiated MTU
-                    // In the future, we could expose this value to Flutter
                     android.util.Log.d("BleDeviceInterface", "MTU negotiated for $deviceAddress: $mtu bytes")
                 } else {
-                    // MTU negotiation failed, but connection still usable with default MTU (23 bytes)
                     android.util.Log.w("BleDeviceInterface", "MTU negotiation failed for $deviceAddress (status: $status), using default MTU")
                 }
+
+                // Trigger an initial PHY read so the cache is populated as soon as the
+                // connection is ready. The result arrives in onPhyRead shortly after.
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    try {
+                        gatt.readPhy()
+                    } catch (e: Exception) {
+                        android.util.Log.w("BleDeviceInterface", "readPhy failed for $deviceAddress: ${e.message}")
+                    }
+                }
             }
+        }
+    }
+
+    /**
+     * Called when a PHY read operation completes for a connected device.
+     *
+     * Fires in response to [BluetoothGatt.readPhy], which is triggered automatically
+     * after MTU negotiation completes. The result is cached in [cachedPhyMap] and
+     * can be retrieved synchronously via [readConnectionParameters].
+     *
+     * Only available on API 26 (Android 8.0) and above.
+     *
+     * @param gatt The GATT client for the device whose PHY was read.
+     * @param txPhy The TX PHY in use (1 = LE 1M, 2 = LE 2M, 3 = LE Coded).
+     * @param rxPhy The RX PHY in use (1 = LE 1M, 2 = LE 2M, 3 = LE Coded).
+     * @param status GATT_SUCCESS if the read succeeded.
+     */
+    @androidx.annotation.RequiresApi(Build.VERSION_CODES.O)
+    override fun onPhyRead(gatt: BluetoothGatt, txPhy: Int, rxPhy: Int, status: Int) {
+        super.onPhyRead(gatt, txPhy, rxPhy, status)
+        if (status == BluetoothGatt.GATT_SUCCESS) {
+            cachedPhyMap[gatt.device.address] = Pair(txPhy, rxPhy)
+            android.util.Log.d(
+                "BleDeviceInterface",
+                "PHY read for ${gatt.device.address}: TX=$txPhy RX=$rxPhy"
+            )
+        }
+    }
+
+    /**
+     * Called when the PHY of a connection changes, either because [BluetoothGatt.setPreferredPhy]
+     * was called or because the remote device requested a PHY update.
+     *
+     * Refreshes [cachedPhyMap] so that a subsequent [readConnectionParameters] call returns the
+     * current PHY rather than the value from connection setup.
+     *
+     * Only available on API 26 (Android 8.0) and above.
+     *
+     * @param gatt The GATT client for the affected device.
+     * @param txPhy The new TX PHY (1 = LE 1M, 2 = LE 2M, 3 = LE Coded).
+     * @param rxPhy The new RX PHY (1 = LE 1M, 2 = LE 2M, 3 = LE Coded).
+     * @param status GATT_SUCCESS if the update succeeded.
+     */
+    @androidx.annotation.RequiresApi(Build.VERSION_CODES.O)
+    override fun onPhyUpdate(gatt: BluetoothGatt, txPhy: Int, rxPhy: Int, status: Int) {
+        super.onPhyUpdate(gatt, txPhy, rxPhy, status)
+        if (status == BluetoothGatt.GATT_SUCCESS) {
+            cachedPhyMap[gatt.device.address] = Pair(txPhy, rxPhy)
+            android.util.Log.d(
+                "BleDeviceInterface",
+                "PHY updated for ${gatt.device.address}: TX=$txPhy RX=$rxPhy"
+            )
+        }
+    }
+
+    /**
+     * Called when the connection parameters for a connected device are updated.
+     *
+     * Fires automatically shortly after connection setup completes, supplying the
+     * actual negotiated connection interval, peripheral latency, and supervision
+     * timeout. Values are cached in [cachedConnectionParamsMap] and returned by
+     * [readConnectionParameters].
+     *
+     * This method is defined WITHOUT the `override` keyword deliberately. The Android
+     * BLE stack calls it on [BluetoothGattCallback] subclasses via normal JVM virtual
+     * dispatch at runtime, but the method is marked `@hide` in the Android SDK source
+     * and is therefore absent from the compile-time public API surface. Declaring it
+     * without `override` avoids the "overrides nothing" compile error while still
+     * receiving the callbacks correctly on Android 8.0+ devices.
+     *
+     * @param gatt The GATT client for the affected device.
+     * @param interval Connection interval in 1.25 ms units.
+     * @param latency Peripheral latency (number of skippable connection events).
+     * @param timeout Supervision timeout in 10 ms units.
+     * @param status GATT_SUCCESS if the update succeeded.
+     */
+    @Suppress("unused")
+    fun onConnectionUpdated(
+        gatt: BluetoothGatt,
+        interval: Int,
+        latency: Int,
+        timeout: Int,
+        status: Int,
+    ) {
+        if (status == BluetoothGatt.GATT_SUCCESS) {
+            cachedConnectionParamsMap[gatt.device.address] = Triple(interval, latency, timeout)
+            android.util.Log.d(
+                "BleDeviceInterface",
+                "Connection params updated for ${gatt.device.address}: " +
+                    "interval=${interval * 1.25}ms " +
+                    "latency=$latency " +
+                    "timeout=${timeout * 10}ms"
+            )
         }
     }
 
@@ -1052,5 +1180,139 @@ class BleDeviceInterface(
         mainHandler.post {
             channel.invokeMethod("onCharacteristicChanged", characteristicMap)
         }
+    }
+
+
+    /**
+     * Requests a preferred PHY (physical layer) for the connection to the given device.
+     *
+     * This is a best-effort request. The BLE stack negotiates with the remote device and
+     * applies the PHY if both sides support it. The outcome is reported through the
+     * [onPhyUpdate] callback.
+     *
+     * The call is silently ignored on devices running API < 26 (Android 8.0 Oreo), which
+     * predates LE 2M and LE Coded PHY support in the Android API.
+     *
+     * @param deviceAddress The MAC address of the connected BLE device.
+     * @param txPhy The desired transmit PHY (1 = LE 1M, 2 = LE 2M, 3 = LE Coded).
+     * @param rxPhy The desired receive PHY (1 = LE 1M, 2 = LE 2M, 3 = LE Coded).
+     */
+    fun requestPreferredPhy(deviceAddress: String, txPhy: Int, rxPhy: Int) {
+        val gatt: BluetoothGatt? = getBluetoothGatt(deviceAddress)
+        if (gatt == null) {
+            channel.invokeMethod(
+                "error",
+                "No BluetoothGatt instance found for device address: $deviceAddress"
+            )
+            return
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            try {
+                // PHY_OPTION_NO_PREFERRED lets the remote device choose the coding scheme
+                // for LE Coded PHY; ignored for LE 1M and LE 2M.
+                gatt.setPreferredPhy(txPhy, rxPhy, BluetoothDevice.PHY_OPTION_NO_PREFERRED)
+            } catch (e: SecurityException) {
+                channel.invokeMethod(
+                    "error",
+                    "Required Bluetooth permissions are missing: ${e.message}"
+                )
+            }
+        }
+        // On API < 26, PHY selection is not supported by the Android API.
+        // The call is silently accepted so the platform layer can return success.
+    }
+
+    /**
+     * Requests a specific connection priority (connection interval) for the connection
+     * to the given device.
+     *
+     * Connection priority affects the connection interval at the link layer. Use
+     * [BluetoothGatt.CONNECTION_PRIORITY_HIGH] before a large data transfer to reduce
+     * the interval and increase throughput. Revert to [BluetoothGatt.CONNECTION_PRIORITY_BALANCED]
+     * after the transfer to conserve power.
+     *
+     * Unlike [requestPreferredPhy], there is no callback for this operation. A return value
+     * of `false` from [BluetoothGatt.requestConnectionPriority] indicates the request could
+     * not be initiated; this is reported as an error to Flutter.
+     *
+     * @param deviceAddress The MAC address of the connected BLE device.
+     * @param priority The desired connection priority constant from [BluetoothGatt]:
+     *   - 0 → CONNECTION_PRIORITY_BALANCED (default)
+     *   - 1 → CONNECTION_PRIORITY_HIGH
+     *   - 2 → CONNECTION_PRIORITY_LOW_POWER
+     */
+    fun requestConnectionPriority(deviceAddress: String, priority: Int) {
+        val gatt: BluetoothGatt? = getBluetoothGatt(deviceAddress)
+        if (gatt == null) {
+            channel.invokeMethod(
+                "error",
+                "No BluetoothGatt instance found for device address: $deviceAddress"
+            )
+            return
+        }
+
+        try {
+            val success: Boolean = gatt.requestConnectionPriority(priority)
+            if (!success) {
+                channel.invokeMethod(
+                    "error",
+                    "Failed to request connection priority for $deviceAddress"
+                )
+            }
+        } catch (e: SecurityException) {
+            channel.invokeMethod(
+                "error",
+                "Required Bluetooth permissions are missing: ${e.message}"
+            )
+        } catch (e: Exception) {
+            channel.invokeMethod(
+                "error",
+                "Failed to request connection priority: ${e.message}"
+            )
+        }
+    }
+
+    /**
+     * Returns a snapshot of the active BLE link parameters for the connected device.
+     *
+     * PHY values come from [cachedPhyMap], populated by [onPhyRead] immediately after
+     * connection setup. Connection interval, peripheral latency, and supervision timeout
+     * come from [cachedConnectionParamsMap], populated by [onConnectionUpdated].
+     *
+     * [onConnectionUpdated] is a hidden Android API that fires on Android 8.0+ devices
+     * at runtime even though it does not appear in the public SDK. The interval, latency,
+     * and timeout fields are therefore available on all modern devices despite the hidden
+     * status of the underlying callback.
+     *
+     * Returns null via [result] if the PHY cache has not yet been populated (can occur
+     * briefly if this method is called immediately after connection before [onPhyRead]
+     * fires, which is unlikely in practice).
+     *
+     * @param deviceAddress The MAC address of the connected BLE device.
+     * @param result The Flutter method channel result to complete.
+     */
+    fun readConnectionParameters(deviceAddress: String, result: MethodChannel.Result) {
+        val phyPair: Pair<Int, Int>? = cachedPhyMap[deviceAddress]
+
+        if (phyPair == null) {
+            result.success(null)
+            return
+        }
+
+        val map: MutableMap<String, Any> = mutableMapOf(
+            "txPhy" to phyPair.first,
+            "rxPhy" to phyPair.second,
+        )
+
+        val connectionParams: Triple<Int, Int, Int>? = cachedConnectionParamsMap[deviceAddress]
+        if (connectionParams != null) {
+            // Convert raw BLE units: interval × 1.25 ms, timeout × 10 ms.
+            map["connectionIntervalMs"] = connectionParams.first * 1.25
+            map["slaveLatency"] = connectionParams.second
+            map["supervisionTimeoutMs"] = connectionParams.third * 10
+        }
+
+        result.success(map)
     }
 }
