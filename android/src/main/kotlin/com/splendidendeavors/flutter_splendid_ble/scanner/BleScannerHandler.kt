@@ -87,6 +87,21 @@ class BleScannerHandler(private val channel: MethodChannel, activity: Context) {
      */
     private val pendingFallbackRunnables: MutableMap<String, Runnable> = mutableMapOf()
 
+    /**
+     * The manufacturer data payload byte count from the most recently emitted ScanResult for
+     * each device address.
+     *
+     * After a device is emitted (whether via the normal scan response path or the fallback
+     * timeout), the payload size is recorded here. Subsequent advertisements for the same
+     * device are only re-emitted to Flutter when the new packet carries more bytes, which
+     * indicates that scan response data that was absent at the time of the initial emission
+     * has now arrived. This allows devices that were first seen via the fallback (with
+     * incomplete manufacturer data) to be updated once their scan response finally appears,
+     * without flooding Flutter with every re-advertisement for devices that already have
+     * complete data.
+     */
+    private val emittedManufacturerDataByteCount: MutableMap<String, Int> = mutableMapOf()
+
     init {
         val bluetoothManager =
             activity.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
@@ -120,6 +135,7 @@ class BleScannerHandler(private val channel: MethodChannel, activity: Context) {
             cancelAllPendingFallbacks()
             discoveredDevices.clear()
             partialAdvertisementData.clear()
+            emittedManufacturerDataByteCount.clear()
 
             // Define a scan callback
             scanCallback = object : ScanCallback() {
@@ -175,17 +191,26 @@ class BleScannerHandler(private val channel: MethodChannel, activity: Context) {
                                 cancelFallbackEmit(deviceAddress)
                                 partialAdvertisementData.remove(deviceAddress)
                                 emitDeviceDiscovery(it, scanFilters)
+                            } else {
+                                // The device was already emitted (either via scan response or via
+                                // the fallback timeout). Re-emit only if this packet carries more
+                                // manufacturer data bytes than was present when the device was last
+                                // emitted. This recovers the case where the fallback fired with
+                                // incomplete data and the scan response has now arrived in a
+                                // subsequent advertisement cycle.
+                                val previousByteCount: Int = emittedManufacturerDataByteCount[deviceAddress] ?: 0
+                                val currentByteCount: Int = manufacturerDataByteCount(it)
+                                if (currentByteCount > previousByteCount) {
+                                    emitDeviceDiscovery(it, scanFilters)
+                                }
                             }
-                            // Duplicate advertisements for already-emitted devices are ignored
-                            // to prevent flooding the Flutter side with repeated entries.
                         }
                     }
                 }
             }
 
-            // Build effective scan settings. When no caller-provided settings are supplied,
-            // construct defaults that disable legacy mode on API 26+ so that extended
-            // advertisement data (including split scan response payloads) is reported.
+            // Build effective scan settings, falling back to the default (legacy mode) when
+            // the caller has not provided explicit settings.
             val effectiveSettings: ScanSettings = scanSettings ?: buildDefaultScanSettings()
 
             if (scanFilters != null) {
@@ -204,17 +229,18 @@ class BleScannerHandler(private val channel: MethodChannel, activity: Context) {
     /**
      * Builds a default [ScanSettings] instance.
      *
-     * On API 26 (Android 8) and above, legacy mode is disabled so the scanner can receive
-     * extended advertising PDUs. This is required for devices that split advertisement data
-     * across the primary packet and a scan response. On older API levels the builder defaults
-     * are used unchanged because the non-legacy APIs are not available.
+     * Android's BLE scanner defaults to legacy mode, which covers all BLE 4.x peripherals
+     * (including devices that split advertisement data across ADV_IND and SCAN_RSP packets).
+     * Legacy mode is also the most compatible setting across OEM Bluetooth stacks and low-end
+     * hardware that does not support BLE 5.0 extended advertising. No legacy override is
+     * applied here so that all devices, including those with budget chipsets and HarmonyOS,
+     * receive scan response data reliably.
+     *
+     * Callers that specifically need extended advertising support can pass explicit
+     * [ScanSettings] with [legacyMode] set to false.
      */
     private fun buildDefaultScanSettings(): ScanSettings {
-        val builder = ScanSettings.Builder()
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            builder.setLegacy(false)
-        }
-        return builder.build()
+        return ScanSettings.Builder().build()
     }
 
     /**
@@ -269,7 +295,9 @@ class BleScannerHandler(private val channel: MethodChannel, activity: Context) {
      * Emits device discovery information to the Flutter/Dart side.
      *
      * This method formats the scan result's advertisement data and sends it through the method channel
-     * to notify the Flutter side that a BLE device has been discovered.
+     * to notify the Flutter side that a BLE device has been discovered. After emitting, the
+     * manufacturer data byte count is recorded so that subsequent advertisements with more data can
+     * trigger a re-emission to update the Flutter side.
      *
      * @param scanResult The discovered device's ScanResult containing complete advertisement data.
      * @param scanFilters The filters used for the scan (for UUID filtering).
@@ -303,8 +331,34 @@ class BleScannerHandler(private val channel: MethodChannel, activity: Context) {
         // Construct DiscoveredDevice
         val discoveredDevice = DiscoveredDevice(deviceMap)
 
+        // Record how many manufacturer data bytes were included in this emission so that
+        // subsequent advertisements with more bytes can trigger a re-emission.
+        emittedManufacturerDataByteCount[scanResult.device.address] = manufacturerDataByteCount(scanResult)
+
         // Invoke method on Flutter side
         channel.invokeMethod("bleDeviceScanned", discoveredDevice.toMap())
+    }
+
+    /**
+     * Returns the total number of manufacturer data payload bytes available in [result].
+     *
+     * The manufacturer-specific data in a [ScanResult] is stored as a [SparseArray] keyed by
+     * the 16-bit manufacturer ID integer. Each entry's byte array contains only the payload
+     * bytes (the manufacturer ID bytes are not included in the value). Summing across all
+     * entries gives the total payload byte count, which is used to determine whether a
+     * subsequent advertisement carries more information than was present in a previously
+     * emitted result.
+     *
+     * @param result The scan result whose manufacturer data byte count should be calculated.
+     * @return Total number of manufacturer data payload bytes, or 0 if none are present.
+     */
+    private fun manufacturerDataByteCount(result: ScanResult): Int {
+        val map = result.scanRecord?.manufacturerSpecificData ?: return 0
+        var total = 0
+        for (i in 0 until map.size()) {
+            total += map.valueAt(i)?.size ?: 0
+        }
+        return total
     }
 
     /**
@@ -338,6 +392,7 @@ class BleScannerHandler(private val channel: MethodChannel, activity: Context) {
 
             discoveredDevices.clear()
             partialAdvertisementData.clear()
+            emittedManufacturerDataByteCount.clear()
         } catch (e: SecurityException) {
             channel.invokeMethod(
                 "error",
@@ -427,10 +482,12 @@ class BleScannerHandler(private val channel: MethodChannel, activity: Context) {
         }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            // When the caller does not provide an explicit legacy value, default to false so
-            // that extended advertising PDUs and scan responses are both delivered.
-            val legacyValue: Boolean = settingsMap?.get("legacy") as? Boolean ?: false
-            builder.setLegacy(legacyValue)
+            // Only apply the legacy setting when the caller explicitly provides the key.
+            // Not providing it leaves Android at its default (legacy = true), which is the
+            // most compatible mode across low-end chipsets and non-standard BLE stacks like
+            // HarmonyOS. Defaulting to false here was the original source of missing scan
+            // response data on budget hardware.
+            settingsMap?.get("legacy")?.let { builder.setLegacy(it as Boolean) }
             settingsMap?.get("phy")?.let { builder.setPhy(it as Int) }
         }
 

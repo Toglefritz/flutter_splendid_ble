@@ -63,6 +63,18 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
     /// when the scan response does arrive, or swept when the scan session ends.
     private var pendingFallbackWorkItems: [UUID: DispatchWorkItem] = [:]
 
+    /// The manufacturer data byte count from the most recently emitted advertisement for each
+    /// peripheral UUID.
+    ///
+    /// After a device is emitted (whether via the normal scan-response path or the fallback
+    /// timeout), the raw manufacturer data byte count is recorded. Subsequent `didDiscover`
+    /// callbacks for the same peripheral are only forwarded to Flutter when the new
+    /// advertisement carries more bytes, which signals that the scan response data that was
+    /// absent during the initial emission has now arrived. This lets devices that were first
+    /// emitted via the fallback (with incomplete payload) receive a corrective update once the
+    /// full data is available, without flooding Flutter on every re-advertisement cycle.
+    private var emittedManufacturerDataByteCount: [UUID: Int] = [:]
+
     /// How long to wait for a scan response before emitting the buffered initial advertisement.
     ///
     /// CoreBluetooth typically delivers the scan response within a few milliseconds of the
@@ -195,8 +207,7 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
             // Clear previous scan session data
             discoveredDevices.removeAll()
             partialAdvertisementData.removeAll()
-
-            // Start scanning with optional service UUIDs and options.
+            emittedManufacturerDataByteCount.removeAll()
             centralManager.scanForPeripherals(withServices: serviceUUIDs, options: options)
             result(nil)
             
@@ -204,12 +215,12 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
             // Stop scanning for BLE devices
             centralManager.stopScan()
             // Cancel pending fallback timers and flush any connectable devices that were
-            // buffered but never received a scan response. Without this, those devices
-            // would be dropped silently when the scan ends.
+            // buffered but never received a scan response.
             cancelAllPendingFallbacks()
             flushPartialAdvertisementData()
             discoveredDevices.removeAll()
             partialAdvertisementData.removeAll()
+            emittedManufacturerDataByteCount.removeAll()
             result(nil)
             
         case CentralMethod.connect.rawValue:
@@ -440,9 +451,18 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
                 }
 
                 emitDeviceDiscovery(peripheral: peripheral, advertisementData: mergedAdvertisementData, rssi: RSSI)
+            } else {
+                // The device was already emitted (via scan response or the fallback timeout).
+                // Re-emit only when this advertisement carries more manufacturer data bytes
+                // than were present at the time of the last emission. This recovers the case
+                // where the fallback fired with incomplete data and the full scan response
+                // payload has now arrived in a subsequent advertisement cycle.
+                let previousByteCount: Int = emittedManufacturerDataByteCount[peripheral.identifier] ?? 0
+                let currentByteCount: Int = manufacturerDataByteCount(advertisementData: advertisementData)
+                if currentByteCount > previousByteCount {
+                    emitDeviceDiscovery(peripheral: peripheral, advertisementData: advertisementData, rssi: RSSI)
+                }
             }
-            // Subsequent callbacks for already-emitted devices are ignored to avoid flooding
-            // the Flutter side with repeated entries during a scan session.
         }
     }
 
@@ -501,7 +521,9 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
     /// Emits device discovery information to the Flutter/Dart side.
     ///
     /// This method formats the peripheral's advertisement data and sends it through the method channel
-    /// to notify the Flutter side that a BLE device has been discovered.
+    /// to notify the Flutter side that a BLE device has been discovered. After emitting, the
+    /// manufacturer data byte count is recorded so that subsequent `didDiscover` callbacks with more
+    /// data can trigger a corrective re-emission.
     ///
     /// - Parameters:
     ///   - peripheral: The discovered `CBPeripheral` device.
@@ -544,10 +566,29 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
         // Send device information to Flutter side
         let jsonData: Data? = try? JSONSerialization.data(withJSONObject: deviceMap, options: [])
         if let jsonData = jsonData, let jsonString = String(data: jsonData, encoding: .utf8) {
+            // Record the manufacturer data byte count for this emission before sending so
+            // that subsequent callbacks can determine whether improved data has arrived.
+            emittedManufacturerDataByteCount[peripheral.identifier] = manufacturerDataByteCount(advertisementData: advertisementData)
             channel.invokeMethod("bleDeviceScanned", arguments: jsonString)
         }
     }
-    
+
+    /// Returns the number of raw manufacturer data bytes in the given advertisement dictionary.
+    ///
+    /// CoreBluetooth exposes manufacturer data as a single `Data` blob under
+    /// `CBAdvertisementDataManufacturerDataKey`. The first two bytes are the manufacturer ID
+    /// and the remainder is the payload. The total byte count is used to detect when a
+    /// subsequent advertisement for the same peripheral carries more information than was
+    /// present at the time of the previous emission, which indicates that the scan response
+    /// data has now arrived.
+    ///
+    /// - Parameter advertisementData: The advertisement data dictionary from a `didDiscover` callback.
+    /// - Returns: The total number of manufacturer data bytes, or 0 if none are present.
+    private func manufacturerDataByteCount(advertisementData: [String: Any]) -> Int {
+        let data = advertisementData[CBAdvertisementDataManufacturerDataKey] as? Data
+        return data?.count ?? 0
+    }
+
     /// Called by the system when a connection to the peripheral is successfully established.
     ///
     /// This method triggers a callback to the Flutter side to inform it of the connection status.
