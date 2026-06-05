@@ -2,6 +2,36 @@
 
 All notable changes to the `flutter_splendid_ble` plugin will be documented in this file.
 
+## [1.1.0] 2026/06/05
+
+- Added support for requesting preferred PHY (physical layer) for BLE connections
+  - New `requestPreferredPhy` method supports LE 1M, LE 2M, and LE Coded PHYs
+  - Implemented on Android (API 26+); no-op on iOS and macOS where the OS manages PHY selection
+- Added support for requesting connection priority (connection interval)
+  - New `requestConnectionPriority` method with `balanced`, `high`, and `lowPower` options
+  - Useful for maximising throughput before large data transfers like OTA firmware updates
+  - Implemented on Android; no-op on iOS and macOS
+- Added ability to read active BLE connection parameters
+  - New `readConnectionParameters` method returns TX/RX PHY, connection interval, slave latency, and supervision timeout
+  - Available on Android API 26+; returns null on iOS and macOS
+- Added new models: `BlePhy`, `BleConnectionPriority`, and `BleConnectionParameters`
+- Improved scan response handling on Android
+  - Enhanced `BleScannerHandler` to better handle devices that split advertisement data across multiple packets
+  - Added `legacyMode` option to `ScanSettings` for controlling extended advertising PDU support on Android 8+
+- Improved scan response handling on iOS and macOS
+  - Added fallback timeout mechanism for connectable devices whose scan response may not arrive
+  - Buffered advertisements are now flushed when a scan session ends or restarts, ensuring no devices are silently dropped
+- Updated advertisement data handling on iOS and macOS for more reliable manufacturer data reporting
+- Updated write operations to support duration measurement
+- Added `completeData` getter to `ManufacturerData` for accessing full manufacturer data including ID and payload
+- Updated Android `compileSdk` to 35 and Kotlin to 2.1.0
+- Updated Android Gradle plugin to 8.7.3
+- Updated fake/mock method channel with implementations for new PHY and connection priority methods
+- Added notification characteristic to ESP32 test firmware
+- Added dynamic security characteristic to ESP32 test firmware
+- Added ability to copy test results in the test app
+- Code cleanup and formatting improvements
+
 ## [0.1.0] 2023/10/07
 
 - Initial support for Bluetooth operations on Android:
