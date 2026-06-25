@@ -526,36 +526,9 @@ class BleDeviceInterface(
     fun connect(deviceAddress: String) {
         val bluetoothManager =
             context.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
-
-        // 1. Guard against ongoing scans, which improves Android stability since ongoing scans
-        // will often cause connection attempts to fail.
-        val adapter = bluetoothManager.adapter
-        try {
-            val scanner = adapter?.bluetoothLeScanner
-            val callback = activeScanCallback
-            if (scanner != null && callback != null) {
-                Log.d("Ble", "Active scan detected. Force-stopping scan before connecting to $deviceAddress to prevent Status 133.")
-                scanner.stopScan(callback)
-                activeScanCallback = null // Reset the callback reference
-            }
-        } catch (e: Exception) {
-            Log.e("Ble", "Error while attempting to stop ongoing scan: ${e.message}")
-        }
-
-        // 2. Attempt to connect to the device
         val device = bluetoothManager.adapter.getRemoteDevice(deviceAddress)
         try {
-            // 2. Force TRANSPORT_LE
-            // Defaulting to device.connectGatt(..., false, ...) triggers TRANSPORT_AUTO, which
-            // attempts classic Bluetooth negotiation as well, causing erratic failures.
-            val gatt = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                Log.d("Ble", "Connecting with TRANSPORT_LE to $deviceAddress")
-                device.connectGatt(context, false, this, BluetoothDevice.TRANSPORT_LE)
-            } else {
-                Log.d("Ble", "Connecting to $deviceAddress (Legacy Android version)")
-                device.connectGatt(context, false, this)
-            }
-
+            val gatt = device.connectGatt(context, false, this)
             bluetoothGattMap[deviceAddress] = gatt
         } catch (e: SecurityException) {
             channel.invokeMethod(
