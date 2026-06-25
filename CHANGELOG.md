@@ -2,6 +2,21 @@
 
 All notable changes to the `flutter_splendid_ble` plugin will be documented in this file.
 
+## [1.2.0] 2026/06/25
+
+- Improved Android BLE connection reliability to reduce GATT_ERROR (status 133) failures
+  - `connect()` now closes any existing GATT client for the same device before opening a new one, preventing native GATT slot leaks during rapid reconnect cycles
+  - `connect()` handles null return from `connectGatt()`, which can occur on some OEMs when the BLE stack is exhausted
+  - `onConnectionStateChange` now verifies GATT instance identity, preventing stale callbacks from a previous connection attempt from interfering with a new connection
+- `disconnect()` is now a true asynchronous operation on Android
+  - The Dart `Future` returned by `disconnect()` no longer resolves until the full disconnect lifecycle completes (physical disconnection handshake, GATT close, and native resource release)
+  - A 1.5-second fallback timer ensures the `Future` always resolves even if the BLE stack becomes unresponsive
+  - This allows Flutter code to safely `await disconnect()` before starting a new connection
+- Unified manufacturer data format across Android and iOS
+
+### Breaking Changes
+- Android manufacturer data now includes the vendor ID bytes as a prefix, matching the existing iOS behavior. Previously, Android omitted the vendor ID from the complete manufacturer data payload. Code that parses manufacturer data by byte index may need to be updated to account for the two additional leading bytes.
+
 ## [1.1.0] 2026/06/05
 
 - Added support for requesting preferred PHY (physical layer) for BLE connections
