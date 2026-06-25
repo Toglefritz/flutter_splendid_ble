@@ -33,7 +33,7 @@ enum BlePhy {
 
   /// The integer identifier used when communicating this PHY over the method channel.
   ///
-  /// These values correspond directly to the Android [BluetoothDevice] PHY constants and are used as-is when calling
+  /// These values correspond directly to the Android `BluetoothDevice` PHY constants and are used as-is when calling
   /// the native API.
   ///
   /// - LE 1M → 1
@@ -65,4 +65,3 @@ enum BlePhy {
     }
   }
 }
-

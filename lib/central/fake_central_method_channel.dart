@@ -390,4 +390,3 @@ class FakeCentralMethodChannel extends CentralPlatformInterface {
     return null;
   }
 }
-

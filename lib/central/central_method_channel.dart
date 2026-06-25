@@ -721,7 +721,7 @@ class CentralMethodChannel extends CentralPlatformInterface {
 
   /// Requests a preferred PHY for the connection to the specified device.
   ///
-  /// On Android, this calls [BluetoothGatt.setPreferredPhy] (API 26+). The actual PHY applied depends on what the
+  /// On Android, this calls `BluetoothGatt.setPreferredPhy` (API 26+). The actual PHY applied depends on what the
   /// remote device supports. On iOS, the call succeeds silently because PHY negotiation is handled by the OS.
   @override
   Future<void> requestPreferredPhy({
@@ -744,7 +744,7 @@ class CentralMethodChannel extends CentralPlatformInterface {
 
   /// Requests a specific connection priority for a connected device.
   ///
-  /// On Android, this calls [BluetoothGatt.requestConnectionPriority]. Use [BleConnectionPriority.high] before a large
+  /// On Android, this calls `BluetoothGatt.requestConnectionPriority`. Use [BleConnectionPriority.high] before a large
   /// data transfer to reduce the connection interval and improve throughput. On iOS, the call succeeds silently because
   /// connection interval management is handled by the OS.
   @override
@@ -766,7 +766,7 @@ class CentralMethodChannel extends CentralPlatformInterface {
 
   /// Returns a snapshot of the active BLE link parameters for the connected device.
   ///
-  /// The native layer caches PHY values from [onPhyRead] and connection interval values from [onConnectionUpdated],
+  /// The native layer caches PHY values from `onPhyRead` and connection interval values from `onConnectionUpdated`,
   /// both of which fire automatically during connection setup. This call is effectively synchronous — it reads from the
   /// native cache rather than triggering a BLE operation.
   ///

@@ -1,10 +1,11 @@
+import '../splendid_ble_central.dart';
 import 'ble_phy.dart';
 
 /// A snapshot of the active BLE link parameters for a connected device.
 ///
 /// Populated by [SplendidBleCentral.readConnectionParameters]. On Android, PHY values come from the
-/// [BluetoothGattCallback.onPhyRead] callback, and connection interval values come from
-/// [BluetoothGattCallback.onConnectionUpdated]. Both callbacks fire automatically during connection setup, so by the
+/// `BluetoothGattCallback.onPhyRead` callback, and connection interval values come from
+/// `BluetoothGattCallback.onConnectionUpdated`. Both callbacks fire automatically during connection setup, so by the
 /// time the dashboard is displayed the cache should be populated.
 ///
 /// On iOS, Core Bluetooth does not expose these link-layer parameters to the central role, so
@@ -45,7 +46,7 @@ class BleConnectionParameters {
 
   /// Constructs a [BleConnectionParameters] from the map returned by the native platform over the method channel.
   ///
-  /// The `txPhy` and `rxPhy` keys are required integers using the Android [BluetoothDevice] PHY constant values (1 = LE
+  /// The `txPhy` and `rxPhy` keys are required integers using the Android `BluetoothDevice` PHY constant values (1 = LE
   /// 1M, 2 = LE 2M, 3 = Coded). The remaining keys are optional and may be absent when the corresponding native
   /// callback has not yet fired.
   factory BleConnectionParameters.fromMap(Map<dynamic, dynamic> map) {
@@ -60,4 +61,3 @@ class BleConnectionParameters {
     );
   }
 }
-

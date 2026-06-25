@@ -51,9 +51,9 @@ class ScanConfigurationController extends State<ScanConfigurationRoute> {
   }
 
   /// Handles changes in the checkbox used to select an option for the allow duplicates scan setting.
-  void onAllowDuplicatesChanged({required bool? allowDuplicates}) {
+  void onAllowDuplicatesChanged({required bool? allow}) {
     setState(() {
-      allowDuplicates = allowDuplicates ?? false;
+      allowDuplicates = allow ?? false;
     });
   }
 
