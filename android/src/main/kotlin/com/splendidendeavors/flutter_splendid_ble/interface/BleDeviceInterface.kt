@@ -528,7 +528,15 @@ class BleDeviceInterface(
             context.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
         val device = bluetoothManager.adapter.getRemoteDevice(deviceAddress)
         try {
-            val gatt = device.connectGatt(context, false, this)
+            // 2. Force TRANSPORT_LE
+            // Defaulting to device.connectGatt(..., false, ...) triggers TRANSPORT_AUTO, which
+            // attempts classic Bluetooth negotiation as well, causing erratic failures.
+            val gatt = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                device.connectGatt(context, false, this, BluetoothDevice.TRANSPORT_LE)
+            } else {
+                device.connectGatt(context, false, this)
+            }
+
             bluetoothGattMap[deviceAddress] = gatt
         } catch (e: SecurityException) {
             channel.invokeMethod(
@@ -546,7 +554,6 @@ class BleDeviceInterface(
         try {
             val gatt = bluetoothGattMap[deviceAddress]
             if (gatt != null) {
-                Log.d("Ble", "Initiating disconnect for $deviceAddress")
                 // 1. Tell Android to start the physical disconnection handshake
                 gatt.disconnect()
 
@@ -555,7 +562,6 @@ class BleDeviceInterface(
                 // (e.g., if the device died or went out of range), we force close it
                 // to prevent leaking a GATT client slot.
                 val fallbackRunnable = Runnable {
-                    Log.w("Ble", "Fallback triggered: onConnectionStateChange didn't fire. Force closing GATT for $deviceAddress")
                     closeAndCleanGatt(deviceAddress)
                 }
 
@@ -590,9 +596,9 @@ class BleDeviceInterface(
             try {
                 // 3. CRUCIAL: Releases the native GATT client slot and returns it to the OS
                 gatt.close()
-                Log.d("Ble", "GATT closed cleanly for $deviceAddress")
+                android.util.Log.d("Ble", "GATT closed cleanly for $deviceAddress")
             } catch (e: Exception) {
-                Log.e("Ble", "Error closing GATT for $deviceAddress: ${e.message}")
+                android.util.Log.e("Ble", "Error closing GATT for $deviceAddress: ${e.message}")
             }
         }
 

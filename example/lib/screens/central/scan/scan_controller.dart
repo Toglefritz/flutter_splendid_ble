@@ -103,7 +103,7 @@ class ScanController extends State<ScanRoute> {
         .where((discoveredDevice) => discoveredDevice.address == device.address)
         .isEmpty) {
       setState(() {
-        debugPrint('Discovered BLE device: ${device.name ?? device.address}');
+        //debugPrint('Discovered BLE device: ${device.name ?? device.address}');
         discoveredDevices.add(device);
       });
     }

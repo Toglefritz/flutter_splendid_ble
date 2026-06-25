@@ -23,9 +23,7 @@ class ScanView extends StatelessWidget {
           IconButton(
             onPressed: state.onActionButtonPressed,
             icon: Icon(
-              state.scanInProgress
-                  ? Icons.stop_outlined
-                  : Icons.play_arrow_outlined,
+              state.scanInProgress ? Icons.stop_outlined : Icons.play_arrow_outlined,
             ),
           ),
           IconButton(
@@ -34,44 +32,45 @@ class ScanView extends StatelessWidget {
           ),
         ],
       ),
-      body: CustomScrollView(
-        slivers: [
-          // If no devices have been discovered, show a loading indicator.
-          if (state.discoveredDevices.isEmpty)
-            const SliverFillRemaining(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+      body: SafeArea(
+        child: CustomScrollView(
+          slivers: [
+            // If no devices have been discovered, show a loading indicator.
+            if (state.discoveredDevices.isEmpty)
+              const SliverFillRemaining(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    LoadingIndicator(),
+                  ],
+                ),
+              ),
+
+            // If devices have been discovered, show them in a list.
+            if (state.discoveredDevices.isNotEmpty)
+              SliverList.list(
                 children: [
-                  LoadingIndicator(),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 32.0),
+                    child: Text(
+                      AppLocalizations.of(context)!.discoveredDevices,
+                      style: Theme.of(context).textTheme.displayMedium,
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                  ...List.generate(
+                    state.discoveredDevices.length,
+                    (index) => state.discoveredDevices[index].name != null
+                        ? ScanResultTile(
+                            device: state.discoveredDevices[index],
+                            onTap: () => state.onResultTap(state.discoveredDevices[index]),
+                          )
+                        : const SizedBox.shrink(),
+                  ),
                 ],
               ),
-            ),
-
-          // If devices have been discovered, show them in a list.
-          if (state.discoveredDevices.isNotEmpty)
-            SliverList.list(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 32.0),
-                  child: Text(
-                    AppLocalizations.of(context)!.discoveredDevices,
-                    style: Theme.of(context).textTheme.displayMedium,
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-                ...List.generate(
-                  state.discoveredDevices.length,
-                  (index) => state.discoveredDevices[index].name != null
-                      ? ScanResultTile(
-                          device: state.discoveredDevices[index],
-                          onTap: () =>
-                              state.onResultTap(state.discoveredDevices[index]),
-                        )
-                      : const SizedBox.shrink(),
-                ),
-              ],
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }
