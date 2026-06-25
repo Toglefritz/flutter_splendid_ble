@@ -212,6 +212,23 @@ class BleDeviceInterface(
     private val fallbackCloseRunnables = HashMap<String, Runnable>()
 
     /**
+     * Tracks pending disconnect operations with their MethodChannel.Result callbacks.
+     *
+     * When [disconnect] is called, the [MethodChannel.Result] is stored here rather than
+     * being completed immediately. The result is completed later when the disconnect process
+     * truly finishes—either when [onConnectionStateChange] fires with STATE_DISCONNECTED,
+     * or when the fallback timeout expires and forces GATT cleanup.
+     *
+     * This ensures that the Dart `Future` returned by `disconnect()` does not complete
+     * until the entire disconnect lifecycle is over (including `gatt.close()`), preventing
+     * race conditions when Flutter code immediately calls `connect()` after awaiting
+     * `disconnect()`.
+     *
+     * The key is the device MAC address.
+     */
+    private val pendingDisconnects: MutableMap<String, MethodChannel.Result> = mutableMapOf()
+
+    /**
      * Called when the connection state of the GATT server changes.
      *
      * This method is invoked when the GATT server connection state changes between the device and
@@ -268,6 +285,24 @@ class BleDeviceInterface(
                 }
 
                 BluetoothProfile.STATE_DISCONNECTED -> {
+                    // Verify that this callback is for the GATT instance we're currently
+                    // tracking. During rapid connect/disconnect cycles, a stale callback
+                    // from a previous connection attempt can arrive after a new GATT has
+                    // already been created for the same device address.
+                    val currentGatt: BluetoothGatt? = bluetoothGattMap[deviceAddress]
+                    if (currentGatt != null && currentGatt !== gatt) {
+                        // This is a stale callback from a previous connection attempt.
+                        // Close the old GATT directly without touching the current connection.
+                        try {
+                            gatt.close()
+                        } catch (_: Exception) {}
+                        android.util.Log.d(
+                            "BleDeviceInterface",
+                            "Stale disconnect callback for $deviceAddress ignored (new GATT exists)"
+                        )
+                        return@post
+                    }
+
                     // Clean up all pending operations and tracking when disconnected
                     pendingWrites.remove(deviceAddress)
                     devicesAwaitingMtu.remove(deviceAddress)
@@ -283,6 +318,10 @@ class BleDeviceInterface(
                         "Device disconnected during descriptor write operation",
                         null
                     )
+
+                    // Complete the pending disconnect Future so Dart's await finishes
+                    val pendingDisconnectResult: MethodChannel.Result? = pendingDisconnects.remove(deviceAddress)
+                    pendingDisconnectResult?.success(null)
 
                     channel.invokeMethod("bleConnectionState_$deviceAddress", ConnectionState.DISCONNECTED.name)
                 }
@@ -511,6 +550,11 @@ class BleDeviceInterface(
     /**
      * Initiates a connection to a Bluetooth Low Energy (BLE) device.
      *
+     * If a GATT client already exists for this device address (e.g. from a previous connection
+     * that was not fully torn down), it is closed first to prevent leaking native GATT client
+     * slots. Android has a limited number of these slots (typically 6-7), and leaking them is
+     * the most common cause of GATT_ERROR (status 133) failures.
+     *
      * In Android's BLE programming, a BluetoothGattCallback is a critical component for
      * handling various BLE events, such as connection changes, service discovery, and
      * reading/writing to/from characteristics. This callback is usually provided when you
@@ -524,17 +568,55 @@ class BleDeviceInterface(
      * @param deviceAddress The Bluetooth address of the device to connect.
      */
     fun connect(deviceAddress: String) {
+        // Close any existing GATT for this device to prevent slot leaks.
+        // This is critical during rapid reconnect cycles where a previous GATT object
+        // may still be lingering in the map (e.g. if disconnect completed but connect
+        // was called before the old object was garbage collected by Android).
+        val existingGatt: BluetoothGatt? = bluetoothGattMap.remove(deviceAddress)
+        if (existingGatt != null) {
+            try {
+                existingGatt.close()
+                android.util.Log.d(
+                    "BleDeviceInterface",
+                    "Closed existing GATT for $deviceAddress before reconnect"
+                )
+            } catch (_: Exception) {}
+        }
+
+        // Clean up any stale state from the previous connection
+        cleanupPendingOperations(deviceAddress)
+        devicesAwaitingMtu.remove(deviceAddress)
+        cachedPhyMap.remove(deviceAddress)
+        cachedConnectionParamsMap.remove(deviceAddress)
+        fallbackCloseRunnables.remove(deviceAddress)?.let { mainHandler.removeCallbacks(it) }
+
+        // If a previous disconnect result was still pending (edge case where disconnect's
+        // fallback hadn't fired yet), complete it now since we're about to reuse the address.
+        val staleDisconnectResult: MethodChannel.Result? = pendingDisconnects.remove(deviceAddress)
+        staleDisconnectResult?.success(null)
+
         val bluetoothManager =
             context.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
-        val device = bluetoothManager.adapter.getRemoteDevice(deviceAddress)
+        val device: BluetoothDevice = bluetoothManager.adapter.getRemoteDevice(deviceAddress)
         try {
-            // 2. Force TRANSPORT_LE
+            // Force TRANSPORT_LE.
             // Defaulting to device.connectGatt(..., false, ...) triggers TRANSPORT_AUTO, which
             // attempts classic Bluetooth negotiation as well, causing erratic failures.
-            val gatt = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            val gatt: BluetoothGatt? = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 device.connectGatt(context, false, this, BluetoothDevice.TRANSPORT_LE)
             } else {
                 device.connectGatt(context, false, this)
+            }
+
+            // connectGatt() can return null on some OEMs when the BLE stack is in a bad
+            // state or all GATT client slots are exhausted.
+            if (gatt == null) {
+                channel.invokeMethod(
+                    "error",
+                    "connectGatt returned null for $deviceAddress. " +
+                        "The BLE stack may be in a bad state or all GATT slots are exhausted."
+                )
+                return
             }
 
             bluetoothGattMap[deviceAddress] = gatt
@@ -548,21 +630,62 @@ class BleDeviceInterface(
 
     /**
      * Initiates disconnection from a connected BLE device.
-     * Leaves the GATT object in the map so the callback can safely receive the event.
+     *
+     * Unlike the previous implementation that returned immediately, this method defers
+     * completion of the [result] until the entire disconnect lifecycle is finished:
+     * 1. `gatt.disconnect()` is called to begin the physical disconnection handshake.
+     * 2. The [onConnectionStateChange] callback fires with STATE_DISCONNECTED.
+     * 3. `gatt.close()` releases the native GATT client slot.
+     * 4. Only then is [result] completed with success.
+     *
+     * If the callback does not fire within 1.5 seconds (e.g. the device went out of range
+     * or the BLE stack is unresponsive), a fallback timer forces cleanup and completes
+     * [result] anyway. This guarantees that the Dart `Future` always resolves.
+     *
+     * This design allows Flutter code to safely do:
+     * ```dart
+     * await ble.disconnect(address);
+     * await ble.connect(deviceAddress: address); // safe — GATT slot is released
+     * ```
+     *
+     * @param deviceAddress The MAC address of the BLE device to disconnect.
+     * @param result The [MethodChannel.Result] to complete when the full disconnect is done.
      */
-    fun disconnect(deviceAddress: String) {
+    fun disconnect(deviceAddress: String, result: MethodChannel.Result) {
         try {
-            val gatt = bluetoothGattMap[deviceAddress]
+            val gatt: BluetoothGatt? = bluetoothGattMap[deviceAddress]
             if (gatt != null) {
+                // Store the result to be completed later when disconnect is truly done
+                // If there's already a pending disconnect for this device, complete the old one
+                // to avoid orphaned Futures on the Dart side.
+                val previousResult: MethodChannel.Result? = pendingDisconnects.remove(deviceAddress)
+                previousResult?.success(null)
+
+                pendingDisconnects[deviceAddress] = result
+
                 // 1. Tell Android to start the physical disconnection handshake
                 gatt.disconnect()
 
                 // 2. Schedule a fallback force-close.
                 // If the onConnectionStateChange callback doesn't fire within 1.5 seconds
                 // (e.g., if the device died or went out of range), we force close it
-                // to prevent leaking a GATT client slot.
+                // to prevent leaking a GATT client slot and to ensure the Dart Future resolves.
                 val fallbackRunnable = Runnable {
+                    android.util.Log.w(
+                        "BleDeviceInterface",
+                        "Disconnect fallback timer fired for $deviceAddress — forcing cleanup"
+                    )
                     closeAndCleanGatt(deviceAddress)
+
+                    // Complete the pending disconnect Future
+                    val pendingResult: MethodChannel.Result? = pendingDisconnects.remove(deviceAddress)
+                    pendingResult?.success(null)
+
+                    // Notify Flutter of the state change
+                    channel.invokeMethod(
+                        "bleConnectionState_$deviceAddress",
+                        ConnectionState.DISCONNECTED.name
+                    )
                 }
 
                 // Cancel any existing fallback timer for this device address before registering a new one
@@ -572,13 +695,16 @@ class BleDeviceInterface(
                 mainHandler.postDelayed(fallbackRunnable, 1500) // 1.5 seconds timeout
 
             } else {
-                // No active connection found in our map, just run cleanups
+                // No active connection found in our map, just run cleanups and complete immediately
                 cleanupPendingOperations(deviceAddress)
+                result.success(null)
             }
         } catch (e: SecurityException) {
-            channel.invokeMethod(
-                "error",
-                "Required Bluetooth permissions are missing: ${e.message}"
+            // Complete with error so the Dart Future doesn't hang
+            result.error(
+                "PERMISSION_ERROR",
+                "Required Bluetooth permissions are missing: ${e.message}",
+                null
             )
         }
     }

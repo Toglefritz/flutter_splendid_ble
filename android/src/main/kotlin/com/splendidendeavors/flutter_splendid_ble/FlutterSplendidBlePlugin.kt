@@ -311,8 +311,7 @@ class FlutterSplendidBlePlugin : FlutterPlugin, MethodCallHandler, ActivityAware
             "disconnect" -> {
                 val deviceAddress = call.argument<String>("address")
                 if (deviceAddress != null) {
-                    bleDeviceInterface.disconnect(deviceAddress)
-                    result.success(null)
+                    bleDeviceInterface.disconnect(deviceAddress, result)
                 } else {
                     result.error("INVALID_ARGUMENT", "Device address cannot be null.", null)
                 }
