@@ -149,7 +149,7 @@ class SplendidBleCentral {
   /// The request is advisory. The actual PHY applied depends on what both the central and the peripheral support. If
   /// the remote device does not support the requested PHY, the connection remains on its current PHY.
   ///
-  /// On Android this calls [BluetoothGatt.setPreferredPhy] (API 26+). On older hardware the call is silently ignored.
+  /// On Android this calls `BluetoothGatt.setPreferredPhy` (API 26+). On older hardware the call is silently ignored.
   /// On iOS, PHY selection is handled automatically by the OS; this call succeeds without requesting any platform
   /// action.
   ///
@@ -173,7 +173,7 @@ class SplendidBleCentral {
   /// of higher power consumption on both the central and the peripheral. It is good practice to revert to
   /// [BleConnectionPriority.balanced] after the transfer completes.
   ///
-  /// On Android this calls [BluetoothGatt.requestConnectionPriority]. On iOS, the connection interval is managed by the
+  /// On Android this calls `BluetoothGatt.requestConnectionPriority`. On iOS, the connection interval is managed by the
   /// OS; this call succeeds without requesting any platform action.
   Future<void> requestConnectionPriority({
     required String deviceAddress,

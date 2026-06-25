@@ -62,7 +62,7 @@ class ScanConfigurationView extends StatelessWidget {
                   title: Text(AppLocalizations.of(context)!.allowDuplicates),
                   value: state.allowDuplicates,
                   onChanged: (value) =>
-                      state.onAllowDuplicatesChanged(allowDuplicates: value),
+                      state.onAllowDuplicatesChanged(allow: value),
                 ),
                 Padding(
                   padding: const EdgeInsets.only(top: 16.0),

@@ -179,7 +179,7 @@ abstract class CentralPlatformInterface extends PlatformInterface {
   /// The request is a hint to the platform. The actual PHY used depends on what both the central and the peripheral
   /// support. If the requested PHY is not supported by the remote device, the connection stays on its current PHY.
   ///
-  /// On Android this calls [BluetoothGatt.setPreferredPhy] and requires API 26+. On iOS, PHY negotiation is handled
+  /// On Android this calls `BluetoothGatt.setPreferredPhy` and requires API 26+. On iOS, PHY negotiation is handled
   /// automatically by the OS; this call succeeds silently without changing any platform state.
   Future<void> requestPreferredPhy({
     required String deviceAddress,
@@ -193,7 +193,7 @@ abstract class CentralPlatformInterface extends PlatformInterface {
 
   /// Requests a specific connection priority (connection interval) for a connected device.
   ///
-  /// On Android this calls [BluetoothGatt.requestConnectionPriority]. Using [BleConnectionPriority.high] reduces the
+  /// On Android this calls `BluetoothGatt.requestConnectionPriority`. Using [BleConnectionPriority.high] reduces the
   /// connection interval, which increases throughput at the cost of higher power consumption on both devices. This is
   /// useful before starting a large data transfer such as an OTA firmware image.
   ///
@@ -210,8 +210,8 @@ abstract class CentralPlatformInterface extends PlatformInterface {
 
   /// Returns a snapshot of the active BLE link parameters for the connected device.
   ///
-  /// On Android, PHY values come from the [BluetoothGatt.onPhyRead] callback and connection parameters come from
-  /// [BluetoothGatt.onConnectionUpdated]. Both are cached automatically during connection setup, so this call is
+  /// On Android, PHY values come from the `BluetoothGatt.onPhyRead` callback and connection parameters come from
+  /// `BluetoothGatt.onConnectionUpdated`. Both are cached automatically during connection setup, so this call is
   /// synchronous from the Dart perspective.
   ///
   /// Returns null on iOS, where Core Bluetooth does not expose these parameters to the central role. Also returns null

@@ -52,10 +52,15 @@ class ManufacturerData {
       ),
     );
 
-    // Extract the manufacturer identifier and the payload.
+    // Extract the manufacturer identifier (first 2 bytes) and the payload (remaining bytes).
+    // We use a safe length check to avoid errors if the data is unexpectedly short.
+    final int idEndIndex =
+        manufacturerDataInts.length < 2 ? manufacturerDataInts.length : 2;
+
     final Uint8List manufacturerId =
-        Uint8List.sublistView(manufacturerDataInts, 0, 2);
-    final Uint8List payload = Uint8List.sublistView(manufacturerDataInts, 2);
+        Uint8List.sublistView(manufacturerDataInts, 0, idEndIndex);
+    final Uint8List payload =
+        Uint8List.sublistView(manufacturerDataInts, idEndIndex);
 
     return ManufacturerData(
       manufacturerId: manufacturerId,
@@ -67,7 +72,7 @@ class ManufacturerData {
   ///
   /// This getter provides a consistent view of the full manufacturer data by concatenating the manufacturer ID with the
   /// payload. The result is the same across both iOS and Android platforms, as both store the data in the same
-  /// separated format after parsing via [fromString].
+  /// separated format after parsing via `fromString`.
   ///
   /// Returns a list containing the manufacturer ID (first 2 bytes) followed by the manufacturer-specific payload
   /// (remaining bytes).

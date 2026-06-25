@@ -281,6 +281,11 @@ class BleScannerHandler(private val channel: MethodChannel, activity: Context) {
             val stringBuilder = StringBuilder()
             for (i in 0 until dataMap.size()) {
                 val key: Int = dataMap.keyAt(i)
+
+                // Add manufacturer ID (2 bytes, little-endian) to match iOS behavior and BLE spec
+                stringBuilder.append("%02x".format(key and 0xFF))
+                stringBuilder.append("%02x".format((key shr 8) and 0xFF))
+
                 val value: ByteArray? = dataMap[key]
                 value?.joinToString(separator = "") { byte ->
                     "%02x".format(byte)
