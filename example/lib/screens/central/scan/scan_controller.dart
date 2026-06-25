@@ -98,13 +98,12 @@ class ScanController extends State<ScanRoute> {
 
   /// A callback used each time a new device is discovered by the Bluetooth scan.
   void _onDeviceDetected(BleDevice device) {
-    debugPrint('Discovered BLE device: ${device.name}');
-
     // Add the newly discovered device to the list only if it not already in the list
     if (discoveredDevices
         .where((discoveredDevice) => discoveredDevice.address == device.address)
         .isEmpty) {
       setState(() {
+        debugPrint('Discovered BLE device: ${device.name ?? device.address}');
         discoveredDevices.add(device);
       });
     }

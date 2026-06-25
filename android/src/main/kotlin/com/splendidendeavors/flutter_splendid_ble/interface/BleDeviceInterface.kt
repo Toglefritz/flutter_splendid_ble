@@ -206,6 +206,12 @@ class BleDeviceInterface(
     private val mainHandler = Handler(Looper.getMainLooper())
 
     /**
+     * A safety-net registry used to track scheduled, delayed tasks for each Bluetooth device that
+     * is attempting a disconnect.
+     */
+    private val fallbackCloseRunnables = HashMap<String, Runnable>()
+
+    /**
      * Called when the connection state of the GATT server changes.
      *
      * This method is invoked when the GATT server connection state changes between the device and
@@ -268,6 +274,7 @@ class BleDeviceInterface(
                     devicesWithPendingDescriptorWrites.remove(deviceAddress)
                     cachedPhyMap.remove(deviceAddress)
                     cachedConnectionParamsMap.remove(deviceAddress)
+                    closeAndCleanGatt(deviceAddress)
 
                     // Complete any pending descriptor write with error
                     val pendingDescriptorResult: MethodChannel.Result? = pendingDescriptorWrites.remove(deviceAddress)
@@ -532,32 +539,80 @@ class BleDeviceInterface(
     }
 
     /**
-     * Disconnects from a connected Bluetooth Low Energy (BLE) device.
-     *
-     * @param deviceAddress The Bluetooth address of the device to disconnect.
+     * Initiates disconnection from a connected BLE device.
+     * Leaves the GATT object in the map so the callback can safely receive the event.
      */
     fun disconnect(deviceAddress: String) {
         try {
-            bluetoothGattMap[deviceAddress]?.disconnect()
-            bluetoothGattMap.remove(deviceAddress)
+            val gatt = bluetoothGattMap[deviceAddress]
+            if (gatt != null) {
+                Log.d("Ble", "Initiating disconnect for $deviceAddress")
+                // 1. Tell Android to start the physical disconnection handshake
+                gatt.disconnect()
 
-            // Clean up all pending operations for this device
-            pendingWrites.remove(deviceAddress)
-            devicesWithPendingDescriptorWrites.remove(deviceAddress)
+                // 2. Schedule a fallback force-close.
+                // If the onConnectionStateChange callback doesn't fire within 1.5 seconds
+                // (e.g., if the device died or went out of range), we force close it
+                // to prevent leaking a GATT client slot.
+                val fallbackRunnable = Runnable {
+                    Log.w("Ble", "Fallback triggered: onConnectionStateChange didn't fire. Force closing GATT for $deviceAddress")
+                    closeAndCleanGatt(deviceAddress)
+                }
 
-            // Complete any pending descriptor write with error
-            val pendingDescriptorResult: MethodChannel.Result? = pendingDescriptorWrites.remove(deviceAddress)
-            pendingDescriptorResult?.error(
-                "DISCONNECTED",
-                "Device disconnected during descriptor write operation",
-                null
-            )
+                // Cancel any existing fallback timer for this device address before registering a new one
+                fallbackCloseRunnables.remove(deviceAddress)?.let { mainHandler.removeCallbacks(it) }
+
+                fallbackCloseRunnables[deviceAddress] = fallbackRunnable
+                mainHandler.postDelayed(fallbackRunnable, 1500) // 1.5 seconds timeout
+
+            } else {
+                // No active connection found in our map, just run cleanups
+                cleanupPendingOperations(deviceAddress)
+            }
         } catch (e: SecurityException) {
             channel.invokeMethod(
                 "error",
                 "Required Bluetooth permissions are missing: ${e.message}"
             )
         }
+    }
+
+    /**
+     * Completely frees up the native GATT resources from a previous connection.
+     */
+    private fun closeAndCleanGatt(deviceAddress: String) {
+        // 1. Cancel any pending fallback timeout
+        fallbackCloseRunnables.remove(deviceAddress)?.let { mainHandler.removeCallbacks(it) }
+
+        // 2. Remove the GATT object from our tracking map
+        val gatt = bluetoothGattMap.remove(deviceAddress)
+        if (gatt != null) {
+            try {
+                // 3. CRUCIAL: Releases the native GATT client slot and returns it to the OS
+                gatt.close()
+                Log.d("Ble", "GATT closed cleanly for $deviceAddress")
+            } catch (e: Exception) {
+                Log.e("Ble", "Error closing GATT for $deviceAddress: ${e.message}")
+            }
+        }
+
+        // 4. Clean up pending Flutter/method channel operations
+        cleanupPendingOperations(deviceAddress)
+    }
+
+    /**
+     * Cleans up any pending writes for a device before disconnections.
+     */
+    private fun cleanupPendingOperations(deviceAddress: String) {
+        pendingWrites.remove(deviceAddress)
+        devicesWithPendingDescriptorWrites.remove(deviceAddress)
+
+        val pendingDescriptorResult: MethodChannel.Result? = pendingDescriptorWrites.remove(deviceAddress)
+        pendingDescriptorResult?.error(
+            "DISCONNECTED",
+            "Device disconnected during descriptor write operation",
+            null
+        )
     }
 
     /**
