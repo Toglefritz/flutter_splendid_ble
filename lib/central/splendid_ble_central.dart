@@ -78,7 +78,9 @@ class SplendidBleCentral {
   }
 
   /// Asks the platform to stop scanning for Bluetooth devices.
-  void stopScan() {
+  ///
+  /// Returns a [Future] that completes when the scan has been stopped.
+  Future<void> stopScan() {
     return _platform.stopScan();
   }
 

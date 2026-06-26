@@ -286,7 +286,10 @@ class FlutterSplendidBlePlugin : FlutterPlugin, MethodCallHandler, ActivityAware
                 result.success(null)
             }
 
-            "stopScan" -> bleScannerHandler.stopScan()
+            "stopScan" -> {
+                bleScannerHandler.stopScan()
+                result.success(null)
+            }
 
             "connect" -> {
                 val deviceAddress = call.argument<String>("address")

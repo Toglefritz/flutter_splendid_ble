@@ -87,7 +87,7 @@ abstract class CentralPlatformInterface extends PlatformInterface {
   }
 
   /// Stops an ongoing Bluetooth scan or, if no scan is running, does nothing.
-  void stopScan() {
+  Future<void> stopScan() {
     throw UnimplementedError('stopScan() has not been implemented.');
   }
 
