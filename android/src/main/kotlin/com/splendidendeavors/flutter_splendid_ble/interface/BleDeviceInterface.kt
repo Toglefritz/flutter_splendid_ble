@@ -1502,4 +1502,79 @@ class BleDeviceInterface(
 
         result.success(map)
     }
+
+    /**
+     * Clears the Android OS GATT cache for the connected device by invoking the hidden
+     * [BluetoothGatt.refresh] method via reflection.
+     *
+     * Android caches the GATT attribute table (services, characteristics, and descriptors)
+     * between connections as a performance optimisation. When the remote device's firmware
+     * is updated and its attribute table changes, Android may continue to serve the stale
+     * cached layout rather than reading fresh data from the device. This produces incorrect
+     * service discovery results and prevents the application from using new or modified
+     * characteristics.
+     *
+     * The recommended pattern is to call this method after bonding completes and before
+     * calling [discoverServices], so the subsequent discovery round-trips to the device
+     * and returns an accurate attribute table.
+     *
+     * [BluetoothGatt.refresh] has existed since Android 4.3 (API 18) but was never promoted
+     * to the public SDK. Calling it via reflection is the standard approach used by all major
+     * Android BLE libraries. It is expected to remain accessible because removing it would
+     * break a large portion of the Android BLE ecosystem.
+     *
+     * If the reflective call fails, an error is reported to the Flutter layer via a
+     * [MethodChannel.Result] error rather than an exception, so the Dart side receives a
+     * [PlatformException] that can be caught and handled.
+     *
+     * @param deviceAddress The MAC address of the connected BLE device.
+     * @param result The Flutter method channel result to complete.
+     */
+    fun refreshGattCache(deviceAddress: String, result: MethodChannel.Result) {
+        val gatt: BluetoothGatt? = getBluetoothGatt(deviceAddress)
+
+        if (gatt == null) {
+            result.error(
+                "GATT_NOT_FOUND",
+                "No BluetoothGatt instance found for device address: $deviceAddress",
+                null
+            )
+            return
+        }
+
+        try {
+            // BluetoothGatt.refresh() is a hidden method that has existed since Android 4.3.
+            // It is not part of the public API but is stable enough to call via reflection.
+            val refreshMethod = gatt.javaClass.getMethod("refresh")
+            val success = refreshMethod.invoke(gatt) as? Boolean ?: false
+
+            if (success) {
+                result.success(null)
+            } else {
+                result.error(
+                    "GATT_CACHE_REFRESH_FAILED",
+                    "BluetoothGatt.refresh() returned false for device: $deviceAddress",
+                    null
+                )
+            }
+        } catch (e: NoSuchMethodException) {
+            result.error(
+                "GATT_CACHE_REFRESH_UNSUPPORTED",
+                "BluetoothGatt.refresh() is not available on this device: ${e.message}",
+                null
+            )
+        } catch (e: SecurityException) {
+            result.error(
+                "PERMISSION_DENIED",
+                "Required Bluetooth permissions are missing: ${e.message}",
+                null
+            )
+        } catch (e: Exception) {
+            result.error(
+                "GATT_CACHE_REFRESH_FAILED",
+                "Failed to refresh GATT cache: ${e.message}",
+                null
+            )
+        }
+    }
 }

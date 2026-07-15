@@ -8,6 +8,7 @@ import 'models/ble_connection_state.dart';
 import 'models/ble_phy.dart';
 import 'models/ble_service.dart';
 import 'models/connected_ble_device.dart';
+import 'models/exceptions/gatt_cache_exception.dart';
 import 'models/scan_filter.dart';
 import 'models/scan_settings.dart';
 
@@ -198,5 +199,27 @@ class SplendidBleCentral {
     required String deviceAddress,
   }) {
     return _platform.readConnectionParameters(deviceAddress: deviceAddress);
+  }
+
+  /// Clears the Android GATT cache for the connected device.
+  ///
+  /// Android caches the GATT attribute table between connections. When that cache is stale (for example, after a
+  /// firmware update changes the device's service layout), [discoverServices] returns the old layout instead of fresh
+  /// data from the device. Calling this method before [discoverServices] discards the stale cache and forces a full
+  /// re-read from the peripheral.
+  ///
+  /// The recommended sequence when reliable service discovery is required after bonding is:
+  ///
+  /// 1. Connect to the device.
+  /// 2. Wait for the bond to be established.
+  /// 3. Call `refreshGattCache`.
+  /// 4. Call `discoverServices`.
+  ///
+  /// This is an Android-only operation. On iOS, Core Bluetooth manages caching internally and does not expose a
+  /// mechanism to clear it, so this call returns without taking any action on that platform.
+  ///
+  /// Throws a [GattCacheException] if the native call fails on Android.
+  Future<void> refreshGattCache({required String deviceAddress}) {
+    return _platform.refreshGattCache(deviceAddress: deviceAddress);
   }
 }

@@ -7,6 +7,7 @@ import '../central/models/ble_connection_priority.dart';
 import '../central/models/ble_connection_state.dart';
 import '../central/models/ble_phy.dart';
 import '../central/models/ble_service.dart';
+import '../central/models/exceptions/gatt_cache_exception.dart';
 import '../central/models/scan_filter.dart';
 import '../central/models/scan_settings.dart';
 import '../shared/models/ble_device.dart';
@@ -222,5 +223,24 @@ abstract class CentralPlatformInterface extends PlatformInterface {
     throw UnimplementedError(
       'readConnectionParameters() has not been implemented.',
     );
+  }
+
+  /// Clears the Android GATT cache for the connected device.
+  ///
+  /// Android caches the GATT attribute table between connections. When that cache is stale (for example, after a
+  /// firmware update changes the device's service layout), [discoverServices] returns the cached layout rather than
+  /// reading fresh data from the device. Calling this method before [discoverServices] forces the OS to discard the
+  /// cache so that the next discovery round-trips to the device.
+  ///
+  /// This is an Android-only operation. On iOS, Core Bluetooth does not expose a GATT cache, so this method returns
+  /// successfully without performing any platform action.
+  ///
+  /// The method uses reflection to invoke `BluetoothGatt.refresh()`, which is a hidden Android API that has been
+  /// available since Android 4.3 but was never added to the public SDK. Calling it via reflection is the standard
+  /// industry approach used by all major BLE libraries.
+  ///
+  /// Throws a [GattCacheException] if the reflective call fails on Android.
+  Future<void> refreshGattCache({required String deviceAddress}) async {
+    throw UnimplementedError('refreshGattCache() has not been implemented.');
   }
 }

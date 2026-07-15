@@ -389,4 +389,12 @@ class FakeCentralMethodChannel extends CentralPlatformInterface {
   }) async {
     return null;
   }
+
+  /// No-op implementation of [refreshGattCache] for use in tests.
+  ///
+  /// There is no Android GATT stack in a test context, so this method returns successfully without taking any action.
+  @override
+  Future<void> refreshGattCache({required String deviceAddress}) async {
+    // No-op: GATT cache management has no meaning in a fake test environment.
+  }
 }

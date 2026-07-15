@@ -19,6 +19,7 @@ import '../central/models/exceptions/bluetooth_read_exception.dart';
 import '../central/models/exceptions/bluetooth_scan_exception.dart';
 import '../central/models/exceptions/bluetooth_subscription_exception.dart';
 import '../central/models/exceptions/bluetooth_write_exception.dart';
+import '../central/models/exceptions/gatt_cache_exception.dart';
 import '../central/models/exceptions/service_discovery_exception.dart';
 import '../central/models/scan_filter.dart';
 import '../central/models/scan_settings.dart';
@@ -786,6 +787,27 @@ class CentralMethodChannel extends CentralPlatformInterface {
     } on PlatformException catch (e) {
       throw BluetoothConnectionException(
         'Failed to read connection parameters: ${e.message}',
+      );
+    }
+  }
+
+  /// Clears the Android GATT cache for the connected device by invoking the hidden
+  /// `BluetoothGatt.refresh()` method via reflection on the native side.
+  ///
+  /// On iOS, this call returns immediately without performing any platform action because
+  /// Core Bluetooth does not expose a GATT cache.
+  ///
+  /// Throws a [GattCacheException] if the native reflective call fails.
+  @override
+  Future<void> refreshGattCache({required String deviceAddress}) async {
+    try {
+      await channel.invokeMethod<void>(
+        'refreshGattCache',
+        {'address': deviceAddress},
+      );
+    } on PlatformException catch (e) {
+      throw GattCacheException(
+        'Failed to refresh GATT cache for $deviceAddress: ${e.message}',
       );
     }
   }

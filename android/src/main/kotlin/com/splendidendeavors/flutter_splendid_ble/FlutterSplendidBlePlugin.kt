@@ -506,6 +506,21 @@ class FlutterSplendidBlePlugin : FlutterPlugin, MethodCallHandler, ActivityAware
                 }
             }
 
+            "refreshGattCache" -> {
+                val deviceAddress = call.argument<String>("address")
+
+                if (deviceAddress != null) {
+                    bleDeviceInterface.refreshGattCache(deviceAddress, result)
+                    // Result is completed inside refreshGattCache.
+                } else {
+                    result.error(
+                        "INVALID_ARGUMENT",
+                        "Device address cannot be null.",
+                        null
+                    )
+                }
+            }
+
             // Throw an exception if an unknown method name is received
             else -> result.notImplemented()
         }
