@@ -99,7 +99,7 @@ class ConnectionTestService {
         secondsElapsed++;
       }
     } finally {
-      _ble.stopScan();
+      await _ble.stopScan();
       await _scanSubscription?.cancel();
       _scanSubscription = null;
     }
