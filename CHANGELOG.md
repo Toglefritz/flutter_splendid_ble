@@ -2,6 +2,14 @@
 
 All notable changes to the `flutter_splendid_ble` plugin will be documented in this file.
 
+## [1.3.2] 2026/07/25
+
+- Automatic GATT cache refresh on Android for bonded devices during reconnection
+  - When reconnecting to a previously bonded device, the plugin now calls `BluetoothGatt.refresh()` to clear the local attribute cache before proceeding with MTU negotiation
+  - This prevents stale cached service/characteristic handles from causing connection failures when a peripheral's GATT table has changed between sessions
+  - A 300ms delay is applied after the cache refresh to allow the Bluetooth stack to complete the internal invalidation before issuing GATT operations
+  - Non-bonded connections are unaffected and proceed immediately without delay
+
 ## [1.3.1] 2026/07/25
 
 - Added a comment on the Android side documenting how to clear the GATT cache

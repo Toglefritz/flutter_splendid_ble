@@ -263,24 +263,52 @@ class BleDeviceInterface(
         mainHandler.post {
             when (newState) {
                 BluetoothProfile.STATE_CONNECTED -> {
-                    // Device is physically connected, but not ready for communication yet
-                    // Request MTU negotiation before reporting CONNECTED to Flutter
+                    // Device is physically connected, but not ready for communication yet.
                     devicesAwaitingMtu.add(deviceAddress)
 
-                    // Request MTU of 517 bytes (maximum supported by BLE 4.2+)
-                    // This will trigger onMtuChanged callback when complete
-                    try {
-                        val mtuRequested: Boolean = gatt.requestMtu(517)
-                        if (!mtuRequested) {
-                            // MTU request failed, report connected anyway to avoid blocking
-                            devicesAwaitingMtu.remove(deviceAddress)
-                            channel.invokeMethod("bleConnectionState_$deviceAddress", ConnectionState.CONNECTED.name)
+                    // If the device is already bonded from a previous session, clear the
+                    // local GATT attribute cache before proceeding. Android aggressively
+                    // caches the remote device's service/characteristic table after the
+                    // first successful discovery. When the peripheral's GATT table changes
+                    // (firmware update, different configuration, or even a simple reboot on
+                    // some peripherals), the stale cache causes the peripheral to reject
+                    // subsequent GATT operations and terminate the link (status 19).
+                    //
+                    // BluetoothGatt.refresh() is a hidden (@hide) method that has existed
+                    // since API 18. It is not part of the public SDK but is stable, widely
+                    // used across the Android BLE ecosystem, and is the only mechanism to
+                    // force cache invalidation. Without this call, reconnecting to a bonded
+                    // device whose GATT table has changed will fail reliably.
+                    //
+                    // After calling refresh(), a delay is required before issuing any GATT
+                    // operations (such as MTU negotiation). The refresh invalidates the
+                    // cache asynchronously inside the Bluetooth stack, and issuing requests
+                    // immediately can race against the internal cleanup, causing the
+                    // peripheral to reject the connection (status 19). A 300ms delay is the
+                    // established workaround in the Android BLE community.
+                    if (gatt.device.bondState == BluetoothDevice.BOND_BONDED) {
+                        try {
+                            val refreshMethod = gatt.javaClass.getMethod("refresh")
+                            val refreshed = refreshMethod.invoke(gatt) as? Boolean ?: false
+                            android.util.Log.d(
+                                "BleDeviceInterface",
+                                "GATT cache refresh for bonded device $deviceAddress: $refreshed"
+                            )
+                        } catch (e: Exception) {
+                            android.util.Log.w(
+                                "BleDeviceInterface",
+                                "GATT cache refresh failed for $deviceAddress: ${e.message}"
+                            )
                         }
-                        // If successful, we'll report CONNECTED in onMtuChanged
-                    } catch (e: Exception) {
-                        // MTU request threw exception, report connected anyway
-                        devicesAwaitingMtu.remove(deviceAddress)
-                        channel.invokeMethod("bleConnectionState_$deviceAddress", ConnectionState.CONNECTED.name)
+
+                        // Delay MTU negotiation to allow the cache invalidation to complete
+                        // within the Bluetooth stack before issuing any GATT operations.
+                        mainHandler.postDelayed({
+                            requestMtuForDevice(gatt, deviceAddress)
+                        }, 300)
+                    } else {
+                        // Non-bonded device: proceed with MTU negotiation immediately
+                        requestMtuForDevice(gatt, deviceAddress)
                     }
                 }
 
@@ -338,6 +366,36 @@ class BleDeviceInterface(
                     channel.invokeMethod("bleConnectionState_$deviceAddress", ConnectionState.UNKNOWN.name)
                 }
             }
+        }
+    }
+
+    /**
+     * Requests MTU negotiation for a connected device.
+     *
+     * This helper is extracted from [onConnectionStateChange] to allow deferred invocation
+     * when a post-refresh delay is needed for bonded devices. It requests an MTU of 517 bytes
+     * (the maximum supported by BLE 4.2+), which triggers the [onMtuChanged] callback on
+     * completion.
+     *
+     * If the MTU request fails or throws, the device is reported as CONNECTED immediately
+     * to avoid blocking the connection flow indefinitely.
+     *
+     * @param gatt The active GATT client for the device.
+     * @param deviceAddress The MAC address of the device.
+     */
+    private fun requestMtuForDevice(gatt: BluetoothGatt, deviceAddress: String) {
+        try {
+            val mtuRequested: Boolean = gatt.requestMtu(517)
+            if (!mtuRequested) {
+                // MTU request failed, report connected anyway to avoid blocking
+                devicesAwaitingMtu.remove(deviceAddress)
+                channel.invokeMethod("bleConnectionState_$deviceAddress", ConnectionState.CONNECTED.name)
+            }
+            // If successful, we'll report CONNECTED in onMtuChanged
+        } catch (e: Exception) {
+            // MTU request threw exception, report connected anyway
+            devicesAwaitingMtu.remove(deviceAddress)
+            channel.invokeMethod("bleConnectionState_$deviceAddress", ConnectionState.CONNECTED.name)
         }
     }
 
