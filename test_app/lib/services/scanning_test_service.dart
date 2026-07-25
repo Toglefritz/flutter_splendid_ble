@@ -214,7 +214,7 @@ class ScanningTestService {
       // Scan for 10 seconds
       await Future<void>.delayed(const Duration(seconds: 10));
     } finally {
-      _ble.stopScan();
+      await _ble.stopScan();
       await _scanSubscription?.cancel();
       _scanSubscription = null;
     }
@@ -299,7 +299,7 @@ class ScanningTestService {
         // Timeout handled above
       }
     } finally {
-      _ble.stopScan();
+      await _ble.stopScan();
       await _scanSubscription?.cancel();
       _scanSubscription = null;
     }

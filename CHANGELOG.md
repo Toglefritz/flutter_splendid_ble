@@ -2,6 +2,14 @@
 
 All notable changes to the `flutter_splendid_ble` plugin will be documented in this file.
 
+## [1.3.0] 2026/07/23
+
+- Added Swift Package Manager support for iOS and macOS platforms
+  - Created `Package.swift` manifests for both iOS (targeting iOS 13.0) and macOS (targeting macOS 10.15)
+  - Migrated Swift source files to SPM-compatible directory structure (`flutter_splendid_ble/Sources/flutter_splendid_ble/`)
+  - Updated CocoaPods podspec files to reference the new source paths
+  - Plugin now supports both Swift Package Manager and CocoaPods for backward compatibility
+
 ## [1.2.0] 2026/06/25
 
 - Improved Android BLE connection reliability to reduce GATT_ERROR (status 133) failures

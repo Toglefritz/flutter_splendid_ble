@@ -13,7 +13,7 @@ A comprehensive Flutter plugin for interacting with Bluetooth Low Energy (BLE) d
   s.license          = { :file => '../LICENSE' }
   s.author           = { 'Splendid Endeavors' => 'email@example.com' }
   s.source           = { :path => '.' }
-  s.source_files = 'Classes/**/*'
+  s.source_files = 'flutter_splendid_ble/Sources/flutter_splendid_ble/**/*.swift'
   s.dependency 'Flutter'
   s.platform = :ios, '11.0'
 
