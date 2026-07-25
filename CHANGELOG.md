@@ -2,6 +2,10 @@
 
 All notable changes to the `flutter_splendid_ble` plugin will be documented in this file.
 
+## [1.3.1] 2026/07/25
+
+- Added a comment on the Android side documenting how to clear the GATT cache
+
 ## [1.3.0] 2026/07/23
 
 - Added Swift Package Manager support for iOS and macOS platforms
