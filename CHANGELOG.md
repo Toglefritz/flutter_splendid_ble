@@ -2,6 +2,12 @@
 
 All notable changes to the `flutter_splendid_ble` plugin will be documented in this file.
 
+## [1.3.3] 2026/07/28
+
+- Removed `maxSdkVersion="30"` restriction from location permissions in the Android manifest
+  - `ACCESS_COARSE_LOCATION` and `ACCESS_FINE_LOCATION` are no longer capped at API 30
+  - Fixes BLE scanning issues on devices where the system requires location permissions regardless of Android version
+
 ## [1.3.2] 2026/07/25
 
 - Automatic GATT cache refresh on Android for bonded devices during reconnection
