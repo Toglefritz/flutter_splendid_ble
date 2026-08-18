@@ -1,7 +1,7 @@
 plugins {
     id("com.android.application")
-    id("kotlin-android")
-    // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
+    // The Flutter Gradle Plugin must be applied after the Android Gradle plugin.
+    // AGP 9+ provides built-in Kotlin support, so kotlin-android is no longer needed.
     id("dev.flutter.flutter-gradle-plugin")
 }
 
@@ -13,10 +13,6 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
-    }
-
-    kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_11.toString()
     }
 
     defaultConfig {
@@ -41,4 +37,11 @@ android {
 
 flutter {
     source = "../.."
+}
+
+// AGP 9 built-in Kotlin: use compilerOptions in place of the deprecated kotlinOptions DSL.
+kotlin {
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11)
+    }
 }
