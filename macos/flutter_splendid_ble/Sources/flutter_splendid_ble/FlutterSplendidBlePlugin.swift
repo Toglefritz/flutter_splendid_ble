@@ -50,6 +50,23 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
     /// Value: The FlutterResult callback to complete when the operation finishes
     private var pendingNotificationStateChanges: [String: FlutterResult] = [:]
 
+    /// Tracks pending characteristic write operations with their FlutterResult callbacks.
+    ///
+    /// When writeCharacteristic() is called with write type `.withResponse`, the operation is
+    /// asynchronous — CoreBluetooth queues the write and fires `didWriteValueFor` once the
+    /// peripheral acknowledges it. The FlutterResult is stored here and completed in that
+    /// callback so that `await characteristic.writeValue(...)` on the Dart side does not
+    /// resolve until the ATT write response has been received.
+    ///
+    /// This is critical for encrypted characteristics: CoreBluetooth may initiate pairing
+    /// before the peripheral can respond, and `didWriteValueFor` does not fire until after
+    /// the bond is fully established and the write is retried successfully. Storing the
+    /// result here ensures the Dart future correctly waits for that entire sequence.
+    ///
+    /// Key format: "deviceAddress:characteristicUUID"
+    /// Value: The FlutterResult callback to complete when the write is acknowledged
+    private var pendingWriteResults: [String: FlutterResult] = [:]
+
     /// Pending fallback work items keyed by peripheral UUID.
     ///
     /// When a connectable device's first advertisement is buffered, a `DispatchWorkItem` is
@@ -270,7 +287,18 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
             }
             
             peripheral.writeValue(dataValue, for: characteristic, type: writeType)
-            result(nil)
+
+            if writeType == .withResponse {
+                // Store the result callback and complete it in didWriteValueFor once the
+                // peripheral sends an ATT write response. For encrypted characteristics,
+                // CoreBluetooth will initiate pairing first and retry the write after the
+                // bond is established, so this callback fires only after pairing is complete.
+                let key = "\(deviceAddress):\(characteristicUuidStr.uppercased())"
+                pendingWriteResults[key] = result
+            } else {
+                // Write without response: no acknowledgement will arrive, so resolve now.
+                result(nil)
+            }
             
         case CentralMethod.readCharacteristic.rawValue:
             guard let arguments = call.arguments as? [String: Any],
@@ -540,13 +568,27 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
     public func centralManager(_ central: CBCentralManager, didDisconnectPeripheral peripheral: CBPeripheral, error: Error?) {
         let deviceAddress: String = peripheral.identifier.uuidString
 
-        // Clean up any pending notification state changes for this device
-        let keysToRemove = pendingNotificationStateChanges.keys.filter { $0.hasPrefix("\(deviceAddress):") }
-        for key in keysToRemove {
+        // Fail any pending notification state changes for this device.
+        let notificationKeysToRemove = pendingNotificationStateChanges.keys.filter { $0.hasPrefix("\(deviceAddress):") }
+        for key in notificationKeysToRemove {
             if let pendingResult = pendingNotificationStateChanges.removeValue(forKey: key) {
                 pendingResult(FlutterError(
                     code: "DISCONNECTED",
                     message: "Device disconnected during notification state change operation",
+                    details: nil
+                ))
+            }
+        }
+
+        // Fail any pending write operations for this device. This covers the case where a
+        // pairing-triggered write is in flight and the peripheral disconnects before the bond
+        // is established, which would otherwise leave the Dart future hanging indefinitely.
+        let writeKeysToRemove = pendingWriteResults.keys.filter { $0.hasPrefix("\(deviceAddress):") }
+        for key in writeKeysToRemove {
+            if let pendingResult = pendingWriteResults.removeValue(forKey: key) {
+                pendingResult(FlutterError(
+                    code: "DISCONNECTED",
+                    message: "Device disconnected before write operation completed",
                     details: nil
                 ))
             }
@@ -698,9 +740,19 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
     ///   - error: An optional `Error` detailing what went wrong during the write operation, if anything.
     public func peripheral(_ peripheral: CBPeripheral, didWriteValueFor characteristic: CBCharacteristic, error: Error?) {
         let deviceAddress = peripheral.identifier.uuidString
+        let key = "\(deviceAddress):\(characteristic.uuid.uuidString.uppercased())"
 
         if let error = error {
-            // Write failed - notify Flutter with error details
+            // Complete the pending Dart future with an error so the await on writeValue() throws.
+            if let pendingResult = pendingWriteResults.removeValue(forKey: key) {
+                pendingResult(FlutterError(
+                    code: "WRITE_FAILED",
+                    message: "Failed to write characteristic: \(error.localizedDescription)",
+                    details: nil
+                ))
+            }
+
+            // Also notify any listeners via the method channel event.
             let errorMap: [String: Any] = [
                 "deviceAddress": deviceAddress,
                 "characteristicUuid": characteristic.uuid.uuidString,
@@ -709,7 +761,12 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
             ]
             centralChannel.invokeMethod("onCharacteristicWrite", arguments: errorMap)
         } else {
-            // Write succeeded - notify Flutter
+            // Complete the pending Dart future successfully.
+            if let pendingResult = pendingWriteResults.removeValue(forKey: key) {
+                pendingResult(nil)
+            }
+
+            // Also notify any listeners via the method channel event.
             let successMap: [String: Any] = [
                 "deviceAddress": deviceAddress,
                 "characteristicUuid": characteristic.uuid.uuidString,

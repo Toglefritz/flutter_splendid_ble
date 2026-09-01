@@ -791,11 +791,11 @@ class CentralMethodChannel extends CentralPlatformInterface {
     }
   }
 
-  /// Clears the Android GATT cache for the connected device by invoking the hidden
-  /// `BluetoothGatt.refresh()` method via reflection on the native side.
+  /// Clears the Android GATT cache for the connected device by invoking the hidden `BluetoothGatt.refresh()` method via
+  /// reflection on the native side.
   ///
-  /// On iOS, this call returns immediately without performing any platform action because
-  /// Core Bluetooth does not expose a GATT cache.
+  /// On iOS, this call returns immediately without performing any platform action because Core Bluetooth does not
+  /// expose a GATT cache.
   ///
   /// Throws a [GattCacheException] if the native reflective call fails.
   @override

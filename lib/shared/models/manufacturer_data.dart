@@ -52,8 +52,8 @@ class ManufacturerData {
       ),
     );
 
-    // Extract the manufacturer identifier (first 2 bytes) and the payload (remaining bytes).
-    // We use a safe length check to avoid errors if the data is unexpectedly short.
+    // Extract the manufacturer identifier (first 2 bytes) and the payload (remaining bytes). We use a safe length check
+    // to avoid errors if the data is unexpectedly short.
     final int idEndIndex =
         manufacturerDataInts.length < 2 ? manufacturerDataInts.length : 2;
 
