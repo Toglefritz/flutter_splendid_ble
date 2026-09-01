@@ -2,6 +2,19 @@
 
 All notable changes to the `flutter_splendid_ble` plugin will be documented in this file.
 
+## [1.4.0] 2026/09/01
+
+- Made macOS characteristic writes with response truly asynchronous
+  - `writeCharacteristic` with write type `.withResponse` now defers the Dart `Future` until CoreBluetooth's `didWriteValueFor` callback confirms the ATT write response
+  - This ensures `await` correctly waits for encrypted characteristic writes, where CoreBluetooth initiates pairing first and retries the write only after the bond is established
+  - Writes without response continue to resolve immediately, since no acknowledgement is sent
+  - Pending writes are now failed cleanly if the device disconnects mid-operation, preventing the Dart `Future` from hanging indefinitely
+- Migrated to Android Gradle Plugin 9+
+  - Updated AGP to 9.0.1 and Kotlin to 2.3.20 in the example and test apps
+  - Updated the Gradle wrapper to 9.1.0
+  - Simplified and modernized the plugin's `android/build.gradle` configuration
+- Documentation formatting cleanup
+
 ## [1.3.3] 2026/07/28
 
 - Removed `maxSdkVersion="30"` restriction from location permissions in the Android manifest
