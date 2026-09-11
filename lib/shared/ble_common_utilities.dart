@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/services.dart';
 
+import 'ble_method_channel_router.dart';
 import 'models/bluetooth_permission_status.dart';
 import 'models/bluetooth_status.dart';
 
@@ -26,8 +27,7 @@ class BleCommonUtilities {
   static Future<BluetoothStatus> checkBluetoothAdapterStatus(
     MethodChannel channel,
   ) async {
-    final String statusString =
-        await channel.invokeMethod('checkBluetoothAdapterStatus') as String;
+    final String statusString = await channel.invokeMethod('checkBluetoothAdapterStatus') as String;
 
     return BluetoothStatus.values.firstWhere(
       (e) => e.identifier == statusString,
@@ -51,11 +51,10 @@ class BleCommonUtilities {
   static Future<Stream<BluetoothStatus>> emitCurrentBluetoothStatus(
     MethodChannel channel,
   ) async {
-    final StreamController<BluetoothStatus> streamController =
-        StreamController<BluetoothStatus>.broadcast();
+    final StreamController<BluetoothStatus> streamController = StreamController<BluetoothStatus>.broadcast();
 
     // Listen to the platform side for Bluetooth adapter status updates.
-    channel.setMethodCallHandler((MethodCall call) async {
+    BleMethodChannelRouter.setOperationHandler(channel, (MethodCall call) async {
       if (call.method == 'adapterStateUpdated') {
         final String statusString = call.arguments as String;
 
@@ -92,8 +91,7 @@ class BleCommonUtilities {
   static Future<BluetoothPermissionStatus> requestBluetoothPermissions(
     MethodChannel channel,
   ) async {
-    final String permissionStatusString =
-        await channel.invokeMethod('requestBluetoothPermissions') as String;
+    final String permissionStatusString = await channel.invokeMethod('requestBluetoothPermissions') as String;
     return BluetoothPermissionStatus.values.firstWhere(
       (status) => status.identifier == permissionStatusString,
       orElse: () => BluetoothPermissionStatus.unknown,
@@ -121,13 +119,12 @@ class BleCommonUtilities {
     final StreamController<BluetoothPermissionStatus> streamController =
         StreamController<BluetoothPermissionStatus>.broadcast();
 
-    channel.setMethodCallHandler((MethodCall call) async {
+    BleMethodChannelRouter.setOperationHandler(channel, (MethodCall call) async {
       if (call.method == 'permissionStatusUpdated') {
         final String permissionStatusString = call.arguments as String;
 
         // Convert the string status to its corresponding enum value
-        final BluetoothPermissionStatus status =
-            BluetoothPermissionStatus.values.firstWhere(
+        final BluetoothPermissionStatus status = BluetoothPermissionStatus.values.firstWhere(
           (status) => status.identifier == permissionStatusString,
         );
 

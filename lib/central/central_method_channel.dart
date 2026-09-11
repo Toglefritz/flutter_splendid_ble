@@ -24,6 +24,7 @@ import '../central/models/exceptions/service_discovery_exception.dart';
 import '../central/models/scan_filter.dart';
 import '../central/models/scan_settings.dart';
 import '../shared/ble_common_utilities.dart';
+import '../shared/ble_method_channel_router.dart';
 import '../shared/models/ble_device.dart';
 import '../shared/models/bluetooth_permission_status.dart';
 import '../shared/models/bluetooth_status.dart';
@@ -37,8 +38,7 @@ import 'models/connected_ble_device.dart';
 class CentralMethodChannel extends CentralPlatformInterface {
   /// The method channel used to interact with the native platform.
   @visibleForTesting
-  final MethodChannel channel =
-      const MethodChannel('flutter_splendid_ble_central');
+  final MethodChannel channel = const MethodChannel('flutter_splendid_ble_central');
 
   /// Checks the status of the Bluetooth adapter on the device.
   ///
@@ -76,8 +76,7 @@ class CentralMethodChannel extends CentralPlatformInterface {
   /// Bluetooth adapter on the device.
   @override
   Future<Stream<BluetoothStatus>> emitCurrentBluetoothStatus() async {
-    final Stream<BluetoothStatus> bluetoothStatusStream =
-        await BleCommonUtilities.emitCurrentBluetoothStatus(channel);
+    final Stream<BluetoothStatus> bluetoothStatusStream = await BleCommonUtilities.emitCurrentBluetoothStatus(channel);
 
     return bluetoothStatusStream;
   }
@@ -109,8 +108,7 @@ class CentralMethodChannel extends CentralPlatformInterface {
   /// Returns a [Stream] of [BluetoothPermissionStatus] values representing the current Bluetooth permission status on
   /// the device.
   @override
-  Future<Stream<BluetoothPermissionStatus>>
-      emitCurrentPermissionStatus() async {
+  Future<Stream<BluetoothPermissionStatus>> emitCurrentPermissionStatus() async {
     final Stream<BluetoothPermissionStatus> permissionStatusStream =
         await BleCommonUtilities.emitCurrentPermissionStatus(channel);
 
@@ -149,8 +147,7 @@ class CentralMethodChannel extends CentralPlatformInterface {
       ) as List<dynamic>;
 
       // Convert the dynamic list to a strongly-typed list of maps
-      final List<ConnectedBleDevice> devices =
-          connectedDevices.map((dynamic device) {
+      final List<ConnectedBleDevice> devices = connectedDevices.map((dynamic device) {
         final Map<dynamic, dynamic> deviceMap = device as Map<dynamic, dynamic>;
         return ConnectedBleDevice.fromMap(deviceMap);
       }).toList();
@@ -179,11 +176,10 @@ class CentralMethodChannel extends CentralPlatformInterface {
     List<ScanFilter>? filters,
     ScanSettings? settings,
   }) async {
-    final StreamController<BleDevice> streamController =
-        StreamController<BleDevice>.broadcast();
+    final StreamController<BleDevice> streamController = StreamController<BleDevice>.broadcast();
 
     // Listen to the platform side for scanned devices.
-    channel.setMethodCallHandler((MethodCall call) async {
+    BleMethodChannelRouter.setOperationHandler(channel, (MethodCall call) async {
       switch (call.method) {
         case 'bleDeviceScanned':
           try {
@@ -191,12 +187,11 @@ class CentralMethodChannel extends CentralPlatformInterface {
             // Different operating systems will send the arguments in different formats. So, normalize the arguments as
             // a Map<dynamic, dynamic> for use in the BleDevice.fromMap factory constructor.
             if (call.arguments is String) {
-              final Map<dynamic, dynamic> argumentsParsed = json
-                  .decode(call.arguments as String) as Map<dynamic, dynamic>;
+              final Map<dynamic, dynamic> argumentsParsed =
+                  json.decode(call.arguments as String) as Map<dynamic, dynamic>;
               device = BleDevice.fromMap(argumentsParsed);
             } else {
-              device =
-                  BleDevice.fromMap(call.arguments as Map<dynamic, dynamic>);
+              device = BleDevice.fromMap(call.arguments as Map<dynamic, dynamic>);
             }
 
             // Apply additional filtering on Dart side. Filtering is also done on the native side, but this allows for
@@ -216,8 +211,7 @@ class CentralMethodChannel extends CentralPlatformInterface {
     });
 
     // Convert filters and settings into map representations if provided.
-    final List<Map<String, dynamic>>? filtersMap =
-        filters?.map((filter) => filter.toMap()).toList();
+    final List<Map<String, dynamic>>? filtersMap = filters?.map((filter) => filter.toMap()).toList();
     final Map<String, dynamic>? settingsMap = settings?.toMap();
 
     // Begin the scan on the platform side, including the filters and settings in the method call if provided.
@@ -269,7 +263,7 @@ class CentralMethodChannel extends CentralPlatformInterface {
 
     // Listen to the platform side for connection state updates. The platform side differentiates connection state
     // updates for different Bluetooth peripherals by appending the device address to the method name.
-    channel.setMethodCallHandler((MethodCall call) async {
+    BleMethodChannelRouter.setOperationHandler(channel, (MethodCall call) async {
       if (call.method == 'bleConnectionState_$deviceAddress') {
         final String connectionStateString = call.arguments as String;
         final BleConnectionState state = BleConnectionState.values.firstWhere(
@@ -277,8 +271,7 @@ class CentralMethodChannel extends CentralPlatformInterface {
         );
         connectionStateStreamController.add(state);
       } else if (call.method == 'error') {
-        connectionStateStreamController
-            .addError(BluetoothConnectionException(call.arguments as String));
+        connectionStateStreamController.addError(BluetoothConnectionException(call.arguments as String));
       }
     });
 
@@ -340,7 +333,7 @@ class CentralMethodChannel extends CentralPlatformInterface {
     String deviceAddress,
     StreamController<List<BleService>> servicesDiscoveredController,
   ) {
-    channel.setMethodCallHandler((MethodCall call) async {
+    BleMethodChannelRouter.setOperationHandler(channel, (MethodCall call) async {
       if (call.method == 'bleServicesDiscovered_$deviceAddress') {
         final Map<dynamic, dynamic> rawServicesMap = call.arguments as Map;
 
@@ -348,18 +341,15 @@ class CentralMethodChannel extends CentralPlatformInterface {
         final List<BleService> services = rawServicesMap.entries
             .map((entry) {
               if (entry.key is String && entry.value is List) {
-                final List<Map<dynamic, dynamic>> rawCharacteristics =
-                    List<Map<dynamic, dynamic>>.from(
+                final List<Map<dynamic, dynamic>> rawCharacteristics = List<Map<dynamic, dynamic>>.from(
                   entry.value as List<dynamic>,
                 );
 
                 try {
                   // Convert the raw characteristic maps to BleCharacteristic objects.
-                  final List<BleCharacteristic> characteristics =
-                      rawCharacteristics.map((charMap) {
+                  final List<BleCharacteristic> characteristics = rawCharacteristics.map((charMap) {
                     // Manually convert the map to the desired type
-                    final Map<String, dynamic> typedMap =
-                        Map<dynamic, dynamic>.from(charMap).map(
+                    final Map<String, dynamic> typedMap = Map<dynamic, dynamic>.from(charMap).map(
                       (key, value) => MapEntry(key as String, value),
                     );
                     return BleCharacteristic.fromMap(typedMap);
@@ -385,8 +375,7 @@ class CentralMethodChannel extends CentralPlatformInterface {
 
         servicesDiscoveredController.add(services);
       } else if (call.method == 'error') {
-        servicesDiscoveredController
-            .addError(ServiceDiscoveryException(call.arguments as String));
+        servicesDiscoveredController.addError(ServiceDiscoveryException(call.arguments as String));
       }
     });
   }
@@ -399,10 +388,10 @@ class CentralMethodChannel extends CentralPlatformInterface {
   ///
   /// ## Importance of Disconnecting
   ///
-  /// 1. **Resource Management**: BLE connections occupy system resources. Failing to disconnect can lead to resource leakage.
-  /// 2. **Battery Optimization**: BLE connections consume battery power on both connecting and connected devices. Timely disconnection helps in prolonging battery life.
+  /// 1. **Resource Management**: Disconnecting releases the system resources occupied by a BLE connection.
+  /// 2. **Battery Optimization**: Disconnecting reduces power consumption on both connected devices.
   /// 3. **Security**: Maintaining an open connection can expose the devices to potential security risks.
-  /// 4. **Connection Limits**: BLE peripherals often have a limit on the number of concurrent connections. Disconnecting when done ensures that other devices can connect.
+  /// 4. **Connection Limits**: Disconnecting frees a peripheral connection slot for another device.
   @override
   Future<void> disconnect(String deviceAddress) async {
     await channel.invokeMethod('disconnect', {'address': deviceAddress});
@@ -424,14 +413,12 @@ class CentralMethodChannel extends CentralPlatformInterface {
   ) async {
     try {
       // Invoke the method channel to fetch the current connection state for the BLE device.
-      final String connectionStateString =
-          await channel.invokeMethod('getCurrentConnectionState', {
+      final String connectionStateString = await channel.invokeMethod('getCurrentConnectionState', {
         'address': deviceAddress,
       }) as String;
 
       // Convert the string received from Kotlin to the Dart enum value.
-      return BleConnectionState.values
-          .firstWhere((e) => e.identifier == connectionStateString);
+      return BleConnectionState.values.firstWhere((e) => e.identifier == connectionStateString);
     } on PlatformException catch (e) {
       // Handle different error types accordingly.
       if (e.message?.contains('permissions') ?? false) {
@@ -480,7 +467,7 @@ class CentralMethodChannel extends CentralPlatformInterface {
     // Set up a method call handler to listen for connection state updates from the platform. The platform side
     // differentiates connection state updates for different devices by appending the device address to the method name
     // (e.g., "bleConnectionState_<address>").
-    channel.setMethodCallHandler((MethodCall call) async {
+    BleMethodChannelRouter.setOperationHandler(channel, (MethodCall call) async {
       if (call.method == 'bleConnectionState_$deviceAddress') {
         final String connectionStateString = call.arguments as String;
         final BleConnectionState state = BleConnectionState.values.firstWhere(
@@ -488,8 +475,7 @@ class CentralMethodChannel extends CentralPlatformInterface {
         );
         connectionStateStreamController.add(state);
       } else if (call.method == 'error') {
-        connectionStateStreamController
-            .addError(BluetoothConnectionException(call.arguments as String));
+        connectionStateStreamController.addError(BluetoothConnectionException(call.arguments as String));
       }
     });
 
@@ -591,7 +577,7 @@ class CentralMethodChannel extends CentralPlatformInterface {
   }) async {
     final completer = Completer<BleCharacteristicValue>();
 
-    channel.setMethodCallHandler((MethodCall call) async {
+    BleMethodChannelRouter.setOperationHandler(channel, (MethodCall call) async {
       if (call.method == 'onCharacteristicRead') {
         final BleCharacteristicValue response;
         try {
@@ -602,7 +588,8 @@ class CentralMethodChannel extends CentralPlatformInterface {
           rethrow;
         }
         completer.complete(response);
-        channel.setMethodCallHandler(
+        BleMethodChannelRouter.setOperationHandler(
+          channel,
           null,
         ); // Reset the handler to avoid future calls.
       }
@@ -630,7 +617,7 @@ class CentralMethodChannel extends CentralPlatformInterface {
       timeout,
       onTimeout: () {
         // If the timeout occurs, reset the method call handler and throw an error.
-        channel.setMethodCallHandler(null);
+        BleMethodChannelRouter.setOperationHandler(channel, null);
         throw TimeoutException(
           'Failed to read characteristic within the given timeout',
           timeout,
@@ -644,29 +631,30 @@ class CentralMethodChannel extends CentralPlatformInterface {
   /// A caller to this function will receive a [Stream] of [BleCharacteristicValue] objects. A caller should listen to
   /// this stream and establish a callback function invoked each time a new value is emitted to the stream. Once
   /// subscribed, any updates to the characteristic value will be sent as a stream of [BleCharacteristicValue] objects.
+  ///
+  /// The broadcast stream contains only updates matching both the address and UUID of [characteristic], ignoring case.
+  /// Subscribing to another characteristic or starting another BLE operation does not replace its notification
+  /// receiver. Cancelling a listener does not disable native notifications; use [unsubscribeFromCharacteristic] to
+  /// disable them.
   @override
   Future<Stream<BleCharacteristicValue>> subscribeToCharacteristic(
     BleCharacteristic characteristic,
   ) async {
-    final StreamController<BleCharacteristicValue> streamController =
-        StreamController<BleCharacteristicValue>.broadcast();
-
-    // Listen for characteristic updates from the platform side.
-    channel.setMethodCallHandler((MethodCall call) async {
-      if (call.method == 'onCharacteristicChanged') {
-        final BleCharacteristicValue value;
-        try {
-          value = BleCharacteristicValue.fromMap(
-            call.arguments as Map<dynamic, dynamic>,
-          );
-        } catch (e) {
-          streamController
-              .addError(Exception('Failed to parse characteristic value: $e'));
-          return;
-        }
-        streamController.add(value);
+    final String address = characteristic.address.toUpperCase();
+    final String uuid = characteristic.uuid.toUpperCase();
+    final Stream<BleCharacteristicValue> stream =
+        BleMethodChannelRouter.forChannel(channel).characteristicChanges.where((MethodCall call) {
+      final Object? arguments = call.arguments;
+      if (arguments is! Map<Object?, Object?>) {
+        throw const FormatException('Characteristic notification must contain a map.');
       }
-    });
+      final Object? eventAddress = arguments['deviceAddress'];
+      final Object? eventUuid = arguments['characteristicUuid'];
+      if (eventAddress is! String || eventUuid is! String) {
+        throw const FormatException('Characteristic notification must identify its device and UUID.');
+      }
+      return eventAddress.toUpperCase() == address && eventUuid.toUpperCase() == uuid;
+    }).map((MethodCall call) => BleCharacteristicValue.fromMap(call.arguments as Map<Object?, Object?>));
 
     // Trigger the subscription to the characteristic on the platform side.
     try {
@@ -677,23 +665,15 @@ class CentralMethodChannel extends CentralPlatformInterface {
     } on PlatformException catch (e) {
       // Handle different error types accordingly.
       if (e.message?.contains('permissions') ?? false) {
-        streamController.addError(
-          BluetoothPermissionException('Permission error: ${e.message}'),
-        );
         throw BluetoothPermissionException('Permission error: ${e.message}');
       } else {
-        streamController.addError(
-          BluetoothSubscriptionException(
-            'Failed to subscribe to BLE characteristic: ${e.message}',
-          ),
-        );
         throw BluetoothSubscriptionException(
           'Failed to subscribe to BLE characteristic: ${e.message}',
         );
       }
     }
 
-    return streamController.stream;
+    return stream;
   }
 
   /// Unsubscribes from a Bluetooth characteristic.
@@ -768,8 +748,8 @@ class CentralMethodChannel extends CentralPlatformInterface {
   /// Returns a snapshot of the active BLE link parameters for the connected device.
   ///
   /// The native layer caches PHY values from `onPhyRead` and connection interval values from `onConnectionUpdated`,
-  /// both of which fire automatically during connection setup. This call is effectively synchronous — it reads from the
-  /// native cache rather than triggering a BLE operation.
+  /// both of which fire automatically during connection setup. This call reads from the native cache rather than
+  /// triggering a BLE operation.
   ///
   /// Returns null on iOS and on Android API < 26, where the underlying callbacks are not available.
   @override
@@ -777,8 +757,7 @@ class CentralMethodChannel extends CentralPlatformInterface {
     required String deviceAddress,
   }) async {
     try {
-      final Map<dynamic, dynamic>? result =
-          await channel.invokeMethod<Map<dynamic, dynamic>>(
+      final Map<dynamic, dynamic>? result = await channel.invokeMethod<Map<dynamic, dynamic>>(
         'readConnectionParameters',
         {'address': deviceAddress},
       );

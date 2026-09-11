@@ -2,6 +2,12 @@
 
 All notable changes to the `flutter_splendid_ble` plugin will be documented in this file.
 
+## [1.5.0] 2026/09/11
+
+- Characteristic notification streams now isolate updates by device address and characteristic UUID, ignoring case.
+- Notification streams retain their shared native receiver when another subscription or BLE operation installs or
+  clears a callback handler. Cancelling one stream listener does not interrupt other characteristic listeners.
+
 ## [1.4.0] 2026/09/01
 
 - Made macOS characteristic writes with response truly asynchronous
@@ -320,4 +326,3 @@ All notable changes to the `flutter_splendid_ble` plugin will be documented in t
 
 ### Breaking Changes
 None - this release maintains backward compatibility with 0.x versions while adding new capabilities.
-
