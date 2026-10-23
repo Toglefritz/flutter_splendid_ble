@@ -6,23 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
-import '../central/models/ble_characteristic.dart';
-import '../central/models/ble_characteristic_value.dart';
-import '../central/models/ble_connection_parameters.dart';
-import '../central/models/ble_connection_priority.dart';
-import '../central/models/ble_connection_state.dart';
-import '../central/models/ble_phy.dart';
-import '../central/models/ble_service.dart';
-import '../central/models/exceptions/bluetooth_connection_exception.dart';
-import '../central/models/exceptions/bluetooth_permission_exception.dart';
-import '../central/models/exceptions/bluetooth_read_exception.dart';
-import '../central/models/exceptions/bluetooth_scan_exception.dart';
-import '../central/models/exceptions/bluetooth_subscription_exception.dart';
-import '../central/models/exceptions/bluetooth_write_exception.dart';
-import '../central/models/exceptions/gatt_cache_exception.dart';
-import '../central/models/exceptions/service_discovery_exception.dart';
-import '../central/models/scan_filter.dart';
-import '../central/models/scan_settings.dart';
 import '../shared/ble_common_utilities.dart';
 import '../shared/ble_method_channel_router.dart';
 import '../shared/models/ble_device.dart';
@@ -30,7 +13,24 @@ import '../shared/models/bluetooth_permission_status.dart';
 import '../shared/models/bluetooth_status.dart';
 import 'central_platform_interface.dart';
 import 'extensions/scan_filter_list_extensions.dart';
+import 'models/ble_characteristic.dart';
+import 'models/ble_characteristic_value.dart';
+import 'models/ble_connection_parameters.dart';
+import 'models/ble_connection_priority.dart';
+import 'models/ble_connection_state.dart';
+import 'models/ble_phy.dart';
+import 'models/ble_service.dart';
 import 'models/connected_ble_device.dart';
+import 'models/exceptions/bluetooth_connection_exception.dart';
+import 'models/exceptions/bluetooth_permission_exception.dart';
+import 'models/exceptions/bluetooth_read_exception.dart';
+import 'models/exceptions/bluetooth_scan_exception.dart';
+import 'models/exceptions/bluetooth_subscription_exception.dart';
+import 'models/exceptions/bluetooth_write_exception.dart';
+import 'models/exceptions/gatt_cache_exception.dart';
+import 'models/exceptions/service_discovery_exception.dart';
+import 'models/scan_filter.dart';
+import 'models/scan_settings.dart';
 
 /// An implementation of [CentralPlatformInterface] that uses method channels.
 // Several methods in this class use SteamControllers. Callers to these functions should ensure that they are closing

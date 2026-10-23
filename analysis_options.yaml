@@ -10,6 +10,13 @@ linter:
     sort_constructors_first: false
     prefer_int_literals: false
     avoid_catches_without_on_clauses: false
+    avoid_types_on_closure_parameters: false
 
 formatter:
   trailing_commas: preserve
+analyzer:
+  exclude:
+    - build/**
+    - android/**
+    - ios/**
+    - macos/**

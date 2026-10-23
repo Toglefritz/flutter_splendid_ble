@@ -1,21 +1,21 @@
 import 'dart:async';
 import 'dart:convert';
 
-import '../central/models/ble_characteristic.dart';
-import '../central/models/ble_characteristic_value.dart';
-import '../central/models/ble_connection_parameters.dart';
-import '../central/models/ble_connection_priority.dart';
-import '../central/models/ble_connection_state.dart';
-import '../central/models/ble_phy.dart';
-import '../central/models/ble_service.dart';
-import '../central/models/scan_filter.dart';
-import '../central/models/scan_settings.dart';
 import '../shared/models/ble_device.dart';
 import '../shared/models/bluetooth_permission_status.dart';
 import '../shared/models/bluetooth_status.dart';
 import 'central_platform_interface.dart';
 import 'extensions/scan_filter_list_extensions.dart';
+import 'models/ble_characteristic.dart';
+import 'models/ble_characteristic_value.dart';
+import 'models/ble_connection_parameters.dart';
+import 'models/ble_connection_priority.dart';
+import 'models/ble_connection_state.dart';
+import 'models/ble_phy.dart';
+import 'models/ble_service.dart';
 import 'models/connected_ble_device.dart';
+import 'models/scan_filter.dart';
+import 'models/scan_settings.dart';
 
 /// A fake implementation of [CentralPlatformInterface] designed for use in unit and widget tests.
 ///

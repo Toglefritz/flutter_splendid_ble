@@ -121,6 +121,7 @@ extension ScanFilterListExtensions on List<ScanFilter>? {
     return false;
   }
 
+  ///  Helper method to compare two lists of integers.
   bool _listEquals(List<int> a, List<int> b) {
     if (a.length != b.length) return false;
     for (int i = 0; i < a.length; i++) {
