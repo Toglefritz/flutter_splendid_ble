@@ -60,7 +60,7 @@ void main() {
     }
     await _notify(_characteristic('UNKNOWN', 'ABCD0'), <int>[99]);
     await _notify(
-        _characteristic(characteristics.first.address, 'UNKNOWN'), <int>[99]);
+        _characteristic(characteristics.first.address, 'UNKNOWN'), <int>[99],);
 
     for (final List<BleCharacteristicValue> values in received) {
       expect(
@@ -75,7 +75,7 @@ void main() {
   test('matches Android and iOS identifiers case-insensitively', () async {
     for (final String address in <String>[
       'AA:BB:CC:DD:EE:FF',
-      'ABCD1234-ABCD-1234-ABCD-123456789ABC'
+      'ABCD1234-ABCD-1234-ABCD-123456789ABC',
     ]) {
       final BleCharacteristic characteristic =
           _characteristic(address, '08590F7E-DB05-467E-8757-72F6FAEB13D6');
@@ -83,8 +83,8 @@ void main() {
       _listen(await platform.subscribeToCharacteristic(characteristic), values);
       await _notify(
           _characteristic(
-              address.toLowerCase(), characteristic.uuid.toLowerCase()),
-          <int>[42]);
+              address.toLowerCase(), characteristic.uuid.toLowerCase(),),
+          <int>[42],);
       expect(values.single.value, <int>[42]);
     }
   });
@@ -105,7 +105,7 @@ void main() {
     await old.cancel();
     await platform.unsubscribeFromCharacteristic(first);
     _listen(await CentralMethodChannel().subscribeToCharacteristic(first),
-        newValues);
+        newValues,);
     await _notify(first, <int>[1]);
     await _notify(second, <int>[2]);
     expect(oldValues, isEmpty);
@@ -127,7 +127,7 @@ void main() {
     await platform.connect(deviceAddress: characteristic.address);
     await _notify(characteristic, <int>[3]);
     await platform.observeConnectionState(
-        deviceAddress: characteristic.address);
+        deviceAddress: characteristic.address,);
     await _notify(characteristic, <int>[4]);
     await platform.emitCurrentBluetoothStatus();
     await _notify(characteristic, <int>[5]);
@@ -144,7 +144,7 @@ void main() {
 
     await expectLater(
       platform.readCharacteristic(
-          characteristic: characteristic, timeout: Duration.zero),
+          characteristic: characteristic, timeout: Duration.zero,),
       throwsA(isA<TimeoutException>()),
     );
     await _notify(characteristic, <int>[9]);
@@ -161,8 +161,8 @@ void main() {
     final BleCharacteristic characteristic = _characteristic('DEVICE', 'ABCD');
     _listen(
         await platform.observeConnectionState(
-            deviceAddress: characteristic.address),
-        events);
+            deviceAddress: characteristic.address,),
+        events,);
     _listen(await platform.subscribeToCharacteristic(characteristic), values);
     await _emit(
       const MethodCall('bleConnectionState_DEVICE', <String, Object?>{
@@ -212,7 +212,7 @@ void main() {
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(channel, (MethodCall call) async {
       throw PlatformException(
-          code: 'failed', message: 'native operation failed');
+          code: 'failed', message: 'native operation failed',);
     });
     await expectLater(
       platform.subscribeToCharacteristic(_characteristic('DEVICE', 'DCBA')),
@@ -224,7 +224,7 @@ void main() {
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(channel, (MethodCall call) async {
       throw PlatformException(
-          code: 'permissions', message: 'Missing permissions');
+          code: 'permissions', message: 'Missing permissions',);
     });
     await expectLater(
       platform.subscribeToCharacteristic(characteristic),
@@ -236,7 +236,7 @@ void main() {
 /// Constructs a characteristic identity without native service discovery.
 BleCharacteristic _characteristic(String address, String uuid) {
   return BleCharacteristic(
-      address: address, uuid: uuid, properties: [], permissions: []);
+      address: address, uuid: uuid, properties: [], permissions: [],);
 }
 
 /// Records events and releases the listener when the test finishes.

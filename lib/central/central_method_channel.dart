@@ -685,18 +685,18 @@ class CentralMethodChannel extends CentralPlatformInterface {
       final Object? arguments = call.arguments;
       if (arguments is! Map<Object?, Object?>) {
         throw const FormatException(
-            'Characteristic notification must contain a map.');
+            'Characteristic notification must contain a map.',);
       }
       final Object? eventAddress = arguments['deviceAddress'];
       final Object? eventUuid = arguments['characteristicUuid'];
       if (eventAddress is! String || eventUuid is! String) {
         throw const FormatException(
-            'Characteristic notification must identify its device and UUID.');
+            'Characteristic notification must identify its device and UUID.',);
       }
       return eventAddress.toUpperCase() == address &&
           eventUuid.toUpperCase() == uuid;
     }).map((MethodCall call) => BleCharacteristicValue.fromMap(
-                call.arguments as Map<Object?, Object?>));
+                call.arguments as Map<Object?, Object?>,),);
 
     // Trigger the subscription to the characteristic on the platform side.
     try {
