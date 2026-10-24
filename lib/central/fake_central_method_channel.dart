@@ -8,6 +8,8 @@ import 'central_platform_interface.dart';
 import 'extensions/scan_filter_list_extensions.dart';
 import 'models/ble_characteristic.dart';
 import 'models/ble_characteristic_value.dart';
+import 'models/ble_connection_event.dart';
+import 'models/ble_connection_failure.dart';
 import 'models/ble_connection_parameters.dart';
 import 'models/ble_connection_priority.dart';
 import 'models/ble_connection_state.dart';
@@ -69,9 +71,9 @@ class FakeCentralMethodChannel extends CentralPlatformInterface {
   final StreamController<BleDevice> _scanResultsController =
       StreamController<BleDevice>.broadcast();
 
-  /// A map of device addresses to their associated BLE connection state stream controllers. Used to simulate and emit
-  /// connection state updates for individual devices.
-  final Map<String, StreamController<BleConnectionState>>
+  /// A map of device addresses to their associated BLE connection event stream controllers. Used to simulate and emit
+  /// connection state updates (including failures) for individual devices.
+  final Map<String, StreamController<BleConnectionEvent>>
       _connectionControllers = {};
 
   /// A map of device addresses to their associated BLE services stream controllers. Used to simulate the result of
@@ -114,7 +116,8 @@ class FakeCentralMethodChannel extends CentralPlatformInterface {
   /// depend on the device's current state.
   void setConnectionState(String deviceAddress, BleConnectionState state) {
     _connectionStates[deviceAddress] = state;
-    _connectionControllers[deviceAddress]?.add(state);
+    _connectionControllers[deviceAddress]
+        ?.add(BleConnectionEvent(state: state));
   }
 
   /// Simulates a connection state update by emitting a new value on the connection stream.
@@ -131,7 +134,36 @@ class FakeCentralMethodChannel extends CentralPlatformInterface {
     BleConnectionState state,
   ) {
     _connectionStates[deviceAddress] = state;
-    _connectionControllers[deviceAddress]?.add(state);
+    _connectionControllers[deviceAddress]
+        ?.add(BleConnectionEvent(state: state));
+  }
+
+  /// Simulates a connection failure by emitting a failure event on the connection stream.
+  ///
+  /// This lets tests exercise the failure-handling path introduced with [BleConnectionEvent]. The emitted event uses
+  /// the given [state] (defaulting to [BleConnectionState.failed]) and carries the provided [failure] detail. The
+  /// device's snapshot state (as returned by [getCurrentConnectionState]) is also updated to [state].
+  ///
+  /// Example usage:
+  /// ```dart
+  /// fakeCentral.simulateConnectionFailure(
+  ///   '00:11:22:33:44:55',
+  ///   const BleConnectionFailure(category: BleConnectionFailureCategory.timeout),
+  /// );
+  /// ```
+  ///
+  /// - Parameter [deviceAddress]: The device whose connection stream should emit the failure.
+  /// - Parameter [failure]: The failure detail to attach to the emitted event.
+  /// - Parameter [state]: The connection state to report with the failure. Defaults to [BleConnectionState.failed].
+  void simulateConnectionFailure(
+    String deviceAddress,
+    BleConnectionFailure failure, {
+    BleConnectionState state = BleConnectionState.failed,
+  }) {
+    _connectionStates[deviceAddress] = state;
+    _connectionControllers[deviceAddress]?.add(
+      BleConnectionEvent(state: state, failure: failure),
+    );
   }
 
   /// Sets a mock read value for a specific characteristic UUID.
@@ -204,15 +236,15 @@ class FakeCentralMethodChannel extends CentralPlatformInterface {
   }
 
   @override
-  Future<Stream<BleConnectionState>> connect({
+  Future<Stream<BleConnectionEvent>> connect({
     required String deviceAddress,
   }) async {
     // Reuse existing controller if one exists, or create a new one This ensures that both connect() and
     // observeConnectionState() can share the same stream
-    final StreamController<BleConnectionState> controller =
+    final StreamController<BleConnectionEvent> controller =
         _connectionControllers.putIfAbsent(
       deviceAddress,
-      StreamController<BleConnectionState>.broadcast,
+      StreamController<BleConnectionEvent>.broadcast,
     );
 
     // Simulate the connection process with state changes
@@ -220,13 +252,15 @@ class FakeCentralMethodChannel extends CentralPlatformInterface {
         _connectionStates[deviceAddress] ?? BleConnectionState.disconnected;
 
     // Emit the initial state
-    controller.add(initialState);
+    controller.add(BleConnectionEvent(state: initialState));
 
     // Simulate connection after a short delay
     Future<void>.delayed(const Duration(milliseconds: 50), () {
       if (!controller.isClosed) {
         _connectionStates[deviceAddress] = BleConnectionState.connected;
-        controller.add(BleConnectionState.connected);
+        controller.add(
+          const BleConnectionEvent(state: BleConnectionState.connected),
+        );
       }
     });
 
@@ -235,7 +269,9 @@ class FakeCentralMethodChannel extends CentralPlatformInterface {
 
   @override
   Future<void> disconnect(String deviceAddress) async {
-    _connectionControllers[deviceAddress]?.add(BleConnectionState.disconnected);
+    _connectionControllers[deviceAddress]?.add(
+      const BleConnectionEvent(state: BleConnectionState.disconnected),
+    );
     _connectionStates[deviceAddress] = BleConnectionState.disconnected;
   }
 
@@ -247,14 +283,14 @@ class FakeCentralMethodChannel extends CentralPlatformInterface {
   }
 
   @override
-  Future<Stream<BleConnectionState>> observeConnectionState({
+  Future<Stream<BleConnectionEvent>> observeConnectionState({
     required String deviceAddress,
   }) async {
     // For the fake implementation, create or reuse a stream controller but don't initiate a connection
-    final StreamController<BleConnectionState> controller =
+    final StreamController<BleConnectionEvent> controller =
         _connectionControllers.putIfAbsent(
       deviceAddress,
-      StreamController<BleConnectionState>.broadcast,
+      StreamController<BleConnectionEvent>.broadcast,
     );
 
     // Emit the current state after a microtask delay to allow listeners to be set up This simulates the async nature of
@@ -264,7 +300,7 @@ class FakeCentralMethodChannel extends CentralPlatformInterface {
 
     Future<void>.delayed(const Duration(milliseconds: 1), () {
       if (!controller.isClosed) {
-        controller.add(currentState);
+        controller.add(BleConnectionEvent(state: currentState));
       }
     });
 
@@ -347,10 +383,10 @@ class FakeCentralMethodChannel extends CentralPlatformInterface {
     _connectionStates[deviceAddress] = state;
 
     // Emit to any listening streams
-    final StreamController<BleConnectionState>? controller =
+    final StreamController<BleConnectionEvent>? controller =
         _connectionControllers[deviceAddress];
     if (controller != null && !controller.isClosed) {
-      controller.add(state);
+      controller.add(BleConnectionEvent(state: state));
     }
   }
 
@@ -376,7 +412,7 @@ class FakeCentralMethodChannel extends CentralPlatformInterface {
     required String deviceAddress,
     required BleConnectionPriority priority,
   }) async {
-  /// No-op: connection priority has no meaning in a fake test environment.
+    /// No-op: connection priority has no meaning in a fake test environment.
   }
 
   /// Stub implementation of [readConnectionParameters] for use in tests.

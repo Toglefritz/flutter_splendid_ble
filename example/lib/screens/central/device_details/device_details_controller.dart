@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_splendid_ble/central/models/ble_characteristic.dart';
+import 'package:flutter_splendid_ble/central/models/ble_connection_event.dart';
+import 'package:flutter_splendid_ble/central/models/ble_connection_failure.dart';
 import 'package:flutter_splendid_ble/central/models/ble_connection_state.dart';
 import 'package:flutter_splendid_ble/central/models/ble_service.dart';
 import 'package:flutter_splendid_ble/central/models/exceptions/bluetooth_connection_exception.dart';
@@ -19,7 +21,7 @@ class DeviceDetailsController extends State<DeviceDetailsRoute> {
   late SplendidBleCentral _ble;
 
   /// A [StreamSubscription] for the connection state between the Flutter app and the Bluetooth peripheral.
-  StreamSubscription<BleConnectionState>? _connectionStateStream;
+  StreamSubscription<BleConnectionEvent>? _connectionStateStream;
 
   /// The current connection state between the host mobile device and the [BleDevice] provided to this route.
   BleConnectionState _currentConnectionState = BleConnectionState.unknown;
@@ -111,7 +113,7 @@ class DeviceDetailsController extends State<DeviceDetailsRoute> {
     });
 
     try {
-      final Stream<BleConnectionState> connectionStateStream =
+      final Stream<BleConnectionEvent> connectionStateStream =
           await _ble.connect(deviceAddress: widget.device.address);
       // ignore: inference_failure_on_untyped_parameter
 
@@ -169,8 +171,21 @@ class DeviceDetailsController extends State<DeviceDetailsRoute> {
   }
 
   /// Callback for changes in the connection state between the host mobile device and the [BleDevice].
-  void onConnectionStateUpdate(BleConnectionState state) {
-    debugPrint('Received connection state update, ${state.name}');
+  void onConnectionStateUpdate(BleConnectionEvent event) {
+    debugPrint('Received connection state update, ${event.state.name}');
+
+    // When the event carries failure detail (a failed connection attempt or an unexpected disconnection), surface it.
+    // Application code could branch on event.failure!.category here to implement specific recovery behavior.
+    if (event.isFailure) {
+      final BleConnectionFailure failure = event.failure!;
+      debugPrint(
+        'Connection failure: category=${failure.category.identifier}, '
+        'platform=${failure.platform}, rawCode=${failure.rawCode}, '
+        'domain=${failure.domain}, description=${failure.description}',
+      );
+    }
+
+    final BleConnectionState state = event.state;
 
     setState(() {
       _currentConnectionState = state;

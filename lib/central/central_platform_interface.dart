@@ -6,6 +6,7 @@ import '../shared/models/bluetooth_status.dart';
 import 'central_method_channel.dart';
 import 'models/ble_characteristic.dart';
 import 'models/ble_characteristic_value.dart';
+import 'models/ble_connection_event.dart';
 import 'models/ble_connection_parameters.dart';
 import 'models/ble_connection_priority.dart';
 import 'models/ble_connection_state.dart';
@@ -92,8 +93,9 @@ abstract class CentralPlatformInterface extends PlatformInterface {
     throw UnimplementedError('stopScan() has not been implemented.');
   }
 
-  /// Initiates a connection to a BLE peripheral and returns a Stream representing the connection state.
-  Future<Stream<BleConnectionState>> connect({
+  /// Initiates a connection to a BLE peripheral and returns a Stream of [BleConnectionEvent] representing the
+  /// connection lifecycle, including failure detail when a connection attempt fails or the link is lost unexpectedly.
+  Future<Stream<BleConnectionEvent>> connect({
     required String deviceAddress,
   }) async {
     throw UnimplementedError('connect() has not been implemented.');
@@ -130,9 +132,9 @@ abstract class CentralPlatformInterface extends PlatformInterface {
   /// The device must have been discovered through scanning or previously connected before this method can monitor its
   /// state.
   ///
-  /// Returns a [Stream] of [BleConnectionState] that emits whenever the connection state changes for the specified
-  /// device.
-  Future<Stream<BleConnectionState>> observeConnectionState({
+  /// Returns a [Stream] of [BleConnectionEvent] that emits whenever the connection state changes for the specified
+  /// device, including failure detail when the link is lost unexpectedly.
+  Future<Stream<BleConnectionEvent>> observeConnectionState({
     required String deviceAddress,
   }) async {
     throw UnimplementedError(

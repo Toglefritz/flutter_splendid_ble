@@ -2,6 +2,24 @@
 
 All notable changes to the `flutter_splendid_ble` plugin will be documented in this file.
 
+## [1.6.0] 2026/10/24
+
+- Rich, cross-platform connection error reporting
+  - Connection streams now emit `BleConnectionEvent` objects that pair the connection state with optional failure detail, rather than a bare `BleConnectionState`
+  - Connection failures and unexpected disconnections now carry a `BleConnectionFailure` describing why the attempt failed or the link was lost
+    - `category` is a normalized, platform-agnostic `BleConnectionFailureCategory` (`timeout`, `peerTerminated`, `hostTerminated`, `authenticationFailure`, `connectionLimitReached`, `unreachable`, `unknown`) intended for writing recovery logic once across all platforms
+    - `platform`, `rawCode`, `domain`, and `description` preserve the raw platform-specific detail for logging and diagnosis
+  - iOS and macOS now forward the `NSError` from `didFailToConnect` and `didDisconnectPeripheral` (code, domain, and `localizedDescription`), normalizing `CBError` and `CBATTError` codes into the shared category set
+  - Android now forwards the GATT/HCI status code from `onConnectionStateChange`, normalizing common status codes (such as 8, 19, 22) into the shared category set, and distinguishes a failed connection attempt from an unexpected disconnection of an established link
+  - Added a new `BleConnectionState.failed` value, distinct from `disconnected`, representing a connection attempt that never succeeded
+- Bug fixes to connection state parsing
+  - Fixed a crash where a `"FAILED"` connection status emitted by iOS and macOS had no corresponding `BleConnectionState` value, causing the Dart method channel handler to throw a `StateError`
+  - Connection state parsing is now tolerant of unrecognized values, resolving them to `BleConnectionState.unknown` instead of throwing; this also fixes a case-sensitivity mismatch in `getCurrentConnectionState`
+
+### Breaking Changes
+- `SplendidBleCentral.connect` and `SplendidBleCentral.observeConnectionState` now return `Future<Stream<BleConnectionEvent>>` instead of `Future<Stream<BleConnectionState>>`. Listeners that previously received a `BleConnectionState` now receive a `BleConnectionEvent`; read the connection state from `event.state` and the failure detail (when present) from `event.failure`. Apps that do not need the richer error detail can remain on 1.5.x.
+- The native method channel payload for connection updates changed from a bare status string to a map. This affects only code that bypasses the plugin's Dart API to listen on the `bleConnectionState_<address>` method channel directly.
+
 ## [1.5.0] 2026/09/11
 
 - Characteristic notification streams now isolate updates by device address and characteristic UUID, ignoring case.

@@ -2,6 +2,8 @@ import '../shared/models/ble_device.dart';
 import '../shared/models/bluetooth_permission_status.dart';
 import '../shared/models/bluetooth_status.dart';
 import 'central_platform_interface.dart';
+import 'models/ble_connection_event.dart';
+import 'models/ble_connection_failure.dart';
 import 'models/ble_connection_parameters.dart';
 import 'models/ble_connection_priority.dart';
 import 'models/ble_connection_state.dart';
@@ -100,8 +102,11 @@ class SplendidBleCentral {
 
   /// Asks the platform to connect to a Bluetooth device by its address.
   ///
-  /// Returns a [Stream] of [BleConnectionState].
-  Future<Stream<BleConnectionState>> connect({
+  /// Returns a [Stream] of [BleConnectionEvent], where each event carries the current [BleConnectionState] and, when
+  /// the state reflects a failure, a [BleConnectionFailure] describing why. Listen for events with a
+  /// [BleConnectionState] of [BleConnectionState.failed] (or an unexpected [BleConnectionState.disconnected]) and
+  /// branch on [BleConnectionFailure.category] to implement recovery logic.
+  Future<Stream<BleConnectionEvent>> connect({
     required String deviceAddress,
   }) async {
     return _platform.connect(deviceAddress: deviceAddress);
@@ -139,9 +144,9 @@ class SplendidBleCentral {
   /// The device must have been discovered through scanning or previously connected before this method can monitor its
   /// state.
   ///
-  /// Returns a [Stream] of [BleConnectionState] that emits whenever the connection state changes for the specified
-  /// device.
-  Future<Stream<BleConnectionState>> observeConnectionState({
+  /// Returns a [Stream] of [BleConnectionEvent] that emits whenever the connection state changes for the specified
+  /// device, including [BleConnectionFailure] detail when the link is lost unexpectedly.
+  Future<Stream<BleConnectionEvent>> observeConnectionState({
     required String deviceAddress,
   }) {
     return _platform.observeConnectionState(deviceAddress: deviceAddress);

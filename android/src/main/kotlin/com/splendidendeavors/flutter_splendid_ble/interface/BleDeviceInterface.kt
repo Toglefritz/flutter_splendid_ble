@@ -122,6 +122,20 @@ class BleDeviceInterface(
     private val devicesAwaitingMtu: MutableSet<String> = mutableSetOf()
 
     /**
+     * Tracks devices that have reached [ConnectionState.CONNECTED] during the current connection session.
+     *
+     * Android reports both a failed connection attempt and the loss of an established connection as
+     * `STATE_DISCONNECTED` in `onConnectionStateChange`, with a non-zero `status` in either case. This set lets the
+     * plugin distinguish the two: if a non-success disconnect arrives for a device that was never in this set, it is
+     * reported to Dart as [ConnectionState.FAILED] (the attempt never succeeded); otherwise it is reported as an
+     * unexpected [ConnectionState.DISCONNECTED]. A device is added when CONNECTED is reported to Dart and removed when
+     * it disconnects.
+     *
+     * Key is the device address (MAC address as String).
+     */
+    private val connectedDevices: MutableSet<String> = mutableSetOf()
+
+    /**
      * Cached PHY (physical layer) values for each connected device.
      *
      * Populated when [onPhyRead] or [onPhyUpdate] fires. The map key is the device
@@ -351,19 +365,45 @@ class BleDeviceInterface(
                     val pendingDisconnectResult: MethodChannel.Result? = pendingDisconnects.remove(deviceAddress)
                     pendingDisconnectResult?.success(null)
 
-                    channel.invokeMethod("bleConnectionState_$deviceAddress", ConnectionState.DISCONNECTED.name)
+                    // Determine how to classify this disconnection for the Dart side.
+                    //
+                    // A GATT_SUCCESS status means a clean, intentional disconnect: report DISCONNECTED with no failure
+                    // detail. A non-success status means something went wrong. If the device had previously reached
+                    // CONNECTED in this session, the established link was lost unexpectedly (DISCONNECTED with failure
+                    // detail); if it never reached CONNECTED, the connection attempt itself failed (FAILED with failure
+                    // detail). This mirrors the iOS/macOS distinction between didDisconnectPeripheral and
+                    // didFailToConnect.
+                    val wasConnected: Boolean = connectedDevices.remove(deviceAddress)
+                    val payload: Map<String, Any?> = if (status == BluetoothGatt.GATT_SUCCESS) {
+                        ConnectionEventPayload.success(ConnectionState.DISCONNECTED)
+                    } else if (wasConnected) {
+                        ConnectionEventPayload.failure(ConnectionState.DISCONNECTED, status)
+                    } else {
+                        ConnectionEventPayload.failure(ConnectionState.FAILED, status)
+                    }
+
+                    channel.invokeMethod("bleConnectionState_$deviceAddress", payload)
                 }
 
                 BluetoothProfile.STATE_CONNECTING -> {
-                    channel.invokeMethod("bleConnectionState_$deviceAddress", ConnectionState.CONNECTING.name)
+                    channel.invokeMethod(
+                        "bleConnectionState_$deviceAddress",
+                        ConnectionEventPayload.success(ConnectionState.CONNECTING),
+                    )
                 }
 
                 BluetoothProfile.STATE_DISCONNECTING -> {
-                    channel.invokeMethod("bleConnectionState_$deviceAddress", ConnectionState.DISCONNECTING.name)
+                    channel.invokeMethod(
+                        "bleConnectionState_$deviceAddress",
+                        ConnectionEventPayload.success(ConnectionState.DISCONNECTING),
+                    )
                 }
 
                 else -> {
-                    channel.invokeMethod("bleConnectionState_$deviceAddress", ConnectionState.UNKNOWN.name)
+                    channel.invokeMethod(
+                        "bleConnectionState_$deviceAddress",
+                        ConnectionEventPayload.success(ConnectionState.UNKNOWN),
+                    )
                 }
             }
         }
@@ -389,13 +429,21 @@ class BleDeviceInterface(
             if (!mtuRequested) {
                 // MTU request failed, report connected anyway to avoid blocking
                 devicesAwaitingMtu.remove(deviceAddress)
-                channel.invokeMethod("bleConnectionState_$deviceAddress", ConnectionState.CONNECTED.name)
+                connectedDevices.add(deviceAddress)
+                channel.invokeMethod(
+                    "bleConnectionState_$deviceAddress",
+                    ConnectionEventPayload.success(ConnectionState.CONNECTED),
+                )
             }
             // If successful, we'll report CONNECTED in onMtuChanged
         } catch (e: Exception) {
             // MTU request threw exception, report connected anyway
             devicesAwaitingMtu.remove(deviceAddress)
-            channel.invokeMethod("bleConnectionState_$deviceAddress", ConnectionState.CONNECTED.name)
+            connectedDevices.add(deviceAddress)
+            channel.invokeMethod(
+                "bleConnectionState_$deviceAddress",
+                ConnectionEventPayload.success(ConnectionState.CONNECTED),
+            )
         }
     }
 
@@ -441,8 +489,14 @@ class BleDeviceInterface(
                 // MTU negotiation complete, remove from waiting set
                 devicesAwaitingMtu.remove(deviceAddress)
 
-                // Now the connection is truly ready - report CONNECTED to Flutter
-                channel.invokeMethod("bleConnectionState_$deviceAddress", ConnectionState.CONNECTED.name)
+                // Now the connection is truly ready - report CONNECTED to Flutter. Record the device as connected so
+                // that a later non-success disconnect is classified as an unexpected DISCONNECTED rather than a FAILED
+                // connection attempt.
+                connectedDevices.add(deviceAddress)
+                channel.invokeMethod(
+                    "bleConnectionState_$deviceAddress",
+                    ConnectionEventPayload.success(ConnectionState.CONNECTED),
+                )
 
                 if (status == BluetoothGatt.GATT_SUCCESS) {
                     android.util.Log.d("BleDeviceInterface", "MTU negotiated for $deviceAddress: $mtu bytes")
@@ -734,15 +788,17 @@ class BleDeviceInterface(
                         "Disconnect fallback timer fired for $deviceAddress — forcing cleanup"
                     )
                     closeAndCleanGatt(deviceAddress)
+                    connectedDevices.remove(deviceAddress)
 
                     // Complete the pending disconnect Future
                     val pendingResult: MethodChannel.Result? = pendingDisconnects.remove(deviceAddress)
                     pendingResult?.success(null)
 
-                    // Notify Flutter of the state change
+                    // Notify Flutter of the state change. This is an application-initiated disconnect, so it carries no
+                    // failure detail.
                     channel.invokeMethod(
                         "bleConnectionState_$deviceAddress",
-                        ConnectionState.DISCONNECTED.name
+                        ConnectionEventPayload.success(ConnectionState.DISCONNECTED),
                     )
                 }
 

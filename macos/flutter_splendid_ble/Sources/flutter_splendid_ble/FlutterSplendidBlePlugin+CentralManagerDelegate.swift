@@ -200,19 +200,26 @@ extension FlutterSplendidBlePlugin {
         // Wait 100ms for macOS BLE stack to complete connection initialization
         // before reporting CONNECTED to Flutter
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
-            self?.centralChannel.invokeMethod("bleConnectionState_\(peripheral.identifier.uuidString)", arguments: "CONNECTED")
+            guard let self = self else { return }
+            let payload = self.makeConnectionEventPayload(state: "connected", error: nil)
+            self.centralChannel.invokeMethod("bleConnectionState_\(peripheral.identifier.uuidString)", arguments: payload)
         }
     }
     
     /// Called by the system when the central manager fails to create a connection with the peripheral.
-    /// This delegate method is crucial for error handling and informing the user of a failed connection attempt.
-    /// The method also communicates this failure back to the Flutter side so it can respond accordingly.
+    ///
+    /// Forwards the failure to the Dart side as a `"failed"` connection event. The `error` reported by CoreBluetooth —
+    /// which may be `nil` — is normalized into a `BleConnectionFailureCategory` and included alongside its raw code,
+    /// domain, and description so the Flutter layer can implement specific recovery logic. See
+    /// `makeConnectionEventPayload(state:error:)` for the payload contract.
+    ///
     /// - Parameters:
     ///   - central: The `CBCentralManager` that attempted the connection.
     ///   - peripheral: The `CBPeripheral` that the manager failed to connect to.
     ///   - error: An optional `Error` providing more details about the reason for the failure.
     public func centralManager(_ central: CBCentralManager, didFailToConnect peripheral: CBPeripheral, error: Error?) {
-        centralChannel.invokeMethod("bleConnectionState_\(peripheral.identifier.uuidString)", arguments: "FAILED")
+        let payload = makeConnectionEventPayload(state: "failed", error: error)
+        centralChannel.invokeMethod("bleConnectionState_\(peripheral.identifier.uuidString)", arguments: payload)
     }
     
     /// Invoked when an existing connection with a peripheral is terminated, either by the peripheral or the system.
@@ -256,7 +263,11 @@ extension FlutterSplendidBlePlugin {
             }
         }
 
-        centralChannel.invokeMethod("bleConnectionState_\(deviceAddress)", arguments: "DISCONNECTED")
+        // Report the disconnection. When CoreBluetooth supplies an error, the link was lost unexpectedly (for example
+        // the peripheral terminated it or a timeout occurred); that detail is normalized and included in the payload.
+        // A nil error indicates a clean, application-initiated disconnect, in which case no failure detail is attached.
+        let payload = makeConnectionEventPayload(state: "disconnected", error: error)
+        centralChannel.invokeMethod("bleConnectionState_\(deviceAddress)", arguments: payload)
     }
 
     // MARK: CBPeripheralManagerDelegate methods
