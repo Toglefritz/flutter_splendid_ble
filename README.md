@@ -5,9 +5,9 @@
 
 The Flutter Splendid BLE plugin offers a robust suite of functionalities for Bluetooth Low Energy (
 BLE) interactions in Flutter applications. It allows Flutter apps to use Bluetooth for interacting
-with peripheral devices. This includes scanning for and connecting to BLE peripherals, managing
-bonding processes, writing and reading values, subscribing to BLE characteristics, and more. This
-plugin provides a comprehensive tool for versatile BLE operations.
+with peripheral devices. This includes scanning for and connecting to BLE peripherals, observing the
+operating-system-managed bonding process, writing and reading values, subscribing to BLE
+characteristics, and more. This plugin provides a comprehensive tool for versatile BLE operations.
 
 [![pub package](https://img.shields.io/pub/v/flutter_splendid_ble.svg)](https://pub.dev/packages/flutter_splendid_ble)
 [![style: very good analysis](https://img.shields.io/badge/style-very_good_analysis-B22C89.svg)](https://pub.dev/packages/very_good_analysis)
@@ -254,6 +254,10 @@ include:
 - Establishing and managing connections with peripherals.
 - Reading from and writing to BLE characteristics.
 - Subscribing to notifications or indications from peripherals.
+- Observing the operating-system-managed bonding (pairing) process.
+- Disconnecting from peripherals.
+- Monitoring connection status and other state changes.
+- Rich, cross-platform error and failure reporting for the connection and bonding processes.
 
 **Example Use-Cases:**
 
@@ -275,18 +279,6 @@ include:
    As such, every class, variable, and method in this plugin is accompanied by detailed and
    easy-to-understand documentation to aid developers at all levels in leveraging the full potential
    of this plugin.
-
-## Features
-
-- Scan for available BLE devices.
-- Connect to a BLE device.
-- Manage the bonding process.
-- Read from and write to BLE characteristics.
-- Subscribe to characteristics via notifications or indications.
-- Disconnect from a BLE device.
-- Handle connection errors and other exceptions.
-- Monitor connection status and other state changes.
-- Have a really good time.
 
 ## Documentation Site
 
@@ -784,9 +776,9 @@ accordingly. Each event pairs the current connection state with optional failure
 **Error Handling**
 It is important to handle any exceptions that may occur during the connection attempt. This could be
 due to the device being out of range, the device not being connectable, or other reasons. Beyond
-thrown exceptions, the connection stream itself reports failures in-band through `event.failure`.
-For a full description of the error reporting introduced in 1.5.0 (connection) and 1.6.0 (bonding),
-see [Error and Failure Reporting](doc/error_handling.md).
+thrown exceptions, the connection stream itself reports failures in-band through `event.failure`,
+which carries a normalized `BleConnectionFailureCategory` for writing recovery logic. See the
+[Error Handling](#error-handling) section below for an overview.
 
 **Example**
 
@@ -927,7 +919,7 @@ uses them for structured data. See the "Data Conversion" section below for more 
   delivery of the notification.
 
 **Prerequisites**
-Ensure that the `BLECharacteristic` supports either notifications or indications. Check the
+Ensure that the `BleCharacteristic` supports either notifications or indications. Check the
 characteristic's properties before attempting to subscribe.
 
 **Setting Up Characteristic Subscription**
@@ -1042,9 +1034,9 @@ void onCharacteristicChanged(BleCharacteristicValue event) {
 ### **Writing Values to a BLE Characteristic**:
 
 Interacting with BLE devices often requires writing data to a characteristic to trigger certain
-actions or configure settings on the peripheral. The 'SplendidBle' provides a 'writeValue'
-method
-on the 'BleCharacteristic' class to facilitate this.
+actions or configure settings on the peripheral. `SplendidBleCentral` provides a
+`writeCharacteristic` method to facilitate this. (A `writeValue` convenience method is also available
+directly on the `BleCharacteristic` class.)
 
 When writing to a BLE characteristic, the data typically needs to be in a byte format (`List<int>`).
 Depending on the characteristic's specification, this could be a simple string conversion,
@@ -1093,7 +1085,7 @@ Future<void> writeStringToCharacteristic(String value, BleCharacteristic charact
 **Notes and Best Practices**
 
 - Ensure the data conforms to the expected format of the BLE characteristic you're writing to.
-- The `writeValue` operation may throw exceptions if the characteristic is not writable, the
+- The write operation may throw exceptions if the characteristic is not writable, the
   peripheral is not connected, or the provided data is not valid. Always include error handling to
   manage these cases.
 - It's important to understand the BLE device's characteristic properties. Some characteristics
@@ -1105,8 +1097,9 @@ Future<void> writeStringToCharacteristic(String value, BleCharacteristic charact
 ### **Reading Values from a BLE Characteristic**:
 
 Communicating with BLE devices often entails reading data from a characteristic to obtain
-information or status updates from the peripheral. The Splendid BLE plugin offers a convenient
-`readValue` method on the `BleCharacteristic` class for this purpose.
+information or status updates from the peripheral. `SplendidBleCentral` offers a `readCharacteristic`
+method for this purpose. (A `readValue` convenience method is also available directly on the
+`BleCharacteristic` class.)
 
 When reading from a BLE characteristic, you receive the data as `BleCharacteristicValue`, which
 consists of a byte stream (`List<int>`). Depending on the characteristic's specification,
@@ -1163,7 +1156,7 @@ Future<void> readCharacteristicValue(BleCharacteristic characteristic) async {
 **Notes and Best Practices**
 
 - Confirm that the characteristic you're reading from is designed to provide readable data.
-- The `readValue` operation may throw exceptions if the characteristic is not readable, the
+- The read operation may throw exceptions if the characteristic is not readable, the
   peripheral is not connected, or other communication errors occur. It is essential to include error
   handling to cover these scenarios.
 - Be aware of the expected data format. Some characteristics provide data in a format that requires
@@ -1228,10 +1221,30 @@ visit https://medium.com/@Toglefritz/flutter-bluetooth-a669fcf4bb44?sk=cbbae5ffb
 
 ## Error Handling
 
-This plugin offers detailed error messages to help you handle possible exceptions gracefully in your
-Flutter application.
+This plugin reports problems through two complementary mechanisms:
 
-<*other details coming soon*>
+**1. Thrown exceptions.** Operations that can fail synchronously or while awaiting a `Future` throw
+typed exceptions, such as `BluetoothScanException`, `BluetoothConnectionException`,
+`BluetoothPermissionException`, `BluetoothReadException`, and `BluetoothWriteException`. Wrap calls in
+`try`/`catch` and branch on the exception type to respond appropriately.
+
+**2. In-band failure detail on lifecycle streams.** For the connection and bonding processes, where
+the underlying work is performed asynchronously by the operating system, failures are reported as
+events on the relevant stream rather than as thrown exceptions:
+
+- `connect` and `observeConnectionState` emit `BleConnectionEvent` objects. When a connection attempt
+  fails (`BleConnectionState.failed`) or an established link is lost unexpectedly, the event carries a
+  `BleConnectionFailure` with a normalized, cross-platform `BleConnectionFailureCategory` plus the raw
+  platform-specific code, domain, and description. (Added in 1.5.0.)
+- `observeBondState` emits `BleBondEvent` objects. When a bond attempt fails
+  (`BleBondState.failed`), the event carries a `BleBondFailure` with a normalized
+  `BleBondFailureCategory` and raw platform detail. Bonding is performed by the operating system, so
+  the detail available is rich on Android and intentionally limited on iOS/macOS, where CoreBluetooth
+  does not expose bonding information.
+
+For detailed documentation of these connection and bonding error reporting mechanisms — including the
+full category mappings per platform, the iOS/macOS bonding limitation, and recommended recovery
+patterns — see [Error and Failure Reporting](doc/error_handling.md).
 
 ## Viewing Documentation Locally
 
