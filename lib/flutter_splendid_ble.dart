@@ -3,6 +3,10 @@
 /// A Flutter plugin for interacting with Bluetooth Low Energy (BLE) devices.
 library;
 
+export 'central/models/ble_bond_event.dart';
+export 'central/models/ble_bond_failure.dart';
+export 'central/models/ble_bond_failure_category.dart';
+export 'central/models/ble_bond_state.dart';
 export 'central/models/ble_characteristic.dart';
 export 'central/models/ble_characteristic_permission.dart';
 export 'central/models/ble_characteristic_property.dart';

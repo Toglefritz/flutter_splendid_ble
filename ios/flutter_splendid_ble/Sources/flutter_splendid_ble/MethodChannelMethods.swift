@@ -22,4 +22,5 @@ enum CentralMethod: String, CaseIterable {
     case requestPreferredPhy = "requestPreferredPhy"
     case requestConnectionPriority = "requestConnectionPriority"
     case readConnectionParameters = "readConnectionParameters"
+    case observeBondState = "observeBondState"
 }

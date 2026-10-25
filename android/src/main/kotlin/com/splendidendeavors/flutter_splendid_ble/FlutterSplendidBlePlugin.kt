@@ -16,6 +16,7 @@ import io.flutter.plugin.common.MethodChannel.Result
 import android.bluetooth.BluetoothGattCharacteristic
 import android.bluetooth.BluetoothManager
 import com.splendidendeavors.flutter_splendid_ble.adapter.BluetoothAdapterHandler
+import com.splendidendeavors.flutter_splendid_ble.`interface`.BleBondHandler
 import com.splendidendeavors.flutter_splendid_ble.`interface`.BleDeviceInterface
 import com.splendidendeavors.flutter_splendid_ble.permissions.BluetoothPermissionsHandler
 import com.splendidendeavors.flutter_splendid_ble.scanner.BleScannerHandler
@@ -152,6 +153,17 @@ class FlutterSplendidBlePlugin : FlutterPlugin, MethodCallHandler, ActivityAware
     private lateinit var bleDeviceInterface: BleDeviceInterface
 
     /**
+     * Handler for BLE bonding observation.
+     *
+     * This handler subscribes to the Android `ACTION_BOND_STATE_CHANGED` broadcast and forwards bonding lifecycle
+     * updates (including failure detail derived from unbond reason codes) to the Dart side. Bonding itself is performed
+     * by the operating system; this handler only observes and reports the transitions the OS broadcasts.
+     *
+     * @see BleBondHandler
+     */
+    private lateinit var bleBondHandler: BleBondHandler
+
+    /**
      * Handler for Bluetooth permission operations.
      *
      * This handler manages:
@@ -198,6 +210,9 @@ class FlutterSplendidBlePlugin : FlutterPlugin, MethodCallHandler, ActivityAware
 
         // Initialize the BleDeviceInterface
         bleDeviceInterface = BleDeviceInterface(channel, flutterPluginBinding.applicationContext)
+
+        // Initialize the BleBondHandler
+        bleBondHandler = BleBondHandler(channel, flutterPluginBinding.applicationContext)
 
         // Initialize the BluetoothPermissionsHandler
         bluetoothPermissionsHandler = BluetoothPermissionsHandler(channel, flutterPluginBinding.applicationContext)
@@ -521,6 +536,21 @@ class FlutterSplendidBlePlugin : FlutterPlugin, MethodCallHandler, ActivityAware
                 }
             }
 
+            "observeBondState" -> {
+                val deviceAddress = call.argument<String>("address")
+
+                if (deviceAddress != null) {
+                    bleBondHandler.observeBondState(deviceAddress)
+                    result.success(null)
+                } else {
+                    result.error(
+                        "INVALID_ARGUMENT",
+                        "Device address cannot be null.",
+                        null
+                    )
+                }
+            }
+
             // Throw an exception if an unknown method name is received
             else -> result.notImplemented()
         }
@@ -535,6 +565,7 @@ class FlutterSplendidBlePlugin : FlutterPlugin, MethodCallHandler, ActivityAware
      * @param binding The plugin binding being detached
      */
     override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
+        bleBondHandler.dispose()
         channel.setMethodCallHandler(null)
     }
 

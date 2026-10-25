@@ -13,6 +13,9 @@ import '../shared/models/bluetooth_permission_status.dart';
 import '../shared/models/bluetooth_status.dart';
 import 'central_platform_interface.dart';
 import 'extensions/scan_filter_list_extensions.dart';
+import 'models/ble_bond_event.dart';
+import 'models/ble_bond_failure.dart';
+import 'models/ble_bond_state.dart';
 import 'models/ble_characteristic.dart';
 import 'models/ble_characteristic_value.dart';
 import 'models/ble_connection_event.dart';
@@ -521,6 +524,72 @@ class CentralMethodChannel extends CentralPlatformInterface {
     return connectionStateStreamController.stream;
   }
 
+  /// Observes the operating-system-managed bonding (pairing) process for the device with the given [deviceAddress].
+  ///
+  /// ## The operating system owns bonding
+  ///
+  /// Bonding is performed by the OS, not by this plugin. This method does not *trigger* a bond; it asks the native
+  /// layer to begin reporting the bond-state transitions the OS surfaces, delivered on the
+  /// `bleBondState_<deviceAddress>` method channel call and decoded into [BleBondEvent]s.
+  ///
+  /// ## Platform behavior
+  ///
+  /// * **Android:** Subscribes to the `ACTION_BOND_STATE_CHANGED` broadcast and emits rich updates, including a
+  ///   normalized failure category and raw unbond reason code on failure. The device's current bond state is emitted
+  ///   immediately upon subscription.
+  /// * **iOS / macOS:** Bonding visibility is best-effort and limited by the platform (CoreBluetooth exposes no bonding
+  ///   API). Updates are derived from the lifecycle of operations on encrypted characteristics: `bonding` when such an
+  ///   operation begins, `bonded` on success, and `failed` on an authentication/encryption error. An initial `unknown`
+  ///   is emitted because the actual bond state cannot be read. See [BleBondFailure] for the documented limitation.
+  ///
+  /// Returns a [Stream] of [BleBondEvent] for the specified device.
+  @override
+  Future<Stream<BleBondEvent>> observeBondState({
+    required String deviceAddress,
+  }) async {
+    /// A [StreamController] emitting [BleBondEvent] values for the specified device.
+    final StreamController<BleBondEvent> bondStateStreamController =
+        StreamController<BleBondEvent>.broadcast();
+
+    // Set up a method call handler to listen for bond state updates from the platform. The platform side
+    // differentiates bond state updates for different devices by appending the device address to the method name
+    // (e.g., "bleBondState_<address>").
+    BleMethodChannelRouter.setOperationHandler(channel,
+        (MethodCall call) async {
+      if (call.method == 'bleBondState_$deviceAddress') {
+        bondStateStreamController.add(
+          _parseBondEvent(call.arguments),
+        );
+      } else if (call.method == 'error') {
+        bondStateStreamController
+            .addError(BluetoothConnectionException(call.arguments as String));
+      }
+    });
+
+    // Ask the native layer to begin observing this device's bond state. On Android this registers the
+    // ACTION_BOND_STATE_CHANGED receiver (if needed) and emits the current bond state; on iOS/macOS this records the
+    // device for best-effort reporting from the encrypted-operation path.
+    await channel.invokeMethod('observeBondState', {'address': deviceAddress});
+
+    return bondStateStreamController.stream;
+  }
+
+  /// Parses the raw method channel arguments for a `bleBondState_<address>` call into a [BleBondEvent].
+  ///
+  /// This helper is defensive: a `null` or unexpectedly-typed payload still yields a well-formed event with
+  /// [BleBondState.unknown], so a malformed message can never throw inside the method channel handler.
+  ///
+  /// - Parameter [arguments]: The raw `call.arguments` received from the platform.
+  /// - Returns: The decoded [BleBondEvent].
+  BleBondEvent _parseBondEvent(Object? arguments) {
+    if (arguments is Map) {
+      return BleBondEvent.fromMap(arguments.cast<Object?, Object?>());
+    }
+
+    // Defensive fallback for an unexpected payload shape. The native layer is expected to always send a map.
+    return const BleBondEvent(state: BleBondState.unknown);
+  }
+
   /// Asynchronously writes data to a specified Bluetooth Low Energy (BLE) characteristic.
   ///
   /// ## BLE Communication Overview
@@ -685,18 +754,23 @@ class CentralMethodChannel extends CentralPlatformInterface {
       final Object? arguments = call.arguments;
       if (arguments is! Map<Object?, Object?>) {
         throw const FormatException(
-            'Characteristic notification must contain a map.',);
+          'Characteristic notification must contain a map.',
+        );
       }
       final Object? eventAddress = arguments['deviceAddress'];
       final Object? eventUuid = arguments['characteristicUuid'];
       if (eventAddress is! String || eventUuid is! String) {
         throw const FormatException(
-            'Characteristic notification must identify its device and UUID.',);
+          'Characteristic notification must identify its device and UUID.',
+        );
       }
       return eventAddress.toUpperCase() == address &&
           eventUuid.toUpperCase() == uuid;
-    }).map((MethodCall call) => BleCharacteristicValue.fromMap(
-                call.arguments as Map<Object?, Object?>,),);
+    }).map(
+      (MethodCall call) => BleCharacteristicValue.fromMap(
+        call.arguments as Map<Object?, Object?>,
+      ),
+    );
 
     // Trigger the subscription to the characteristic on the platform side.
     try {

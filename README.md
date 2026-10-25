@@ -63,7 +63,7 @@ Add the flutter_splendid_ble dependency to your pubspec.yaml:
 
 ```
 dependencies:
-  flutter_splendid_ble: ^0.18.0
+  flutter_splendid_ble: ^1.6.0
 ```
 
 Run:
@@ -150,14 +150,19 @@ Once a device is discovered, you can initiate a connection:
 
 ```dart
 /// A StreamSubscription used to listen for connection state updates.
-StreamSubscription<BleConnectionState>? connectionSubscription;
+StreamSubscription<BleConnectionEvent>? connectionSubscription;
 
 /// Connect to a BLE device.
 void connectToDevice(BleDevice device) async {
-  final Stream<BleConnectionState> connectionStream = await bleCentral.connect(deviceAddress: device.address);
+  final Stream<BleConnectionEvent> connectionStream = await bleCentral.connect(deviceAddress: device.address);
   connectionSubscription = connectionStream.listen(
-        (state) {
-      print('Connection state: $state');
+        (event) {
+      print('Connection state: ${event.state}');
+
+      // When the state reflects a failure, event.failure carries the detail.
+      if (event.isFailure) {
+        print('Connection failure: ${event.failure?.category}');
+      }
     },
     onError: (error) {
       print('Connection error: $error');
@@ -294,7 +299,7 @@ First, add the following line to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  flutter_splendid_ble: ^0.15.0
+  flutter_splendid_ble: ^1.6.0
 ```
 
 Then run:
@@ -306,7 +311,7 @@ flutter pub get
 In the files in which you wish to use the plugin, import it by adding:
 
 ```dart
-import 'package:flutter_splendid_ble/splendid_ble.dart';
+import 'package:flutter_splendid_ble/flutter_splendid_ble.dart';
 ```
 
 ### Development Setup
@@ -468,7 +473,7 @@ class (which is also aliased as `SplendidBle` for backwards compatibility). So, 
 to conduct Bluetooth operations, you will need an instance of this class.
 
 ```dart
-import 'package:flutter_splendid_ble/splendid_ble_plugin.dart';
+import 'package:flutter_splendid_ble/flutter_splendid_ble.dart';
 
 final SplendidBleCentral bleCentral = SplendidBleCentral();
 ```
@@ -640,7 +645,7 @@ Future<void> _getConnectedDevices() async {
     final List<ConnectedBleDevice> devices = await _ble.getConnectedDevices(
         ['abcd1234-1234-1234-1234-1234567890aa']);
 
-    debugPrint('Connected devices: $connectedDevices');
+    debugPrint('Connected devices: $devices');
 
     // TODO: use the list of devices as needed
   } on BluetoothScanException catch (e) {
@@ -765,16 +770,23 @@ process.
   Apple devices will have two different UUID identifiers.
 
 **Connection State Updates**
-Once the connection attempt has been initiated, the connect method will return a stream that emits
-the connection state updates. You should listen to this stream to receive updates and handle them
-accordingly.
+Once the connection attempt has been initiated, the `connect` method returns a stream that emits
+`BleConnectionEvent` objects. You should listen to this stream to receive updates and handle them
+accordingly. Each event pairs the current connection state with optional failure detail:
 
-- *onConnectionStateUpdate*: A callback function that will be called with the new connection state
-  whenever it changes.
+- *event.state*: A `BleConnectionState` (`connected`, `connecting`, `disconnecting`, `disconnected`,
+  `failed`, or `unknown`) describing the current state of the connection.
+- *event.failure*: A `BleConnectionFailure` present when a connection attempt failed
+  (`BleConnectionState.failed`) or when an established link was lost unexpectedly. It carries a
+  normalized, cross-platform `category` for recovery logic along with the raw platform-specific
+  detail. Use `event.isFailure` to detect these events.
 
 **Error Handling**
 It is important to handle any exceptions that may occur during the connection attempt. This could be
-due to the device being out of range, the device not being connectable, or other reasons.
+due to the device being out of range, the device not being connectable, or other reasons. Beyond
+thrown exceptions, the connection stream itself reports failures in-band through `event.failure`.
+For a full description of the error reporting introduced in 1.5.0 (connection) and 1.6.0 (bonding),
+see [Error and Failure Reporting](doc/error_handling.md).
 
 **Example**
 
@@ -785,12 +797,12 @@ import 'dart:async';
 final SplendidBleCentral _ble = SplendidBleCentral();
 
 /// A [StreamSubscription] used to listen for changes in the connection status between the app and the [BleDevice].
-StreamSubscription<BleConnectionState>? _connectionStream;
+StreamSubscription<BleConnectionEvent>? _connectionStream;
 
 /// Attempt to connect to the [BleDevice].
 void _connectToDevice(BleDevice device) async {
   try {
-    final Stream<BleConnectionState> connectionStream = await _ble.connect(deviceAddress: device.address);
+    final Stream<BleConnectionEvent> connectionStream = await _ble.connect(deviceAddress: device.address);
     _connectionStream = connectionStream.listen(
       _onConnectionStateUpdate,
     );
@@ -807,8 +819,12 @@ void _handleConnectionError(Object error) {
 }
 
 /// Called when the connection state is updated.
-void _onConnectionStateUpdate(BleConnectionState state) {
+void _onConnectionStateUpdate(BleConnectionEvent event) {
   // Handle the updated connection state, e.g., by updating the UI or starting service discovery.
+  //
+  // Each event carries event.state (a BleConnectionState) and, when event.isFailure is true, an
+  // event.failure (a BleConnectionFailure) describing why a connection attempt failed or a link was
+  // lost unexpectedly. See the error handling documentation for details.
 }
 
 void dispose() {
@@ -923,19 +939,19 @@ changes.
 
 ```dart
 import 'dart:async';
-import 'package:flutter_splendid_ble/splendid_ble.dart';
+import 'package:flutter_splendid_ble/flutter_splendid_ble.dart';
 
 SplendidBleCentral _blePlugin;
 
-/// A [BLECharacteristic] instance for a characteristic that supports indications or
+/// A [BleCharacteristic] instance for a characteristic that supports indications or
 /// notifications.
-BLECharacteristic _characteristic;
+BleCharacteristic _characteristic;
 
 /// A [StreamSubscription] used to listen for updates in the value of a characteristic.
 StreamSubscription<BleCharacteristicValue>? _characteristicValueListener;
 
-/// Constructor accepts a SplendidBle instance and a BLECharacteristic instance.
-BLECharacteristicListener(this._blePlugin, this._characteristic);
+/// Constructor accepts a SplendidBleCentral instance and a BleCharacteristic instance.
+BleCharacteristicListener(this._blePlugin, this._characteristic);
 
 /// Subscribes to the characteristic updates.
 void subscribeToCharacteristic() async {

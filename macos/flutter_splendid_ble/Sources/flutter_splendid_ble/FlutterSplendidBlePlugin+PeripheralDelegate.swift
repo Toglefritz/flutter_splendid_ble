@@ -165,6 +165,15 @@ extension FlutterSplendidBlePlugin {
                 ))
             }
 
+            // Best-effort bonding diagnostic: if this device is being observed for bonding and the write failed with an
+            // authentication/encryption error, the OS could not establish the bond required for the encrypted
+            // operation. Report `failed` with whatever NSError detail CoreBluetooth provided. macOS exposes no
+            // dedicated bonding failure callback, so this is the closest observable signal. See
+            // FlutterSplendidBlePlugin+BondEvent.swift.
+            if observedBondDevices.contains(deviceAddress) {
+                emitBondState(deviceAddress: deviceAddress, state: "failed", error: error)
+            }
+
             // Also notify any listeners via the method channel event.
             let errorMap: [String: Any] = [
                 "deviceAddress": deviceAddress,
@@ -177,6 +186,12 @@ extension FlutterSplendidBlePlugin {
             // Complete the pending Dart future successfully.
             if let pendingResult = pendingWriteResults.removeValue(forKey: key) {
                 pendingResult(nil)
+            }
+
+            // Best-effort bonding diagnostic: a successful write to a (potentially encrypted) characteristic means any
+            // bond the OS needed to establish is now in place. Report `bonded` for observed devices.
+            if observedBondDevices.contains(deviceAddress) {
+                emitBondState(deviceAddress: deviceAddress, state: "bonded", error: nil)
             }
 
             // Also notify any listeners via the method channel event.

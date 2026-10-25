@@ -4,6 +4,8 @@ import '../shared/models/ble_device.dart';
 import '../shared/models/bluetooth_permission_status.dart';
 import '../shared/models/bluetooth_status.dart';
 import 'central_method_channel.dart';
+import 'models/ble_bond_event.dart';
+import 'models/ble_bond_failure.dart';
 import 'models/ble_characteristic.dart';
 import 'models/ble_characteristic_value.dart';
 import 'models/ble_connection_event.dart';
@@ -139,6 +141,18 @@ abstract class CentralPlatformInterface extends PlatformInterface {
   }) async {
     throw UnimplementedError(
       'observeConnectionState() has not been implemented.',
+    );
+  }
+
+  /// Observes the operating-system-managed bonding (pairing) process for a BLE peripheral.
+  ///
+  /// Returns a [Stream] of [BleBondEvent] that emits whenever the bond state changes for the specified device,
+  /// including [BleBondFailure] detail when a bond attempt fails.
+  Future<Stream<BleBondEvent>> observeBondState({
+    required String deviceAddress,
+  }) async {
+    throw UnimplementedError(
+      'observeBondState() has not been implemented.',
     );
   }
 

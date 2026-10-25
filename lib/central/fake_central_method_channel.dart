@@ -6,6 +6,9 @@ import '../shared/models/bluetooth_permission_status.dart';
 import '../shared/models/bluetooth_status.dart';
 import 'central_platform_interface.dart';
 import 'extensions/scan_filter_list_extensions.dart';
+import 'models/ble_bond_event.dart';
+import 'models/ble_bond_failure.dart';
+import 'models/ble_bond_state.dart';
 import 'models/ble_characteristic.dart';
 import 'models/ble_characteristic_value.dart';
 import 'models/ble_connection_event.dart';
@@ -95,6 +98,13 @@ class FakeCentralMethodChannel extends CentralPlatformInterface {
 
   /// A map of device addresses to their current simulated BLE connection states.
   final Map<String, BleConnectionState> _connectionStates = {};
+
+  /// A map of device addresses to their associated BLE bond event stream controllers. Used to simulate and emit
+  /// bonding state updates (including failures) for individual devices.
+  final Map<String, StreamController<BleBondEvent>> _bondControllers = {};
+
+  /// A map of device addresses to their current simulated BLE bond states.
+  final Map<String, BleBondState> _bondStates = {};
 
   /// A map storing mock read values for specific characteristics.
   final Map<String, List<int>> _mockReadValues = {};
@@ -308,6 +318,31 @@ class FakeCentralMethodChannel extends CentralPlatformInterface {
   }
 
   @override
+  Future<Stream<BleBondEvent>> observeBondState({
+    required String deviceAddress,
+  }) async {
+    // For the fake implementation, create or reuse a stream controller. No real bonding occurs.
+    final StreamController<BleBondEvent> controller =
+        _bondControllers.putIfAbsent(
+      deviceAddress,
+      StreamController<BleBondEvent>.broadcast,
+    );
+
+    // Emit the current state after a microtask delay to allow listeners to be set up. This simulates the async nature
+    // of the platform channel.
+    final BleBondState currentState =
+        _bondStates[deviceAddress] ?? BleBondState.unknown;
+
+    Future<void>.delayed(const Duration(milliseconds: 1), () {
+      if (!controller.isClosed) {
+        controller.add(BleBondEvent(state: currentState));
+      }
+    });
+
+    return controller.stream;
+  }
+
+  @override
   Future<Stream<List<BleService>>> discoverServices(
     String deviceAddress,
   ) async {
@@ -387,6 +422,58 @@ class FakeCentralMethodChannel extends CentralPlatformInterface {
         _connectionControllers[deviceAddress];
     if (controller != null && !controller.isClosed) {
       controller.add(BleConnectionEvent(state: state));
+    }
+  }
+
+  /// Sets the simulated bond state for a given BLE device.
+  ///
+  /// Allows tests to control a device's bond state directly, updating the snapshot used by [observeBondState] and
+  /// emitting the new state on any active bond stream.
+  ///
+  /// The [deviceAddress] specifies which device's state to set, and [state] specifies the new bond state.
+  void setBondState(String deviceAddress, BleBondState state) {
+    _bondStates[deviceAddress] = state;
+    _bondControllers[deviceAddress]?.add(BleBondEvent(state: state));
+  }
+
+  /// Simulates a bond state change for testing purposes.
+  ///
+  /// This method allows tests to simulate operating-system-driven bond state changes. It updates the internal bond
+  /// state tracking and emits the new state to any active bond state streams created via [observeBondState].
+  ///
+  /// The [deviceAddress] specifies which device's state to change, and [state] specifies the new bond state.
+  void simulateBondStateChange(
+    String deviceAddress,
+    BleBondState state,
+  ) {
+    _bondStates[deviceAddress] = state;
+
+    final StreamController<BleBondEvent>? controller =
+        _bondControllers[deviceAddress];
+    if (controller != null && !controller.isClosed) {
+      controller.add(BleBondEvent(state: state));
+    }
+  }
+
+  /// Simulates a bonding failure by emitting a [BleBondState.failed] event carrying the given [failure] detail.
+  ///
+  /// This lets tests exercise the failure-handling path for [BleBondEvent]. The device's snapshot bond state is also
+  /// updated to [BleBondState.failed].
+  ///
+  /// The [deviceAddress] specifies which device's stream to emit on, and [failure] is the detail attached to the
+  /// emitted event.
+  void simulateBondFailure(
+    String deviceAddress,
+    BleBondFailure failure,
+  ) {
+    _bondStates[deviceAddress] = BleBondState.failed;
+
+    final StreamController<BleBondEvent>? controller =
+        _bondControllers[deviceAddress];
+    if (controller != null && !controller.isClosed) {
+      controller.add(
+        BleBondEvent(state: BleBondState.failed, failure: failure),
+      );
     }
   }
 

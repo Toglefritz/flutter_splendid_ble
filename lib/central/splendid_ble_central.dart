@@ -2,6 +2,9 @@ import '../shared/models/ble_device.dart';
 import '../shared/models/bluetooth_permission_status.dart';
 import '../shared/models/bluetooth_status.dart';
 import 'central_platform_interface.dart';
+import 'models/ble_bond_event.dart';
+import 'models/ble_bond_failure.dart';
+import 'models/ble_bond_failure_category.dart';
 import 'models/ble_connection_event.dart';
 import 'models/ble_connection_failure.dart';
 import 'models/ble_connection_parameters.dart';
@@ -150,6 +153,33 @@ class SplendidBleCentral {
     required String deviceAddress,
   }) {
     return _platform.observeConnectionState(deviceAddress: deviceAddress);
+  }
+
+  /// Observes the operating-system-managed bonding (pairing) process for a device by its address.
+  ///
+  /// Bonding is performed by the operating system, not by this plugin. This method does not *initiate* a bond — it
+  /// reports the bond-state transitions the OS surfaces so that an app can give the user visibility into pairing
+  /// progress and diagnose pairing failures. To provoke a bond, interact with an encrypted characteristic (on either
+  /// platform) once the device is connected.
+  ///
+  /// ## Platform differences (a known iOS/macOS limitation)
+  ///
+  /// The detail available differs substantially by platform, because the operating systems expose bonding differently:
+  ///
+  /// * **Android** reports every bond-state transition (`none`, `bonding`, `bonded`) and, on failure, a specific
+  ///   unbond reason that is normalized into a [BleBondFailureCategory]. The current bond state is emitted immediately.
+  /// * **iOS / macOS** do not expose a bonding API, bond-state callback, or failure reason to apps. Reporting is
+  ///   therefore best-effort and coarse: it is derived from the lifecycle of operations on encrypted characteristics
+  ///   (`bonding` when one begins, `bonded` on success, `failed` with limited detail on an authentication error), and
+  ///   begins with an `unknown` state because the real bond state cannot be read. This is a platform restriction, not a
+  ///   limitation of this plugin. See [BleBondFailure] for details.
+  ///
+  /// Returns a [Stream] of [BleBondEvent] that emits whenever the bond state changes for the specified device,
+  /// including [BleBondFailure] detail when a bond attempt fails.
+  Future<Stream<BleBondEvent>> observeBondState({
+    required String deviceAddress,
+  }) {
+    return _platform.observeBondState(deviceAddress: deviceAddress);
   }
 
   /// Requests a preferred PHY (physical layer) for the BLE connection.

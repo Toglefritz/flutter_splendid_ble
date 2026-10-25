@@ -2,6 +2,20 @@
 
 All notable changes to the `flutter_splendid_ble` plugin will be documented in this file.
 
+## [1.6.0] 2026/10/25
+
+- Cross-platform bonding (pairing) diagnostics
+  - Added `SplendidBleCentral.observeBondState`, returning a `Future<Stream<BleBondEvent>>` that reports the operating-system-managed bonding process for a peripheral
+  - Bonding is performed by the OS, not by the plugin; `observeBondState` does not initiate a bond, it surfaces the bond-state transitions the OS exposes so apps can show pairing progress and diagnose pairing failures
+  - `BleBondEvent` pairs a `BleBondState` (`none`, `bonding`, `bonded`, `failed`, `unknown`) with optional failure detail
+  - A failed bond attempt carries a `BleBondFailure` describing why it failed
+    - `category` is a normalized, platform-agnostic `BleBondFailureCategory` (`authenticationFailure`, `authenticationRejected`, `authenticationTimeout`, `remoteDeviceDown`, `removed`, `unknown`) intended for writing recovery logic once across platforms
+    - `platform`, `rawCode`, `domain`, and `description` preserve the raw platform-specific detail for logging and diagnosis
+  - Android subscribes to the `ACTION_BOND_STATE_CHANGED` broadcast, emits the current bond state immediately on subscription, and normalizes the unbond reason code into the shared category set on failure
+
+### Known Limitations
+- iOS and macOS bonding visibility is best-effort and far coarser than Android's, because CoreBluetooth exposes no bonding API, bond-state callback, or bonding failure reason to apps. This is a platform restriction imposed by the operating system, not a limitation of this plugin. On these platforms `observeBondState` derives updates from the lifecycle of operations on encrypted characteristics: it emits an initial `unknown` (the real bond state cannot be read), `bonding` when an acknowledged write to an observed device begins, `bonded` when it succeeds, and `failed` with whatever `CBATTError`/`CBError` detail is available when it fails with an authentication/encryption error. In practice the iOS/macOS failure `category` resolves to `authenticationFailure` or `unknown`.
+
 ## [1.5.0] 2026/10/24
 
 - Characteristic notification streams now isolate updates by device address and characteristic UUID, ignoring case.

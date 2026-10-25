@@ -52,6 +52,14 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
     
     /// A set of device names used to filter the results of a scan. Only devices with names appearing in this list will be returned by the scan.
     var scanNameFilters: Set<String> = []
+
+    /// Peripheral identifiers for which the Dart side has requested bonding observation.
+    ///
+    /// macOS exposes no bonding API, so bonding visibility is best-effort: the plugin only emits
+    /// `bleBondState_<address>` updates for devices present in this set, derived from the lifecycle of operations on
+    /// encrypted characteristics. A device is added when Dart calls `observeBondState` for it. See
+    /// `FlutterSplendidBlePlugin+BondEvent.swift` for the platform-limitation details.
+    var observedBondDevices: Set<String> = []
     
     /// An optional `FlutterEventSink` which allows for sending scanning result data back to the Flutter side in real-time.
     var scanResultSink: FlutterEventSink?
@@ -316,6 +324,14 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
                 return
             }
             
+            // If this device is being observed for bonding and the write expects a response, the OS may transparently
+            // initiate pairing to satisfy an encrypted characteristic before the write is acknowledged. Report that a
+            // bond attempt may be in progress. This is a best-effort signal: macOS gives no explicit "pairing started"
+            // callback, so the start of an acknowledged write is the closest observable proxy.
+            if writeType == .withResponse && observedBondDevices.contains(deviceAddress) {
+                emitBondState(deviceAddress: deviceAddress, state: "bonding", error: nil)
+            }
+
             peripheral.writeValue(dataValue, for: characteristic, type: writeType)
 
             if writeType == .withResponse {
@@ -361,6 +377,21 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
             // macOS does not expose a connection interval negotiation API to the
             // central role. Accepting the call silently ensures callers can use
             // a single code path across platforms.
+            result(nil)
+
+        case CentralMethod.observeBondState.rawValue:
+            // macOS exposes no bonding API, so observation is best-effort: record the device so that the
+            // encrypted-write path can emit `bonding`/`bonded`/`failed` proxies for it. See
+            // FlutterSplendidBlePlugin+BondEvent.swift for the platform limitation. An `unknown` state is emitted
+            // immediately because the actual bond state cannot be read on macOS.
+            guard let arguments = call.arguments as? [String: Any],
+                  let deviceAddress = arguments["address"] as? String else {
+                result(FlutterError(code: "INVALID_ARGUMENT", message: "Device address cannot be null.", details: nil))
+                return
+            }
+
+            observedBondDevices.insert(deviceAddress)
+            emitBondState(deviceAddress: deviceAddress, state: "unknown", error: nil)
             result(nil)
 
         default:
