@@ -2,8 +2,11 @@
 
 All notable changes to the `flutter_splendid_ble` plugin will be documented in this file.
 
-## [1.6.0] 2026/10/24
+## [1.5.0] 2026/10/24
 
+- Characteristic notification streams now isolate updates by device address and characteristic UUID, ignoring case.
+- Notification streams retain their shared native receiver when another subscription or BLE operation installs or
+  clears a callback handler. Cancelling one stream listener does not interrupt other characteristic listeners.
 - Rich, cross-platform connection error reporting
   - Connection streams now emit `BleConnectionEvent` objects that pair the connection state with optional failure detail, rather than a bare `BleConnectionState`
   - Connection failures and unexpected disconnections now carry a `BleConnectionFailure` describing why the attempt failed or the link was lost
@@ -19,12 +22,6 @@ All notable changes to the `flutter_splendid_ble` plugin will be documented in t
 ### Breaking Changes
 - `SplendidBleCentral.connect` and `SplendidBleCentral.observeConnectionState` now return `Future<Stream<BleConnectionEvent>>` instead of `Future<Stream<BleConnectionState>>`. Listeners that previously received a `BleConnectionState` now receive a `BleConnectionEvent`; read the connection state from `event.state` and the failure detail (when present) from `event.failure`. Apps that do not need the richer error detail can remain on 1.5.x.
 - The native method channel payload for connection updates changed from a bare status string to a map. This affects only code that bypasses the plugin's Dart API to listen on the `bleConnectionState_<address>` method channel directly.
-
-## [1.5.0] 2026/09/11
-
-- Characteristic notification streams now isolate updates by device address and characteristic UUID, ignoring case.
-- Notification streams retain their shared native receiver when another subscription or BLE operation installs or
-  clears a callback handler. Cancelling one stream listener does not interrupt other characteristic listeners.
 
 ## [1.4.0] 2026/09/01
 
