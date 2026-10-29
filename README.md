@@ -1310,7 +1310,7 @@ on the GitHub repository.
 
 ## License:
 
-MIT License
+BSD 3-Clause License
 
 ## Disclaimer
 
