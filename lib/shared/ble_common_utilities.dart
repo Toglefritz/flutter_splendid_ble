@@ -27,7 +27,8 @@ class BleCommonUtilities {
   static Future<BluetoothStatus> checkBluetoothAdapterStatus(
     MethodChannel channel,
   ) async {
-    final String statusString = await channel.invokeMethod('checkBluetoothAdapterStatus') as String;
+    final String statusString =
+        await channel.invokeMethod('checkBluetoothAdapterStatus') as String;
 
     return BluetoothStatus.values.firstWhere(
       (e) => e.identifier == statusString,
@@ -51,21 +52,20 @@ class BleCommonUtilities {
   static Future<Stream<BluetoothStatus>> emitCurrentBluetoothStatus(
     MethodChannel channel,
   ) async {
-    final StreamController<BluetoothStatus> streamController = StreamController<BluetoothStatus>.broadcast();
+    // Listen to the platform side for Bluetooth adapter status updates. The router delivers these to every listener,
+    // so starting a scan or connection afterward does not silence this stream.
+    final Stream<BluetoothStatus> statusStream =
+        BleMethodChannelRouter.forChannel(channel)
+            .callsNamed('adapterStateUpdated')
+            .map((MethodCall call) {
+      final String statusString = call.arguments as String;
 
-    // Listen to the platform side for Bluetooth adapter status updates.
-    BleMethodChannelRouter.setOperationHandler(channel, (MethodCall call) async {
-      if (call.method == 'adapterStateUpdated') {
-        final String statusString = call.arguments as String;
-
-        // Convert the string status to its corresponding enum value
-        final BluetoothStatus status = BluetoothStatus.values.firstWhere(
-          (e) => e.identifier == statusString,
-          orElse: () => BluetoothStatus.notAvailable,
-        ); // Default to notAvailable if the string does not match any enum value
-
-        streamController.add(status);
-      }
+      // Convert the string status to its corresponding enum value. Default to notAvailable if the string does not
+      // match any enum value.
+      return BluetoothStatus.values.firstWhere(
+        (BluetoothStatus e) => e.identifier == statusString,
+        orElse: () => BluetoothStatus.notAvailable,
+      );
     });
 
     // Use a microtask to ensure the stream is returned before the native method is invoked This gives the caller a
@@ -76,7 +76,7 @@ class BleCommonUtilities {
       }),
     );
 
-    return streamController.stream;
+    return statusStream;
   }
 
   /// Requests Bluetooth permissions from the user.
@@ -91,7 +91,8 @@ class BleCommonUtilities {
   static Future<BluetoothPermissionStatus> requestBluetoothPermissions(
     MethodChannel channel,
   ) async {
-    final String permissionStatusString = await channel.invokeMethod('requestBluetoothPermissions') as String;
+    final String permissionStatusString =
+        await channel.invokeMethod('requestBluetoothPermissions') as String;
     return BluetoothPermissionStatus.values.firstWhere(
       (status) => status.identifier == permissionStatusString,
       orElse: () => BluetoothPermissionStatus.unknown,
@@ -116,20 +117,19 @@ class BleCommonUtilities {
   static Future<Stream<BluetoothPermissionStatus>> emitCurrentPermissionStatus(
     MethodChannel channel,
   ) async {
-    final StreamController<BluetoothPermissionStatus> streamController =
-        StreamController<BluetoothPermissionStatus>.broadcast();
+    // Listen to the platform side for permission status updates. The router delivers these to every listener, so
+    // starting another BLE operation afterward does not silence this stream.
+    final Stream<BluetoothPermissionStatus> statusStream =
+        BleMethodChannelRouter.forChannel(channel)
+            .callsNamed('permissionStatusUpdated')
+            .map((MethodCall call) {
+      final String permissionStatusString = call.arguments as String;
 
-    BleMethodChannelRouter.setOperationHandler(channel, (MethodCall call) async {
-      if (call.method == 'permissionStatusUpdated') {
-        final String permissionStatusString = call.arguments as String;
-
-        // Convert the string status to its corresponding enum value
-        final BluetoothPermissionStatus status = BluetoothPermissionStatus.values.firstWhere(
-          (status) => status.identifier == permissionStatusString,
-        );
-
-        streamController.add(status);
-      }
+      // Convert the string status to its corresponding enum value
+      return BluetoothPermissionStatus.values.firstWhere(
+        (BluetoothPermissionStatus status) =>
+            status.identifier == permissionStatusString,
+      );
     });
 
     // Use a microtask to ensure the stream is returned before the native method is invoked This gives the caller a
@@ -140,6 +140,6 @@ class BleCommonUtilities {
       }),
     );
 
-    return streamController.stream;
+    return statusStream;
   }
 }

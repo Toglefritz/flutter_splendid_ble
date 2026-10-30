@@ -2,6 +2,17 @@
 
 All notable changes to the `flutter_splendid_ble` plugin will be documented in this file.
 
+## [Unreleased]
+
+- Fixed BLE operations silently stopping each other's event streams
+  - All central callbacks share one native method channel. Previously, every `startScan`, `connect`, `observeConnectionState`, `discoverServices`, `observeBondState`, `readCharacteristic`, `emitCurrentBluetoothStatus`, and `emitCurrentPermissionStatus` call replaced a single shared callback handler, so the stream returned by the previous call stopped receiving events without an error or done event
+  - Native callbacks are now delivered to every stream that matches them, the same way characteristic notifications already were. For example, an adapter status stream keeps reporting after a scan starts, a connection stream for one device keeps reporting after connecting to another device, and a running scan keeps delivering results during a concurrent connect or service discovery
+  - `readCharacteristic` now completes only with the read response matching its characteristic's device address and UUID (ignoring case), so concurrent reads no longer interfere with each other. Its listener is released when the read succeeds, fails, or times out
+  - Malformed service discovery payloads are now emitted as stream errors instead of being thrown inside the method channel handler
+
+### Known Limitations
+- Some native failures are reported with an untargeted `error` callback that identifies neither a device nor an operation. These errors are delivered only to the stream of the most recently started scan, connection, connection observation, service discovery, or bond observation, as before. Adapter status, permission status, and characteristic read calls no longer take over delivery of these errors
+
 ## [1.6.0] 2026/10/25
 
 - Cross-platform bonding (pairing) diagnostics
