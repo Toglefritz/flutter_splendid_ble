@@ -14,9 +14,15 @@ extension FlutterSplendidBlePlugin {
     
     /// Invoked when the central manager's state is updated.
     /// This method is crucial as Bluetooth operations can only be performed when the central's state is powered on.
-    /// It is also used to emit the current permission and adapter status back to the Flutter side.
+    ///
+    /// CoreBluetooth calls this when Bluetooth is turned on or off, when it resets, and when the app's Bluetooth
+    /// authorization changes. Both the adapter status and the permission status are pushed to the Flutter side so
+    /// that listeners of `emitCurrentBluetoothStatus` and `emitCurrentPermissionStatus` learn about each change
+    /// without having to poll. This also resolves the initial `.unknown` state, which is reported as "disabled" if
+    /// Dart asks for the status before CoreBluetooth has finished initializing.
     /// - Parameter central: The central manager whose state has been updated.
     public func centralManagerDidUpdateState(_ central: CBCentralManager) {
+        emitCurrentBluetoothStatus()
         emitCurrentPermissionStatus()
     }
 

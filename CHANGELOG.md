@@ -13,6 +13,9 @@ All notable changes to the `flutter_splendid_ble` plugin will be documented in t
   - The plugin previously cached the `BluetoothLeScanner` when attaching to the Flutter engine. Android provides no scanner while Bluetooth is off, so plugin startup failed partway, and every later scan, connection, and permission request failed until the process was killed, even after Bluetooth was turned on
   - The scanner is now looked up each time a scan starts or stops, and the plugin only begins answering calls from Dart once it has finished initializing
   - `startScan` now throws a `BluetoothScanException` when the scan cannot be started, for example on Android while Bluetooth is turned off. Previously, this surfaced as a raw `PlatformException` from an unhandled native exception
+- Fixed iOS and macOS not reporting Bluetooth adapter and permission changes to existing status streams
+  - iOS previously sent only permission status when CoreBluetooth's state changed, so streams from `emitCurrentBluetoothStatus` never learned that Bluetooth had been turned on or off after they were created. macOS had the opposite gap and never pushed permission changes
+  - Both platforms now push adapter status and permission status whenever CoreBluetooth reports a state change, matching Android. On iOS this also corrects an early "disabled" status reported before CoreBluetooth finishes initializing
 
 ### Known Limitations
 - Some native failures are reported with an untargeted `error` callback that identifies neither a device nor an operation. These errors are delivered only to the stream of the most recently started scan, connection, connection observation, service discovery, or bond observation, as before. Adapter status, permission status, and characteristic read calls no longer take over delivery of these errors
