@@ -9,6 +9,10 @@ All notable changes to the `flutter_splendid_ble` plugin will be documented in t
   - Native callbacks are now delivered to every stream that matches them, the same way characteristic notifications already were. For example, an adapter status stream keeps reporting after a scan starts, a connection stream for one device keeps reporting after connecting to another device, and a running scan keeps delivering results during a concurrent connect or service discovery
   - `readCharacteristic` now completes only with the read response matching its characteristic's device address and UUID (ignoring case), so concurrent reads no longer interfere with each other. Its listener is released when the read succeeds, fails, or times out
   - Malformed service discovery payloads are now emitted as stream errors instead of being thrown inside the method channel handler
+- Fixed Android scanning and connections failing for the life of the app process when Bluetooth was off as the plugin started
+  - The plugin previously cached the `BluetoothLeScanner` when attaching to the Flutter engine. Android provides no scanner while Bluetooth is off, so plugin startup failed partway, and every later scan, connection, and permission request failed until the process was killed, even after Bluetooth was turned on
+  - The scanner is now looked up each time a scan starts or stops, and the plugin only begins answering calls from Dart once it has finished initializing
+  - `startScan` now throws a `BluetoothScanException` when the scan cannot be started, for example on Android while Bluetooth is turned off. Previously, this surfaced as a raw `PlatformException` from an unhandled native exception
 
 ### Known Limitations
 - Some native failures are reported with an untargeted `error` callback that identifies neither a device nor an operation. These errors are delivered only to the stream of the most recently started scan, connection, connection observation, service discovery, or bond observation, as before. Adapter status, permission status, and characteristic read calls no longer take over delivery of these errors

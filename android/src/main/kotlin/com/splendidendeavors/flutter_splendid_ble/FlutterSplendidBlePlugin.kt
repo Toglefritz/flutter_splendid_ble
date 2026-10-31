@@ -191,11 +191,13 @@ class FlutterSplendidBlePlugin : FlutterPlugin, MethodCallHandler, ActivityAware
      * All handlers are initialized with references to the MethodChannel and application context
      * so they can communicate with Flutter and access Android system services.
      *
+     * The method call handler is installed only after every handler is constructed. If a constructor
+     * threw, the plugin would otherwise keep answering calls from Dart with uninitialized handlers.
+     *
      * @param flutterPluginBinding Provides access to the binary messenger and application context
      */
     override fun onAttachedToEngine(flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
         channel = MethodChannel(flutterPluginBinding.binaryMessenger, "flutter_splendid_ble_central")
-        channel.setMethodCallHandler(this)
         eventChannel = EventChannel(flutterPluginBinding.binaryMessenger, "flutter_ble_events")
 
         // Initialize BluetoothAdapterHandler
@@ -216,6 +218,9 @@ class FlutterSplendidBlePlugin : FlutterPlugin, MethodCallHandler, ActivityAware
 
         // Initialize the BluetoothPermissionsHandler
         bluetoothPermissionsHandler = BluetoothPermissionsHandler(channel, flutterPluginBinding.applicationContext)
+
+        // Start receiving calls from Dart only once every handler is ready.
+        channel.setMethodCallHandler(this)
     }
 
     /**
@@ -297,8 +302,15 @@ class FlutterSplendidBlePlugin : FlutterPlugin, MethodCallHandler, ActivityAware
                 val scanSettings =
                     settingsMap?.let { bleScannerHandler.createScanSettingsFromMap(it) }
 
-                bleScannerHandler.startScan(scanFilters, scanSettings)
-                result.success(null)
+                if (bleScannerHandler.startScan(scanFilters, scanSettings)) {
+                    result.success(null)
+                } else {
+                    result.error(
+                        "BLUETOOTH_UNAVAILABLE",
+                        "Cannot start scan: the Bluetooth LE scanner is unavailable. Bluetooth may be turned off.",
+                        null
+                    )
+                }
             }
 
             "stopScan" -> {

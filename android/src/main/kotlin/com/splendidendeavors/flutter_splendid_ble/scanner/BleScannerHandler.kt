@@ -32,8 +32,8 @@ import android.util.Log
  *
  * Here's an overview of the process:
  *
- *  -   During initialization, it sets up the `BluetoothLeScanner` using the Android Bluetooth
- *      services.
+ *  -   The `BluetoothLeScanner` is looked up from the Android Bluetooth services each time it is
+ *      needed, because Android does not provide one while Bluetooth is turned off.
  *  -   The `startScan` method begins the scanning process, defining a callback that handles
  *      discovered devices.
  *  -   The `stopScan` method stops the scanning process using the previously defined callback.
@@ -45,8 +45,18 @@ import android.util.Log
  * Note: The scanning process requires specific permissions (such as location access) and enabled
  * Bluetooth on the device. These should be handled elsewhere in the application.
  */
-class BleScannerHandler(private val channel: MethodChannel, activity: Context) {
-    private val bluetoothLeScanner: BluetoothLeScanner
+class BleScannerHandler(private val channel: MethodChannel, context: Context) {
+    /**
+     * System Bluetooth manager used to look up the LE scanner on demand.
+     *
+     * Null only on devices without Bluetooth support.
+     */
+    private val bluetoothManager: BluetoothManager? =
+        context.getSystemService(Context.BLUETOOTH_SERVICE) as? BluetoothManager
+
+    /**
+     * The callback for the scan in progress, or null when no scan is running.
+     */
     private var scanCallback: ScanCallback? = null
 
     /**
@@ -87,11 +97,15 @@ class BleScannerHandler(private val channel: MethodChannel, activity: Context) {
      */
     private val pendingFallbackRunnables: MutableMap<String, Runnable> = mutableMapOf()
 
-    init {
-        val bluetoothManager =
-            activity.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
-        bluetoothLeScanner = bluetoothManager.adapter.bluetoothLeScanner
-    }
+    /**
+     * Returns the system LE scanner, or null if it is currently unavailable.
+     *
+     * The scanner is looked up on every use rather than cached at construction. Android returns null from
+     * [android.bluetooth.BluetoothAdapter.getBluetoothLeScanner] while Bluetooth is off, so caching it when the plugin
+     * attaches would break scanning (or, with a non-null field, plugin registration) for the life of the process if
+     * Bluetooth happened to be off at that moment.
+     */
+    private fun currentScanner(): BluetoothLeScanner? = bluetoothManager?.adapter?.bluetoothLeScanner
 
     /**
      * Initiates the scanning process for nearby Bluetooth Low Energy (BLE) devices.
@@ -110,9 +124,15 @@ class BleScannerHandler(private val channel: MethodChannel, activity: Context) {
      *
      * Note: Ensure that the necessary permissions (e.g., location access) and Bluetooth are
      * enabled on the device, as these are prerequisites for scanning BLE devices on Android. If
-     * permissions have not been granted, a `SecurityException` is thrown.
+     * permissions have not been granted, a `SecurityException` is caught and reported to Flutter through the
+     * `error` method channel callback.
+     *
+     * @return false without starting a scan if the LE scanner is unavailable, which happens while Bluetooth is turned
+     * off or on devices without Bluetooth; true otherwise.
      */
-    fun startScan(scanFilters: List<ScanFilter>? = null, scanSettings: ScanSettings? = null) {
+    fun startScan(scanFilters: List<ScanFilter>? = null, scanSettings: ScanSettings? = null): Boolean {
+        val bluetoothLeScanner: BluetoothLeScanner = currentScanner() ?: return false
+
         try {
             // Cancel and clear any state from a previous scan session. Pending fallback
             // runnables are removed before clearing the partial data so the runnables do not
@@ -199,6 +219,8 @@ class BleScannerHandler(private val channel: MethodChannel, activity: Context) {
                 "Required Bluetooth permissions are missing: ${e.message}"
             )
         }
+
+        return true
     }
 
     /**
@@ -323,11 +345,14 @@ class BleScannerHandler(private val channel: MethodChannel, activity: Context) {
      * call. This should be the case since a scan should not be ongoing if Bluetooth permissions
      * were not granted. But, nonetheless, a `SecurityException` will be thrown if this method
      * is used without the necessary permissions.
+     *
+     * If the LE scanner is unavailable because Bluetooth has been turned off, the system has already ended the scan,
+     * so only the local scan state is cleared.
      */
     fun stopScan() {
         try {
-            if (scanCallback != null) {
-                bluetoothLeScanner.stopScan(scanCallback)
+            scanCallback?.let { callback ->
+                currentScanner()?.stopScan(callback)
                 scanCallback = null
             }
 

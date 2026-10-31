@@ -179,6 +179,9 @@ class CentralMethodChannel extends CentralPlatformInterface {
   /// The method returns a broadcast stream derived from the shared [BleMethodChannelRouter]. Every time a device is
   /// discovered by the native platform, the 'bleDeviceScanned' method is invoked, and the device information is parsed
   /// and added to the stream. Starting another BLE operation does not stop this stream from receiving results.
+  ///
+  /// Throws a [BluetoothScanException] if the platform cannot start the scan, for example on Android while Bluetooth
+  /// is turned off, or a [BluetoothPermissionException] if the platform reports missing permissions.
   @override
   Future<Stream<BleDevice>> startScan({
     List<ScanFilter>? filters,
@@ -232,10 +235,22 @@ class CentralMethodChannel extends CentralPlatformInterface {
     final Map<String, dynamic>? settingsMap = settings?.toMap();
 
     // Begin the scan on the platform side, including the filters and settings in the method call if provided.
-    await channel.invokeMethod('startScan', {
-      'filters': filtersMap,
-      'settings': settingsMap,
-    });
+    try {
+      await channel.invokeMethod('startScan', {
+        'filters': filtersMap,
+        'settings': settingsMap,
+      });
+    } on PlatformException catch (e) {
+      // Handle different error types accordingly. For example, Android reports a BLUETOOTH_UNAVAILABLE error when
+      // the scanner cannot be obtained because Bluetooth is turned off.
+      if (e.message?.contains('permissions') ?? false) {
+        throw BluetoothPermissionException('Permission error: ${e.message}');
+      } else {
+        throw BluetoothScanException(
+          'Failed to start Bluetooth scan: ${e.message}',
+        );
+      }
+    }
 
     return scanStream;
   }
