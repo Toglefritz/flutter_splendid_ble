@@ -107,9 +107,13 @@ extension FlutterSplendidBlePlugin {
                 }
 
                 emitDeviceDiscovery(peripheral: peripheral, advertisementData: mergedAdvertisementData, rssi: RSSI)
+                return
             }
-            // Subsequent callbacks for already-emitted devices are ignored to avoid flooding
-            // the Flutter side with repeated entries during a scan session.
+
+            // A device that has already been emitted. `emitDeviceDiscovery` emits it again only if its
+            // non-RSSI content (name, manufacturer data, or advertised services) has changed, so updates
+            // to RSSI alone do not flood the Flutter side.
+            emitDeviceDiscovery(peripheral: peripheral, advertisementData: advertisementData, rssi: RSSI)
         }
     }
 
@@ -165,47 +169,47 @@ extension FlutterSplendidBlePlugin {
         }
     }
 
-    /// Emits device discovery information to the Flutter/Dart side.
+    /// Emits device discovery information to the Flutter/Dart side, unless it would repeat the last emission.
     ///
     /// This method formats the peripheral's advertisement data and sends it through the method channel
-    /// to notify the Flutter side that a BLE device has been discovered.
+    /// to notify the Flutter side that a BLE device has been discovered or that its advertised content has changed.
+    ///
+    /// The packet's content is combined with the content last emitted for the same peripheral in this scan
+    /// session: any field missing from this packet keeps its last emitted value, so a partial packet cannot
+    /// replace complete data. The device is emitted only if the combined non-RSSI content differs from what was
+    /// last emitted. A change in RSSI alone never produces an emission.
     ///
     /// - Parameters:
     ///   - peripheral: The discovered `CBPeripheral` device.
-    ///   - advertisementData: The complete advertisement data for the device.
+    ///   - advertisementData: The advertisement data received for the device.
     ///   - rssi: The received signal strength indicator (RSSI) value.
     func emitDeviceDiscovery(peripheral: CBPeripheral, advertisementData: [String: Any], rssi: NSNumber) {
         // Get a list of service UUIDs as strings, to be sent to the Dart side.
         let advertisedServiceUuids: [String]? = (advertisementData[CBAdvertisementDataServiceUUIDsKey] as? [CBUUID])?.map { $0.uuidString }
 
+        // Combine this packet's content with what was last emitted for the device.
+        let previousContent: AdvertisementContent? = lastEmittedAdvertisementContent[peripheral.identifier]
+        let content: AdvertisementContent = AdvertisementContent(
+            name: peripheral.name,
+            manufacturerData: formatManufacturerData(advertisementData[CBAdvertisementDataManufacturerDataKey] as? Data),
+            advertisedServiceUuids: advertisedServiceUuids
+        ).merging(over: previousContent)
+
+        // Skip devices whose non-RSSI content has not changed since they were last emitted.
+        if content == previousContent {
+            return
+        }
+        lastEmittedAdvertisementContent[peripheral.identifier] = content
+
         // Create a dictionary with device details
         var deviceMap: [String: Any?] = [
-            "name": peripheral.name,
+            "name": content.name,
             "address": peripheral.identifier.uuidString,
-            "advertisedServiceUuids": advertisedServiceUuids,
+            "advertisedServiceUuids": content.advertisedServiceUuids,
             "rssi": rssi.intValue,
         ]
-
-        // Extract the manufacturer data
-        let manufacturerData: Data? = advertisementData[CBAdvertisementDataManufacturerDataKey] as? Data
-
-        // Process the manufacturer data if it exists
-        if let manufacturerData = manufacturerData {
-            // Check that the data is at least 2 bytes long (to extract the manufacturer identifier)
-            if manufacturerData.count >= 2 {
-                // Extract the manufacturer identifier (first two bytes)
-                let manufacturerIdData: Data = manufacturerData.subdata(in: 0..<2)
-                // Extract the manufacturer-specific payload (the remaining bytes)
-                let manufacturerPayloadData: Data = manufacturerData.subdata(in: 2..<manufacturerData.count)
-
-                // Convert both the data parts into uppercase hexadecimal strings
-                let manufacturerIdHex: String = manufacturerIdData.map { String(format: "%02X", $0) }.joined()
-                let manufacturerPayloadHex: String = manufacturerPayloadData.map { String(format: "%02X", $0) }.joined()
-
-                let formattedManufacturerData: String = "\(manufacturerIdHex)\(manufacturerPayloadHex)"
-
-                deviceMap["manufacturerData"] = formattedManufacturerData
-            }
+        if let manufacturerData = content.manufacturerData {
+            deviceMap["manufacturerData"] = manufacturerData
         }
 
         // Send device information to Flutter side
@@ -213,6 +217,21 @@ extension FlutterSplendidBlePlugin {
         if let jsonData = jsonData, let jsonString = String(data: jsonData, encoding: .utf8) {
             channel.invokeMethod("bleDeviceScanned", arguments: jsonString)
         }
+    }
+
+    /// Formats raw manufacturer data as the uppercase hexadecimal string sent to the Dart side.
+    ///
+    /// The string begins with the two-byte manufacturer identifier, followed by the manufacturer-specific payload,
+    /// in the byte order CoreBluetooth reports them.
+    ///
+    /// - Parameter manufacturerData: The value of `CBAdvertisementDataManufacturerDataKey`, if present.
+    /// - Returns: The formatted string, or `nil` if the data is missing or too short to contain an identifier.
+    func formatManufacturerData(_ manufacturerData: Data?) -> String? {
+        guard let manufacturerData = manufacturerData, manufacturerData.count >= 2 else {
+            return nil
+        }
+
+        return manufacturerData.map { String(format: "%02X", $0) }.joined()
     }
     
     /// Called by the system when a connection to the peripheral is successfully established.

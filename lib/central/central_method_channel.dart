@@ -180,6 +180,11 @@ class CentralMethodChannel extends CentralPlatformInterface {
   /// discovered by the native platform, the 'bleDeviceScanned' method is invoked, and the device information is parsed
   /// and added to the stream. Starting another BLE operation does not stop this stream from receiving results.
   ///
+  /// A device is emitted when first discovered and again whenever its advertised content (name, manufacturer data, or
+  /// advertised service UUIDs) changes during the scan, so the same address can appear more than once. Use the latest
+  /// emission for an address as its current state. RSSI-only changes are not emitted. See
+  /// [ScanSettings.allowDuplicates] for how promptly content changes are noticed on each platform.
+  ///
   /// Throws a [BluetoothScanException] if the platform cannot start the scan, for example on Android while Bluetooth
   /// is turned off, or a [BluetoothPermissionException] if the platform reports missing permissions.
   @override

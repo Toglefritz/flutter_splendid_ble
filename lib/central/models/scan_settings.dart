@@ -23,9 +23,21 @@ class ScanSettings {
   /// Defaults to 0, which means results are reported as soon as they are available.
   final int? reportDelayMillis;
 
-  /// Whether to report only unique advertisements or to include duplicates.
+  /// Whether the operating system should deliver every advertisement it receives, including repeats from devices it
+  /// has already reported.
   ///
-  /// If `true`, each advertisement is reported only once. If `false`, advertisements might be reported multiple times.
+  /// Regardless of this setting, the plugin reports each device once when it is first discovered, and again only when
+  /// its advertised content (name, manufacturer data, or advertised service UUIDs) changes during the scan. A change in
+  /// RSSI alone never produces another report. A result that omits a field, such as an advertisement received without
+  /// its scan response, keeps the value last reported for that field.
+  ///
+  /// This setting controls how often the plugin can notice such changes:
+  ///
+  /// * **iOS / macOS:** When `true`, CoreBluetooth delivers every advertisement packet, so content changes are noticed
+  ///   promptly. When `false` or `null` (the CoreBluetooth default), CoreBluetooth coalesces repeated advertisements
+  ///   from a device, and later content changes may be noticed late or not at all. Delivering every packet increases
+  ///   power use.
+  /// * **Android:** No effect. Android always delivers repeated advertisements to the plugin.
   final bool? allowDuplicates;
 
   /// Whether to restrict scanning to legacy BLE advertising PDUs.

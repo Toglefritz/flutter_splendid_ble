@@ -98,6 +98,14 @@ class BleScannerHandler(private val channel: MethodChannel, context: Context) {
     private val pendingFallbackRunnables: MutableMap<String, Runnable> = mutableMapOf()
 
     /**
+     * The non-RSSI content most recently emitted to Flutter for each device address during the current scan session.
+     *
+     * A device is emitted again only when its content differs from the entry stored here, so changes in RSSI alone
+     * never produce another emission. Cleared whenever a scan starts or stops.
+     */
+    private val lastEmittedContent: MutableMap<String, AdvertisementContent> = mutableMapOf()
+
+    /**
      * Returns the system LE scanner, or null if it is currently unavailable.
      *
      * The scanner is looked up on every use rather than cached at construction. Android returns null from
@@ -140,6 +148,7 @@ class BleScannerHandler(private val channel: MethodChannel, context: Context) {
             cancelAllPendingFallbacks()
             discoveredDevices.clear()
             partialAdvertisementData.clear()
+            lastEmittedContent.clear()
 
             // Define a scan callback
             scanCallback = object : ScanCallback() {
@@ -194,10 +203,12 @@ class BleScannerHandler(private val channel: MethodChannel, context: Context) {
                                 // Cancel the fallback - scan response arrived in time.
                                 cancelFallbackEmit(deviceAddress)
                                 partialAdvertisementData.remove(deviceAddress)
-                                emitDeviceDiscovery(it, scanFilters)
                             }
-                            // Duplicate advertisements for already-emitted devices are ignored
-                            // to prevent flooding the Flutter side with repeated entries.
+
+                            // For an already-emitted device, emitDeviceDiscovery emits it again
+                            // only if its non-RSSI content (name, manufacturer data, or advertised
+                            // services) has changed, so RSSI-only updates do not flood Flutter.
+                            emitDeviceDiscovery(it, scanFilters)
                         }
                     }
                 }
@@ -288,12 +299,17 @@ class BleScannerHandler(private val channel: MethodChannel, context: Context) {
     }
 
     /**
-     * Emits device discovery information to the Flutter/Dart side.
+     * Emits device discovery information to the Flutter/Dart side, unless it would repeat the last emission.
      *
      * This method formats the scan result's advertisement data and sends it through the method channel
-     * to notify the Flutter side that a BLE device has been discovered.
+     * to notify the Flutter side that a BLE device has been discovered or that its advertised content has changed.
      *
-     * @param scanResult The discovered device's ScanResult containing complete advertisement data.
+     * The result's content is combined with the content last emitted for the same device in this scan session: any
+     * field missing from this result keeps its last emitted value, so a partial packet cannot replace complete data.
+     * The device is emitted only if the combined non-RSSI content differs from what was last emitted. A change in
+     * RSSI alone never produces an emission.
+     *
+     * @param scanResult The discovered device's ScanResult containing its advertisement data.
      * @param scanFilters The filters used for the scan (for UUID filtering).
      */
     private fun emitDeviceDiscovery(scanResult: ScanResult, scanFilters: List<ScanFilter>?) {
@@ -316,15 +332,29 @@ class BleScannerHandler(private val channel: MethodChannel, context: Context) {
                 }
             }
             stringBuilder.toString()
-        }
+        }?.ifEmpty { null } // A record with no manufacturer entries carries no manufacturer data.
+
+        // Combine this result's content with what was last emitted for the device.
+        val deviceAddress: String = scanResult.device.address
+        val previousContent: AdvertisementContent? = lastEmittedContent[deviceAddress]
+        val content: AdvertisementContent = AdvertisementContent(
+            name = scanResult.device.name,
+            manufacturerData = manufacturerData,
+            advertisedServiceUuids = scanResult.scanRecord?.serviceUuids
+                ?.map { parcelUuid -> parcelUuid.toString() } ?: emptyList(),
+        ).mergingOver(previousContent)
+
+        // Skip devices whose non-RSSI content has not changed since they were last emitted.
+        if (content == previousContent) return
+        lastEmittedContent[deviceAddress] = content
 
         // Create a map with device details
         val deviceMap: Map<String, Any?> = mapOf(
-            "name" to scanResult.device.name,
-            "address" to scanResult.device.address,
+            "name" to content.name,
+            "address" to deviceAddress,
             "rssi" to scanResult.rssi,
-            "manufacturerData" to manufacturerData,
-            "advertisedServiceUuids" to (scanResult.scanRecord?.serviceUuids?.map { parcelUuid -> parcelUuid.toString() } ?: emptyList()),
+            "manufacturerData" to content.manufacturerData,
+            "advertisedServiceUuids" to content.advertisedServiceUuids,
         )
 
         // Construct DiscoveredDevice
@@ -368,6 +398,7 @@ class BleScannerHandler(private val channel: MethodChannel, context: Context) {
 
             discoveredDevices.clear()
             partialAdvertisementData.clear()
+            lastEmittedContent.clear()
         } catch (e: SecurityException) {
             channel.invokeMethod(
                 "error",

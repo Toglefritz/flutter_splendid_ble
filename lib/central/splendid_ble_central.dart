@@ -92,7 +92,10 @@ class SplendidBleCentral {
 
   /// Asks the platform to start scanning for Bluetooth devices.
   ///
-  /// Returns a [Stream] of [BleDevice] found during the scan.
+  /// Returns a [Stream] of [BleDevice] found during the scan. A device is emitted when first discovered and again
+  /// whenever its advertised content (name, manufacturer data, or advertised service UUIDs) changes, so the same
+  /// address can appear more than once; use the latest emission for an address. RSSI-only changes are not emitted.
+  /// See [ScanSettings.allowDuplicates] for how promptly content changes are noticed on each platform.
   Future<Stream<BleDevice>> startScan({
     List<ScanFilter>? filters,
     ScanSettings? settings,

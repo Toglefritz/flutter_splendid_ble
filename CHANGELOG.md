@@ -16,6 +16,12 @@ All notable changes to the `flutter_splendid_ble` plugin will be documented in t
 - Fixed iOS and macOS not reporting Bluetooth adapter and permission changes to existing status streams
   - iOS previously sent only permission status when CoreBluetooth's state changed, so streams from `emitCurrentBluetoothStatus` never learned that Bluetooth had been turned on or off after they were created. macOS had the opposite gap and never pushed permission changes
   - Both platforms now push adapter status and permission status whenever CoreBluetooth reports a state change, matching Android. On iOS this also corrects an early "disabled" status reported before CoreBluetooth finishes initializing
+- Scan results now update when a device's advertised content changes
+  - Previously, each device was emitted once per scan session, and every later advertisement from it was dropped on all platforms. A device first seen with incomplete data (for example, before its scan response arrived) stayed incomplete for the whole scan, and changes to its advertised data were never reported
+  - A device is now emitted again whenever its name, manufacturer data, or advertised service UUIDs change during the scan, so scan streams can contain the same address more than once. Use the latest emission for an address as its current state
+  - Changes in RSSI alone are not emitted
+  - A result that omits a field, such as an advertisement received without its scan response, keeps the value last emitted for that field, so partial packets do not replace complete data
+  - Corrected the `ScanSettings.allowDuplicates` documentation, which described the setting backwards. On iOS and macOS, `true` makes CoreBluetooth deliver every advertisement, so content changes are noticed promptly; when unset or `false`, CoreBluetooth coalesces repeat advertisements and later changes may be noticed late or not at all. The setting has no effect on Android, which always delivers repeat advertisements
 
 ### Known Limitations
 - Some native failures are reported with an untargeted `error` callback that identifies neither a device nor an operation. These errors are delivered only to the stream of the most recently started scan, connection, connection observation, service discovery, or bond observation, as before. Adapter status, permission status, and characteristic read calls no longer take over delivery of these errors

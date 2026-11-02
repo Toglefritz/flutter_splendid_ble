@@ -113,6 +113,12 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
     /// This data is merged with scan response data before being emitted to Flutter.
     var partialAdvertisementData: [UUID: (data: [String: Any], rssi: NSNumber)] = [:]
 
+    /// The non-RSSI content most recently emitted to Flutter for each peripheral during the current scan session.
+    ///
+    /// A peripheral is emitted again only when its content differs from the entry stored here, so changes in RSSI
+    /// alone never produce another emission. Cleared whenever a scan starts or stops.
+    var lastEmittedAdvertisementContent: [UUID: AdvertisementContent] = [:]
+
     /// How long to wait for a scan response before emitting the buffered initial advertisement.
     ///
     /// CoreBluetooth typically delivers the scan response within a few milliseconds of the
@@ -231,6 +237,7 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
             // Clear previous scan session data
             discoveredDevices.removeAll()
             partialAdvertisementData.removeAll()
+            lastEmittedAdvertisementContent.removeAll()
 
             // Start scanning with optional service UUIDs and options.
             // Note: We pass nil for serviceUUIDs to let Dart-side filtering handle all filtering
@@ -259,6 +266,7 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
             flushPartialAdvertisementData()
             discoveredDevices.removeAll()
             partialAdvertisementData.removeAll()
+            lastEmittedAdvertisementContent.removeAll()
             result(nil)
             
         case CentralMethod.connect.rawValue:
