@@ -2,7 +2,7 @@
 
 All notable changes to the `flutter_splendid_ble` plugin will be documented in this file.
 
-## [Unreleased]
+## [1.7.0] 2026/11/02
 
 - Fixed BLE operations silently stopping each other's event streams
   - All central callbacks share one native method channel. Previously, every `startScan`, `connect`, `observeConnectionState`, `discoverServices`, `observeBondState`, `readCharacteristic`, `emitCurrentBluetoothStatus`, and `emitCurrentPermissionStatus` call replaced a single shared callback handler, so the stream returned by the previous call stopped receiving events without an error or done event
