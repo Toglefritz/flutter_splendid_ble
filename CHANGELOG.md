@@ -2,6 +2,11 @@
 
 All notable changes to the `flutter_splendid_ble` plugin will be documented in this file.
 
+## [1.7.1] 2026/11/14
+- Fixed iOS and macOS rejecting characteristics with 16-bit and 32-bit UUIDs
+  - CoreBluetooth reports Bluetooth SIG UUIDs in their short form (for example `FF11`), and service discovery returns them that way. The subscribe, unsubscribe, read, and write handlers parsed the UUID with `UUID(uuidString:)`, which only accepts the 36-character form, so these operations failed with `Invalid characteristic UUID format` for any device that uses short UUIDs
+  - The handlers now parse with `CBUUID(string:)`, which accepts the 4, 8, and 36-character forms and treats a short UUID and its 128-bit expansion as the same value
+
 ## [1.7.0] 2026/11/02
 
 - Fixed BLE operations silently stopping each other's event streams

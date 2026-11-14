@@ -313,7 +313,7 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
                   let characteristicUuidStr = arguments["characteristicUuid"] as? String,
                   let stringValue = arguments["value"] as? String,
                   let peripheral = getPeripheralByIdentifier(deviceAddress: deviceAddress),
-                  let characteristicUuid = UUID(uuidString: characteristicUuidStr),
+                  let characteristicUuid = parseCharacteristicUuid(characteristicUuidStr),
                   let characteristic = getCharacteristicByUuid(peripheral: peripheral, uuid: characteristicUuid) else {
                 result(FlutterError(code: "INVALID_ARGUMENT", message: "Device address, characteristic UUID, or value cannot be null.", details: nil))
                 return
@@ -341,7 +341,7 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
                 // peripheral sends an ATT write response. This ensures that the Dart-side
                 // await on writeValue() resolves only after the write is acknowledged,
                 // giving callers accurate per-write timing information.
-                let key = "\(deviceAddress):\(characteristicUuidStr)"
+                let key = "\(deviceAddress):\(characteristic.uuid.uuidString)"
                 pendingWriteResults[key] = result
             } else {
                 // Write without response: the peripheral will not send an acknowledgement,
@@ -354,7 +354,7 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
                   let characteristicUuidStr = arguments["characteristicUuid"] as? String,
                   let deviceAddress = arguments["address"] as? String,
                   let peripheral = getPeripheralByIdentifier(deviceAddress: deviceAddress),
-                  let characteristicUuid = UUID(uuidString: characteristicUuidStr),
+                  let characteristicUuid = parseCharacteristicUuid(characteristicUuidStr),
                   let characteristic = getCharacteristicByUuid(peripheral: peripheral, uuid: characteristicUuid) else {
                 result(FlutterError(code: "INVALID_ARGUMENT", message: "Device address or characteristic UUID cannot be null", details: nil))
                 return

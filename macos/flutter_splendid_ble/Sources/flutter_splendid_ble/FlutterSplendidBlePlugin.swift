@@ -319,7 +319,7 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
                   let characteristicUuidStr = arguments["characteristicUuid"] as? String,
                   let stringValue = arguments["value"] as? String,
                   let peripheral = getPeripheralByIdentifier(deviceAddress: deviceAddress),
-                  let characteristicUuid = UUID(uuidString: characteristicUuidStr),
+                  let characteristicUuid = parseCharacteristicUuid(characteristicUuidStr),
                   let characteristic = getCharacteristicByUuid(peripheral: peripheral, uuid: characteristicUuid) else {
                 result(FlutterError(code: "INVALID_ARGUMENT", message: "Device address, characteristic UUID, or value cannot be null.", details: nil))
                 return
@@ -347,7 +347,7 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
                 // peripheral sends an ATT write response. For encrypted characteristics,
                 // CoreBluetooth will initiate pairing first and retry the write after the
                 // bond is established, so this callback fires only after pairing is complete.
-                let key = "\(deviceAddress):\(characteristicUuidStr.uppercased())"
+                let key = "\(deviceAddress):\(characteristic.uuid.uuidString.uppercased())"
                 pendingWriteResults[key] = result
             } else {
                 // Write without response: no acknowledgement will arrive, so resolve now.
@@ -359,7 +359,7 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
                   let characteristicUuidStr = arguments["characteristicUuid"] as? String,
                   let deviceAddress = arguments["address"] as? String,
                   let peripheral = getPeripheralByIdentifier(deviceAddress: deviceAddress),
-                  let characteristicUuid = UUID(uuidString: characteristicUuidStr),
+                  let characteristicUuid = parseCharacteristicUuid(characteristicUuidStr),
                   let characteristic = getCharacteristicByUuid(peripheral: peripheral, uuid: characteristicUuid) else {
                 result(FlutterError(code: "INVALID_ARGUMENT", message: "Device address or characteristic UUID cannot be null", details: nil))
                 return

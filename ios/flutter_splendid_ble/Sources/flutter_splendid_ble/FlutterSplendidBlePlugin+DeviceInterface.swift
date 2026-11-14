@@ -88,7 +88,7 @@ extension FlutterSplendidBlePlugin {
             return
         }
         
-        guard let characteristicUuid = UUID(uuidString: characteristicUuidStr) else {
+        guard let characteristicUuid = parseCharacteristicUuid(characteristicUuidStr) else {
             result(FlutterError(code: "INVALID_ARGUMENT",
                                 message: "Invalid characteristic UUID format",
                                 details: nil))
@@ -98,7 +98,7 @@ extension FlutterSplendidBlePlugin {
         
         if let characteristic = getCharacteristicByUuid(peripheral: peripheral, uuid: characteristicUuid) {
             // Create a key to track this specific operation
-            let key = "\(deviceAddress):\(characteristicUuidStr)"
+            let key = "\(deviceAddress):\(characteristic.uuid.uuidString)"
 
             // Store the result callback to complete later when the operation finishes
             pendingNotificationStateChanges[key] = result
@@ -117,7 +117,7 @@ extension FlutterSplendidBlePlugin {
         guard let args = call.arguments as? [String: Any],
               let deviceAddress = args["address"] as? String,
               let characteristicUuidStr = args["characteristicUuid"] as? String,
-              let characteristicUuid = UUID(uuidString: characteristicUuidStr),
+              let characteristicUuid = parseCharacteristicUuid(characteristicUuidStr),
               let peripheral = peripheralsMap[deviceAddress] else {
             result(FlutterError(code: "INVALID_ARGUMENT",
                                 message: "Device address or characteristic UUID cannot be null.",
@@ -125,13 +125,13 @@ extension FlutterSplendidBlePlugin {
             return
         }
         
-        let cbCharacteristicUuid = CBUUID(nsuuid: characteristicUuid)
+        let cbCharacteristicUuid = characteristicUuid
         
         if let service = peripheral.services?.first(where: { $0.characteristics?.contains(where: { $0.uuid == cbCharacteristicUuid }) == true }),
            let characteristic = service.characteristics?.first(where: { $0.uuid == cbCharacteristicUuid }) {
 
             // Create a key to track this specific operation
-            let key = "\(deviceAddress):\(characteristicUuidStr)"
+            let key = "\(deviceAddress):\(characteristic.uuid.uuidString)"
 
             // Store the result callback to complete later when the operation finishes
             pendingNotificationStateChanges[key] = result
