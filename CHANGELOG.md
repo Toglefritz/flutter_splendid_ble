@@ -2,7 +2,12 @@
 
 All notable changes to the `flutter_splendid_ble` plugin will be documented in this file.
 
-## [1.7.1] 2026/11/14
+## [1.8.0] 2026/11/13
+- Added `BleCharacteristic.writeBytes` for writing raw bytes (`List<int>`) to a characteristic without text encoding
+  - `writeValue` still takes a `String` and encodes it as UTF-8, so it behaves as before. Use `writeBytes` for binary protocols, since UTF-8 turns bytes from `0x80` to `0xFF` into multi-byte sequences
+- Breaking: the `value` parameter of `CentralPlatformInterface.writeCharacteristic` (and its implementations) is now `List<int>` instead of `String`. Code calling it directly should pass `utf8.encode(value)` or use `writeValue` or `writeBytes`
+
+## [1.7.1] 2026/11/13
 - Fixed iOS and macOS rejecting characteristics with 16-bit and 32-bit UUIDs
   - CoreBluetooth reports Bluetooth SIG UUIDs in their short form (for example `FF11`), and service discovery returns them that way. The subscribe, unsubscribe, read, and write handlers parsed the UUID with `UUID(uuidString:)`, which only accepts the 36-character form, so these operations failed with `Invalid characteristic UUID format` for any device that uses short UUIDs
   - The handlers now parse with `CBUUID(string:)`, which accepts the 4, 8, and 36-character forms and treats a short UUID and its 128-bit expansion as the same value
