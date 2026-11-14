@@ -50,17 +50,39 @@ class BleCharacteristic {
     );
   }
 
-  /// Writes data to a specified characteristic.
+  /// Writes a string to this characteristic.
   ///
-  /// `value` - The string value to be written. `writeType` - Optional write type, defaulting to
-  /// `BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT`.
+  /// `value` - The string to be written. It is encoded as UTF-8 before being sent, so only ASCII characters map to
+  /// single bytes with the same value. To send arbitrary byte values, use [writeBytes] instead.
+  /// `writeType` - Optional write type, defaulting to `BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT`.
   Future<void> writeValue({
     required String value,
     int? writeType,
   }) async {
     return CentralPlatformInterface.instance.writeCharacteristic(
       characteristic: this,
-      value: value,
+      value: utf8.encode(value),
+      writeType: writeType,
+    );
+  }
+
+  /// Writes raw bytes to this characteristic exactly as provided, without any text encoding.
+  ///
+  /// `bytes` - The bytes to be written. Each element must be in the range 0-255. Use this for devices whose BLE
+  /// protocol interprets raw byte values (flags, length prefixes, checksums, etc.).
+  /// `writeType` - Optional write type, defaulting to `BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT`.
+  ///
+  /// Example:
+  /// ```dart
+  /// await characteristic.writeBytes(bytes: <int>[0x01, 0xFF, 0x80]);
+  /// ```
+  Future<void> writeBytes({
+    required List<int> bytes,
+    int? writeType,
+  }) async {
+    return CentralPlatformInterface.instance.writeCharacteristic(
+      characteristic: this,
+      value: bytes,
       writeType: writeType,
     );
   }

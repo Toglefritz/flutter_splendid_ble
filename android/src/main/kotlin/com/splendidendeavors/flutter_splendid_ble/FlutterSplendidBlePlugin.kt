@@ -361,13 +361,12 @@ class FlutterSplendidBlePlugin : FlutterPlugin, MethodCallHandler, ActivityAware
             "writeCharacteristic" -> {
                 val deviceAddress = call.argument<String>("address")
                 val characteristicUuidStr = call.argument<String>("characteristicUuid")
-                val stringValue = call.argument<String>("value")
+                val byteValue = call.argument<ByteArray>("value")
                 val writeType = call.argument<Int>("writeType")
                     ?: BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT
 
-                if (deviceAddress != null && characteristicUuidStr != null && stringValue != null) {
+                if (deviceAddress != null && characteristicUuidStr != null && byteValue != null) {
                     val characteristicUuid = UUID.fromString(characteristicUuidStr)
-                    val byteValue = stringValue.toByteArray()
 
                     try {
                         bleDeviceInterface.writeCharacteristic(

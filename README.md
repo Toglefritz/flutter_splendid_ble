@@ -1038,48 +1038,43 @@ actions or configure settings on the peripheral. `SplendidBleCentral` provides a
 `writeCharacteristic` method to facilitate this. (A `writeValue` convenience method is also available
 directly on the `BleCharacteristic` class.)
 
-When writing to a BLE characteristic, the data typically needs to be in a byte format (`List<int>`).
-Depending on the characteristic's specification, this could be a simple string conversion,
-serialized structured data, or even encoded protobuf objects.
+`BleCharacteristic` offers two ways to write:
+
+- `writeValue(value: String)`: encodes the string as UTF-8 and sends it. Only ASCII characters map to
+  single bytes with the same value.
+- `writeBytes(bytes: List<int>)`: sends the bytes exactly as provided. Use this for devices whose BLE
+  protocol interprets raw byte values (flags, length prefixes, checksums, etc.).
+
+Both accept an optional `writeType`.
 
 **Data Preparation**
-Before calling the `writeValue` method, you must convert your data into a List<int>. Here are common
-scenarios:
+Before calling `writeBytes`, convert your data into a `List<int>` (each element 0-255):
 
-- *String*: Convert the string to bytes using `utf8.encode` from Dart's dart:convert package.
-- *JSON*: If you have a `Map<String, dynamic>`, you first serialize it into a string
-  with `json.encode`, then convert it to bytes.
+- *JSON*: Serialize a `Map<String, dynamic>` with `json.encode`, then convert it with `utf8.encode`.
 - *Objects*: Serialize your objects into a byte array according to the object's serialization
   method.
 - *Protocol Buffers*: Use the `.writeToBuffer()` method on the protobuf object to obtain
   a `List<int>` representation.
 
 **Example**
-The example below demonstrates how to write a string to a characteristic, with error handling:
+The example below writes a string and then raw bytes to a characteristic, with error handling:
 
 ```dart
-// Import the required Dart convert library.
-import 'dart:convert';
-
-// ... other code for your Flutter application ...
-
-/// Writes a string value to the given BLE characteristic.
-Future<void> writeStringToCharacteristic(String value, BleCharacteristic characteristic) async {
+/// Writes a string and a raw byte command to the given BLE characteristic.
+Future<void> writeToCharacteristic(BleCharacteristic characteristic) async {
   try {
-    // Write the string value to the characteristic using the central method
-    await _ble.writeCharacteristic(
-      characteristic: characteristic,
-      value: value,
-    );
+    // Text protocol: the string is UTF-8 encoded.
+    await characteristic.writeValue(value: 'hello');
 
-    print("Successfully wrote value to the characteristic.");
+    // Binary protocol: bytes are sent exactly as given, including values above 0x7F.
+    await characteristic.writeBytes(bytes: <int>[0x01, 0xFF, 0x80]);
+
+    print("Successfully wrote to the characteristic.");
   } catch (e) {
     // Handle any errors that occur during the write operation
-    print("Failed to write value to characteristic: $e");
+    print("Failed to write to characteristic: $e");
   }
 }
-
-// ... other code for your Flutter application ...
 ```
 
 **Notes and Best Practices**

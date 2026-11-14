@@ -609,22 +609,22 @@ class CentralMethodChannel extends CentralPlatformInterface {
   ///
   /// - [characteristic]: The BLE characteristic to which the data will be written. This should include both the device
   /// address and the UUID of the characteristic.
-  /// - [value]: The data to be written to the characteristic, generally a string that will be converted into
-  /// bytes/hexadecimals.
+  /// - [value]: The raw bytes to be written to the characteristic. They are sent to the platform as a byte array
+  /// without any text encoding.
   /// - [writeType]: Optional parameter to specify the type of write operation. Defaults to
   /// `BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT`. Different write types have different transmission and
   /// confirmation behaviors.
   @override
   Future<void> writeCharacteristic({
     required BleCharacteristic characteristic,
-    required String value,
+    required List<int> value,
     int? writeType,
   }) async {
     try {
       await channel.invokeMethod('writeCharacteristic', {
         'address': characteristic.address,
         'characteristicUuid': characteristic.uuid,
-        'value': value,
+        'value': Uint8List.fromList(value),
         if (writeType != null) 'writeType': writeType,
       });
     } on PlatformException catch (e) {

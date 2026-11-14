@@ -156,10 +156,12 @@ abstract class CentralPlatformInterface extends PlatformInterface {
     );
   }
 
-  /// Writes data to a specified characteristic.
+  /// Writes raw bytes to a specified characteristic.
+  ///
+  /// [value] is sent as-is. Callers holding a string should encode it first (e.g. with `utf8.encode`).
   Future<void> writeCharacteristic({
     required BleCharacteristic characteristic,
-    required String value,
+    required List<int> value,
     int? writeType,
   }) async {
     throw UnimplementedError('writeCharacteristic() has not been implemented.');

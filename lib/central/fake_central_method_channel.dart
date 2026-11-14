@@ -360,7 +360,7 @@ class FakeCentralMethodChannel extends CentralPlatformInterface {
   @override
   Future<void> writeCharacteristic({
     required BleCharacteristic characteristic,
-    required String value,
+    required List<int> value,
     int? writeType,
   }) async {
     // No-op for mock. Could add logging or tracking.

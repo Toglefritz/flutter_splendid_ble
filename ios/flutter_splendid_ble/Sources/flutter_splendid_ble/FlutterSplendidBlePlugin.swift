@@ -311,7 +311,7 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
             // Extract arguments safely.
             guard let deviceAddress = arguments["address"] as? String,
                   let characteristicUuidStr = arguments["characteristicUuid"] as? String,
-                  let stringValue = arguments["value"] as? String,
+                  let typedValue = arguments["value"] as? FlutterStandardTypedData,
                   let peripheral = getPeripheralByIdentifier(deviceAddress: deviceAddress),
                   let characteristicUuid = parseCharacteristicUuid(characteristicUuidStr),
                   let characteristic = getCharacteristicByUuid(peripheral: peripheral, uuid: characteristicUuid) else {
@@ -319,7 +319,7 @@ public class FlutterSplendidBlePlugin: NSObject, FlutterPlugin, CBCentralManager
                 return
             }
 
-            let dataValue = Data(stringValue.utf8)
+            let dataValue = typedValue.data
             let writeTypeValue = arguments["writeType"] as? Int ?? CBCharacteristicWriteType.withResponse.rawValue
             guard let writeType = CBCharacteristicWriteType(rawValue: writeTypeValue) else {
                 result(FlutterError(code: "INVALID_ARGUMENT", message: "Invalid write type provided.", details: nil))
