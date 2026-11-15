@@ -1186,7 +1186,7 @@ class BleDeviceInterface(
         if (status == BluetoothGatt.GATT_SUCCESS) {
             @Suppress("DEPRECATION")
             val value = characteristic.value ?: byteArrayOf()
-            val valueList = value.map { byte -> byte.toInt() }
+            val valueList = value.toUnsignedByteList()
             // The invokeMethod call must be done on the main thread
             mainHandler.post {
                 channel.invokeMethod(
@@ -1467,7 +1467,7 @@ class BleDeviceInterface(
 
         @Suppress("DEPRECATION")
         val value = characteristic.value ?: byteArrayOf()
-        val valueList = value.map { byte -> byte.toInt() }
+        val valueList = value.toUnsignedByteList()
         val deviceAddress = gatt.device?.address
 
         // Create a map with updated characteristic details

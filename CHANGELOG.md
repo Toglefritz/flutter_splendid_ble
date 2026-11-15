@@ -2,6 +2,10 @@
 
 All notable changes to the `flutter_splendid_ble` plugin will be documented in this file.
 
+## [1.8.1] 2026/11/15
+- Fixed Android reporting characteristic bytes from `0x80` to `0xFF` as negative numbers in `BleCharacteristicValue.value`
+  - Values from notifications and reads are now 0-255 on every platform, matching iOS and macOS
+
 ## [1.8.0] 2026/11/13
 - Added `BleCharacteristic.writeBytes` for writing raw bytes (`List<int>`) to a characteristic without text encoding
   - `writeValue` still takes a `String` and encodes it as UTF-8, so it behaves as before. Use `writeBytes` for binary protocols, since UTF-8 turns bytes from `0x80` to `0xFF` into multi-byte sequences

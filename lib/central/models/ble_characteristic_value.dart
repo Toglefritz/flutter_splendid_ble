@@ -33,9 +33,9 @@ class BleCharacteristicValue {
 
   /// The actual value of the characteristic.
   ///
-  /// This is a list of integers, where each integer represents a byte of data rom the characteristic. The structure and
-  /// meaning of this data is typically defined by the Bluetooth service specification to which the characteristic
-  /// belongs.
+  /// This is a list of integers, where each integer represents a byte of data from the characteristic as an unsigned
+  /// value from 0 to 255, on every platform. The structure and meaning of this data is typically defined by the
+  /// Bluetooth service specification to which the characteristic belongs.
   final List<int> value;
 
   /// Returns the [value] converted into a String by treating the `List<int>` as a UTF-8 encoded string. This string
