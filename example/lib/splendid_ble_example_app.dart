@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'splendid_ble_example_material_app.dart';
 
 /// A [StatelessWidget] that builds the root [MaterialApp] for the Flutter BLE Example App.

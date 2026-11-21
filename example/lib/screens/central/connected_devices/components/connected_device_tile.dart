@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_splendid_ble/central/models/connected_ble_device.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Displays information about a Bluetooth device that is currently connected to the host device.
 class ConnectedDeviceTile extends StatelessWidget {

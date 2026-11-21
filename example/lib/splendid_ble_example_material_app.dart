@@ -1,5 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:material_ui/material_ui.dart';
+
 import 'l10n/app_localizations.dart';
 import 'screens/home/home_route.dart';
 
@@ -53,9 +54,7 @@ class SplendidBleExampleMaterialApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       localizationsDelegates: const [
         AppLocalizations.delegate,
-        GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
       ],
       supportedLocales: const [
         Locale('en'), // English

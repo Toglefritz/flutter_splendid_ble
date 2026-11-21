@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// An indicator used to indicate that something that needs to load is loading.
 class LoadingIndicator extends StatelessWidget {

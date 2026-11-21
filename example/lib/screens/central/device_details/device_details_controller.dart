@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_splendid_ble/central/models/ble_characteristic.dart';
 import 'package:flutter_splendid_ble/central/models/ble_connection_event.dart';
 import 'package:flutter_splendid_ble/central/models/ble_connection_failure.dart';
@@ -9,6 +8,7 @@ import 'package:flutter_splendid_ble/central/models/ble_service.dart';
 import 'package:flutter_splendid_ble/central/models/exceptions/bluetooth_connection_exception.dart';
 import 'package:flutter_splendid_ble/central/splendid_ble_central.dart';
 import 'package:flutter_splendid_ble/shared/models/ble_device.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../home/home_route.dart';
 import '../characteristic_interaction/characteristic_interaction_route.dart';

@@ -4,7 +4,7 @@ homepage: https://github.com/Toglefritz/flutter_splendid_ble
 repository: https://github.com/Toglefritz/flutter_splendid_ble
 
 environment:
-  sdk: '>=3.0.6 <4.0.0'
+  sdk: ^3.14.0
 
 dependencies:
   flutter:
@@ -21,7 +21,8 @@ dependencies:
     path: ../
   # Provides internationalization and localization
   intl: ^0.20.2
-
+  # Material Design UI components
+  material_ui: any
 dev_dependencies:
   flutter_test:
     sdk: flutter

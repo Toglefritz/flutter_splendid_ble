@@ -1,10 +1,10 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_splendid_ble/central/models/connected_ble_device.dart';
 import 'package:flutter_splendid_ble/central/models/exceptions/bluetooth_scan_exception.dart';
 import 'package:flutter_splendid_ble/central/splendid_ble_central.dart';
 import 'package:flutter_splendid_ble/shared/models/ble_device.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../device_details/device_details_route.dart';
 import 'connected_devices_route.dart';

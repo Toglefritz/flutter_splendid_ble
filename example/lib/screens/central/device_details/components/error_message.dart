@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// An error message displayed to the user.
 class ErrorMessage extends StatelessWidget {

@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_splendid_ble/central/splendid_ble_central.dart';
 import 'package:flutter_splendid_ble/shared/models/ble_device.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../scan/scan_route.dart';
 import 'device_details_controller.dart';

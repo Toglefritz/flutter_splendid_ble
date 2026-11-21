@@ -1,9 +1,8 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_splendid_ble/shared/models/bluetooth_status.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../components/main_app_bar.dart';
-
 import 'components/error_message.dart';
 import 'home_controller.dart';
 import 'home_route.dart';

@@ -1,6 +1,7 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_splendid_ble/central/models/ble_connection_state.dart';
 import 'package:flutter_splendid_ble/shared/models/ble_device.dart';
+import 'package:material_ui/material_ui.dart';
+
 import '../../../../extensions/string_capitalization.dart';
 import '../../../../l10n/app_localizations.dart';
 

@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_splendid_ble/central/models/scan_settings.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../l10n/app_localizations.dart';
 import '../../components/main_app_bar.dart';
